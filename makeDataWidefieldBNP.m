@@ -48,7 +48,6 @@ for image = 1:numImages
         for j = 1:numCols
             for obs = 1:imageData{image}(i, j)
                 Data(i,j).Dt = cat(1, Data(i,j).Dt, delay);
-                % add imageData{image}(i,j)/gates into this pixels Data.W
             end
         end
     end
