@@ -1,12 +1,20 @@
-# Short script to attach all images output by the SPAD into a single tiff, for piping into BNP or exponential analyses
+import numpy as np
+from skimage.io import imread, imsave 
 
-import numpy as np 
-from tifffile import imread, imsave, imwrite  
-from pathlib import Path
+raw = '240607/5_ms_12bit.tif'
+out = '240607/5_ms_12bit_processed.tif'
+ratio = 5
 
-files = Path('folder name here').glob('*')
-image = imread(files[0])
-for file in files:
-    newimage = imread(file)
-    image = np.hstack(image, file)
-imwrite('image name here', image)
+image = imread(raw)
+length, x, y = image.shape
+newlen = length // ratio
+
+new = np.zeros((newlen, x, y), dtype=image.dtype)
+
+for i in range(newlen):
+  new[i] = np.sum(image[i*ratio:(i+1)*ratio], axis=0)
+  print(f'set {i} done')
+print(f'New shape: {np.shape(new)}')
+
+imsave(out, new)
+print(f'Image saved as {out}')
