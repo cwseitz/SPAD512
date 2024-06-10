@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.io import savemat
 from skimage.io import imread 
+import random
+
 '''
 Script for adjusting data collected in a .tif for use in the matlab package BNP-LA by Mohamadreza Fazel.
 To-Do: 
@@ -20,6 +22,8 @@ data = []
 for i, count in enumerate(raw):
     for j in range(int(count)):
         data.append(start + bin_width * i)
+
+random.shuffle(data) # needed so that when not using all photons, data isn't skewed to taking early times only
 
 data = np.array(data).reshape(1, -1)
 mat_dict = {'Dt': data}
