@@ -12,8 +12,8 @@ Simulation of exponential fitting of fluorescent lifetime imaging data acquired 
 
 '''Simulation Parameters'''
 freq_sim = 10  # laser frequency in MHz
-integ_sims = [0.001, 0.005, 0.01, 00.05, 0.1, 0.5, 1, 2.5, 5]  # integration times to simulate with in ms
-step_sims = [0.018, 0.04, 0.06, 0.08, 0.1, 0.2, 0.4, 0.6, 0.8, 1, 2.5, 5]  # gate step sizes in ns
+integ_sims = np.linspace(0.001, 10, num = 20)  # integration times to simulate with in ms
+step_sims = np.linspace(0.018, 5, num = 20)  # gate step sizes in ns
 offset_sim = 0.018  # gate offset in ns
 tau_sim = 10  # ground truth lifetime to simulate
 width_sim = 5  # gate width in ns
@@ -133,4 +133,4 @@ print(f'Full simulation complete in {tic2-tic1} seconds.')
 print(stdevs)
 
 display(stdevs, integ_sims, step_sims)
-imsave('simulation.tif',stdevs)
+imsave('simulation2.tif',stdevs)
