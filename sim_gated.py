@@ -1,5 +1,4 @@
 import numpy as np
-import flimlib
 import time
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
@@ -55,6 +54,17 @@ def getLifetime(data, step):
         return params
 
     LMA_params = fit_decay(data, step)
+
+    # x = np.arange(len(data)) * step
+    # plt.figure(figsize=(6, 4))
+    # plt.plot(x, data, 'bo', markersize=3, label='Data')
+    # plt.plot(x, decay(x, *LMA_params), 'r--', label='Fit: tau = {:.2f}'.format(LMA_params[1]))
+    # plt.xlabel('Time, ns')
+    # plt.ylabel('Counts')
+    # plt.legend()
+    # plt.title('Simulated Decay for 10 ms integration, 5 ns step')
+    # plt.show()
+
     return LMA_params
 
 '''Inner function for multiprocessing'''
@@ -96,7 +106,6 @@ def display(image, integs, steps):
 
 '''Main code'''
 tic1 = time.time()
-
 stdevs = np.zeros((len(integ_sims), len(step_sims)))
 
 for i, integ_sim in enumerate(integ_sims):
@@ -107,6 +116,12 @@ for i, integ_sim in enumerate(integ_sims):
         if __name__ == '__main__': # multiprocessing bit
             with Pool(100) as p:
                 lifetimes = p.map(job, range(iter))
+
+        # plt.figure(figsize=(6, 4))
+        # plt.boxplot(lifetimes, vert=False,  patch_artist=True)
+        # plt.title('Box Plot of Lifetimes for 1 ms integration, 5 ns step')
+        # plt.xlabel('Lifetimes, in ns')
+        # plt.show()
 
         stdevs[i][j] += np.std(lifetimes) # store standard deviation over all iterations as summary stat
 
@@ -119,4 +134,3 @@ print(stdevs)
 
 display(stdevs, integ_sims, step_sims)
 imsave('simulation.tif',stdevs)
-
