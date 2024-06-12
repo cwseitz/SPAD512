@@ -3,21 +3,18 @@ import flimlib
 import time
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
 from multiprocessing import Pool
+from skimage.io import imsave, imread
 
 ''' 
 Simulation of exponential fitting of fluorescent lifetime imaging data acquired by a time-gated SPAD
-To Do:
-- Test limits of multiprocessing in this context
-- Optimize data generation
-- Code data visualization
-- Run full (finer) integration/step simulation series
 '''
 
 '''Simulation Parameters'''
 freq_sim = 10  # laser frequency in MHz
-integ_sims = [0.001, 0.01, 0.1, 1, 10]  # integration times to simulate with in ms
-step_sims = [0.018, 0.05, 0.09, 0.18, 0.5, 0.9, 1.8, 5]  # gate step sizes in ns
+integ_sims = [0.001, 0.005, 0.01, 00.05, 0.1, 0.5, 1, 2.5, 5]  # integration times to simulate with in ms
+step_sims = [0.018, 0.04, 0.06, 0.08, 0.1, 0.2, 0.4, 0.6, 0.8, 1, 2.5, 5]  # gate step sizes in ns
 offset_sim = 0.018  # gate offset in ns
 tau_sim = 10  # ground truth lifetime to simulate
 width_sim = 5  # gate width in ns
@@ -72,11 +69,36 @@ def job(n): # need to call n as a parameter for multiprocessing syntax
     return out
 
 '''Data display function (placeholder until I decide how to actually visualize data)'''
-def display(im):
-    plt.imshow(im)
+def display(image, integs, steps):
+    xlen, ylen = np.shape(image)
+    fig, ax = plt.subplots()
+    ax.set_aspect('auto')
+
+    norm = Normalize(vmin = 0, vmax = 1, clip = True)
+
+    cax = ax.imshow(image, cmap = 'viridis', norm = norm)
+    cbar = fig.colorbar(cax)
+    cbar.set_label('Standard Deviation of Lifetimes')
+
+    ax.set_title('Simulation Results')
+    ax.set_xlabel('Step size (ns)')
+    ax.set_ylabel('Integration time (ms)')
+
+    ax.set_yticks(np.linspace(0, xlen, num = xlen, endpoint=False))
+    ax.set_yticklabels(integs)
+
+    ax.set_xticks(np.linspace(0, ylen, num = ylen, endpoint=False))
+    ax.set_xticklabels(steps)
+    plt.xticks(rotation=30)
+
+    plt.show()
+
 
 '''Main code'''
+tic1 = time.time()
+
 stdevs = np.zeros((len(integ_sims), len(step_sims)))
+
 for i, integ_sim in enumerate(integ_sims):
     for j, step_sim in enumerate(step_sims):
         tic = time.time()
@@ -90,3 +112,11 @@ for i, integ_sim in enumerate(integ_sims):
 
         toc = time.time()
         print(f'Simulation complete in {toc-tic} seconds. Lifetime stdev {stdevs[i][j]}\n')
+
+tic2 = time.time()
+print(f'Full simulation complete in {tic2-tic1} seconds.')
+print(stdevs)
+
+display(stdevs, integ_sims, step_sims)
+imsave('simulation.tif',stdevs)
+
