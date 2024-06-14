@@ -5,23 +5,26 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from multiprocessing import Pool
 from skimage.io import imsave, imread
+from scipy.io import savemat
 
 ''' 
 Simulation of exponential fitting of fluorescent lifetime imaging data acquired by a time-gated SPAD
 '''
 
 '''Manipulated Simulation Parameters'''
-integ_sims = [0.001, 0.0025, 0.005, 0.0075, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 0.75, 1, 5, 10] # integration times in ms
-step_sims = [0.018, 0.04, 0.06, 0.1, 0.15, 0.2, 0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 5] # gate step sizes (not width) in ns
-tau_sims = [10, 5, 1]  # ground truth lifetimes in ns
-tau_sim = 10
+# integ_sims = [0.001, 0.0025, 0.005, 0.0075, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 0.75, 1, 5, 10] # integration times in ms
+# step_sims = [0.018, 0.04, 0.06, 0.1, 0.15, 0.2, 0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 5] # gate step sizes (not width) in ns
+# tau_sims = [10, 5, 1]  # ground truth lifetimes in ns
+integ_sims = [1]
+step_sims = [0.09]
+tau_sims = [10]
 
 '''Standard Simulation Parameters'''
 freq_sim = 10  # laser frequency in MHz
 offset_sim = 0.018  # gate offset in ns
-width_sim = 5  # gate width in nsW
-iter = 1000 # number of times to iterate for each combination of integrations and steps
-zeta_sim = 0.05 # probability of detection per pulse, from QY, detector eff., cross section, excitation flux
+width_sim = 5  # gate width in ns
+iter = 1 # number of times to iterate for each combination of integrations and steps
+zeta_sim = 0.01 # probability of detection per pulse, from QY, detector eff., cross section, excitation flux
 
 '''Generates data given a ground truth lifetime and SPAD acquisition parameters'''
 def genData(freq, integ, step, offset, width, tau, zeta):
@@ -37,6 +40,8 @@ def genData(freq, integ, step, offset, width, tau, zeta):
     for i in range(numsteps):
         draws = np.random.rand(numgates) < prob[i]
         data[i] = np.sum(draws)
+
+    savemat('BNP-LA-main/my_array.mat', {'my_array': data})
 
     return data
 
@@ -63,15 +68,15 @@ def getLifetime(data, step):
     LMA_params, success = fit_decay(data, step)
 
     # plots decay curve from a particular iteration
-    # x = np.arange(len(data)) * step
-    # plt.figure(figsize=(6, 4))
-    # plt.plot(x, data, 'bo', markersize=3, label='Data')
-    # plt.plot(x, decay(x, *LMA_params), 'r--', label='Fit: tau = {:.2f}'.format(LMA_params[1]))
-    # plt.xlabel('Time, ns')
-    # plt.ylabel('Counts')
-    # plt.legend()
-    # plt.title('Simulated Decay for 10 us integration, 5 ns step')
-    # plt.show()
+    x = np.arange(len(data)) * step
+    plt.figure(figsize=(6, 4))
+    plt.plot(x, data, 'bo', markersize=3, label='Data')
+    plt.plot(x, decay(x, *LMA_params), 'r--', label='Fit: tau = {:.2f}'.format(LMA_params[1]))
+    plt.xlabel('Time, ns')
+    plt.ylabel('Counts')
+    plt.legend()
+    plt.title('Simulated Decay for 1 ms integration, 90 ps step')
+    plt.show()
 
     return LMA_params, success
 
@@ -89,11 +94,13 @@ def job(n): # need to call n as a parameter for multiprocessing syntax
     return out, success
 
 '''Data display function'''
-def display(mean_image, std_image, integs, steps, tau, show = False):
+def display(mean_image, std_image, integs, steps, tau, show = True):
     xlen, ylen = np.shape(mean_image)
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
     
     # plot mean
+    mean_image = mean_image - 5
+    imsave(str(tau_sim) + 'ns_means.tif',mean_image)
     norm = mcolors.TwoSlopeNorm(vmin=np.min(mean_image), vcenter=tau, vmax=np.max(mean_image))
     cax1 = ax1.imshow(mean_image, cmap='seismic', norm=norm)
     cbar1 = fig.colorbar(cax1, ax=ax1, shrink = 0.6)
@@ -131,10 +138,10 @@ def display(mean_image, std_image, integs, steps, tau, show = False):
 
 
 '''Main code'''
-tic1 = time.time()
-stdevs = np.zeros((len(integ_sims), len(step_sims)))
-means = np.zeros((len(integ_sims), len(step_sims)))
 for tau_sim in tau_sims:
+    tic1 = time.time()
+    stdevs = np.zeros((len(integ_sims), len(step_sims)))
+    means = np.zeros((len(integ_sims), len(step_sims)))
     for i, integ_sim in enumerate(integ_sims):
         for j, step_sim in enumerate(step_sims):
             tic = time.time()
@@ -160,14 +167,14 @@ for tau_sim in tau_sims:
                 stdevs[i][j] = -1
                 means[i][j] = -1
             toc = time.time()
-            print(f'Simulation complete in {toc-tic} seconds. Lifetime stdev {stdevs[i][j]}\n, mean {means[i][j]}')
+            print(f'Simulation complete in {toc-tic} seconds. Lifetime stdev {stdevs[i][j]}, mean {means[i][j]}\n')
     tic2 = time.time()
     print(f'Full simulation for {tau_sim} ns lifetime complete in {tic2-tic1} seconds.')
     imsave(str(tau_sim) + 'ns_stdevs.tif',stdevs)
     imsave(str(tau_sim) + 'ns_means.tif',means)
     display(means, stdevs, integ_sims, step_sims, tau_sim, show = False)
 
-# stdevs = imread('10ns_stdevs.tif')
-# means = imread('10ns_means.tif',)
+# stdevs = imread('1ns_stdevs.tif')
+# means = imread('1ns_means.tif',)
 
 # display(means, stdevs, integ_sims, step_sims, tau_sim, show = True)
