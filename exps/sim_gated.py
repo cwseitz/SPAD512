@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from multiprocessing import Pool
 from skimage.io import imsave, imread
-from scipy.io import savemat
 
 ''' 
 Simulation of exponential fitting of fluorescent lifetime imaging data acquired by a time-gated SPAD
@@ -40,8 +39,6 @@ def genData(freq, integ, step, offset, width, tau, zeta):
     for i in range(numsteps):
         draws = np.random.rand(numgates) < prob[i]
         data[i] = np.sum(draws)
-
-    savemat('BNP-LA-main/my_array.mat', {'my_array': data})
 
     return data
 
@@ -172,6 +169,8 @@ for tau_sim in tau_sims:
     print(f'Full simulation for {tau_sim} ns lifetime complete in {tic2-tic1} seconds.')
     imsave(str(tau_sim) + 'ns_stdevs.tif',stdevs)
     imsave(str(tau_sim) + 'ns_means.tif',means)
+    print(stdevs)
+    print(means)
     display(means, stdevs, integ_sims, step_sims, tau_sim, show = False)
 
 # stdevs = imread('1ns_stdevs.tif')
