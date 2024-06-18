@@ -6,12 +6,14 @@ import matplotlib.colors as mcolors
 from multiprocessing import Pool
 from skimage.io import imsave, imread
 from scipy.io import savemat
+from scipy.signal import convolve, deconvolve
 
 '''
 Script to fit deconvolved exponentials accross a widefield FLIM image and display the full results. 
 To-do: 
 - Add deconvolution code
 - Automate threshold determination
+- Choose better start point for exponential fitting
 '''
 
 # define parameters
@@ -21,7 +23,6 @@ gate_step = 0.09 # gate step size in ns
 gate_width = 5 # gate width in ns
 gate_num = 1000 # number of gates for a given step
 gate_offset = 0.018 # gate offset in ns
-irf_mean = 0
 irf_width = 0
 
 # exponential decay helper function
@@ -35,8 +36,10 @@ def fit_decay(times, data):
         return params
 
 # deconvolution function
-def deconvolve(data, irf_mean, irf_width):
-    return 0
+def irf_deconvolve(times, trace, irf_width):
+    irf = np.exp(-times**2 / irf_width)
+    tracedc = deconvolve(trace, irf)
+    return tracedc
 
 # read image and set initial arrays
 image = imread(filename)
