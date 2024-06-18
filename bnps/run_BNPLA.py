@@ -23,7 +23,7 @@ for i, count in enumerate(raw):
 random.shuffle(data) # needed so that when not using all photons, data isn't skewed to taking early times only
 
 data = np.array(data).reshape(1, -1)
-# print(data)
+print(data)
 
 # import matlab.engine
 # import numpy as np
