@@ -1,9 +1,7 @@
-import numpy as np # type: ignore
-import scipy.io as sio # type: ignore
-from skimage.io import imread #type: ignore
-import random
-import matlab.engine
 import numpy as np
+import scipy.io as sio 
+from skimage.io import imread 
+import random
 import scipy.io as sio
 
 x = 147 # x coordinate of interest
