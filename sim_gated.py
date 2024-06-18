@@ -12,9 +12,9 @@ Simulation of exponential fitting of fluorescent lifetime imaging data acquired 
 '''
 
 '''Manipulated Simulation Parameters'''
-# integ_sims = [0.001, 0.0025, 0.005, 0.0075, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 0.75, 1, 5, 10] # integration times in ms
-# step_sims = [0.018, 0.04, 0.06, 0.1, 0.15, 0.2, 0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 5] # gate step sizes (not width) in ns
-# tau_sims = [10, 5, 1]  # ground truth lifetimes in ns
+integ_sims = [0.001, 0.0025, 0.005, 0.0075, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 0.75, 1, 5, 10] # integration times in ms
+step_sims = [0.018, 0.04, 0.06, 0.1, 0.15, 0.2, 0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 5] # gate step sizes (not width) in ns
+tau_sims = [10, 5, 1]  # ground truth lifetimes in ns
 integ_sims = [1]
 step_sims = [0.09]
 tau_sims = [10]
