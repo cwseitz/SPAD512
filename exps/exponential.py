@@ -11,7 +11,6 @@ from scipy.signal import convolve, deconvolve
 '''
 Script to fit deconvolved exponentials accross a widefield FLIM image and display the full results. 
 To-do: 
-- Add deconvolution code
 - Automate threshold determination
 - Choose better start point for exponential fitting
 '''
