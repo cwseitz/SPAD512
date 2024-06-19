@@ -3,6 +3,7 @@ from datetime import datetime
 '''
 Function for auto naming acquisitons. Be careful with units.
 '''
+
 freq = 10 # frequency in MHz
 frames = 3 # number of frames
 gate_num = 1000 # number of gates per frame

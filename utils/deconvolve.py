@@ -2,6 +2,10 @@ import numpy as np
 from scipy.signal import convolve, deconvolve
 import matplotlib.pyplot as plt
 
+'''
+Test script for deconvolution of gaussians from exponential
+'''
+
 time = np.linspace(0, 10, 1000)
 tau = 2.0
 decay = np.exp(-time / tau)

@@ -2,6 +2,10 @@ import matplotlib.pyplot as plt #type: ignore
 from skimage.io import imread #type: ignore
 import numpy as np #type: ignore
 
+'''
+Plots FLIMJ outputs
+'''
+
 A = imread('240607/A_6bit.tif')
 Intensity = imread('240607/I_6bit.tif')
 tau = imread('240607/tau_6bit.tif')
