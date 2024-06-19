@@ -14,28 +14,9 @@ To-do:
 
 # define parameters
 filenames = [
-'240613/240613_SPAD-QD-10MHz-3f-18g-5us-5ns-5000ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-18g-10us-5ns-5000ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-18g-100us-5ns-5000ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-18g-1000us-5ns-5000ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-18g-10000us-5ns-5000ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-90g-5us-5ns-1000ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-90g-10us-5ns-1000ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-90g-100us-5ns-1000ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-90g-1000us-5ns-1000ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-90g-10000us-5ns-1000ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-900g-5us-5ns-100ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-900g-10us-5ns-100ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-900g-100us-5ns-100ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-900g-1000us-5ns-100ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-900g-10000us-5ns-100ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-5000g-5us-5ns-18ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-5000g-10us-5ns-18ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-5000g-100us-5ns-18ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-5000g-1000us-5ns-18ps-18ps-150uW',
-'240613/240613_SPAD-QD-10MHz-3f-5000g-10000us-5ns-18ps-18ps-150uW'
+'240613/240613_SPAD-QD-10MHz-3f-5000g-1000us-5ns-18ps-18ps-150uW'
 ]
-threshs = [1,1,2,10,65,1,1,5,20,100,1,5,15,75,500,10,10,50,300,2500] # threshold for sum of counts over trace, below which there is no fitting done
+threshs = [300] # threshold for sum of counts over trace, below which there is no fitting done
 irf_width = 0 # width of gaussian irf in ns
 
 def parse(filename):
