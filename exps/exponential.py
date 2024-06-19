@@ -13,18 +13,47 @@ To-do:
 '''
 
 # define parameters
-filename = '240613_SPAD-QD-10MHz-3f-5000g-10ms-5ns-18ps-18ps-150uW' # no .tif
-gate_num = 5000 # number of gate steps used
-gate_step = 0.018 # gate step size in ns
-thresh = 2500 # threshold for sum of counts over trace, below which there is no fitting done
-
-freq = 10 # frequency in MHz
-frames = 3 # number of frames
-gate_integ = 100 # integration time in ns
-gate_width = 5 # gate width in ns
-gate_offset = 0.018 # gate offset in ps
+filenames = [
+'240613/240613_SPAD-QD-10MHz-3f-18g-5us-5ns-5000ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-18g-10us-5ns-5000ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-18g-100us-5ns-5000ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-18g-1000us-5ns-5000ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-18g-10000us-5ns-5000ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-90g-5us-5ns-1000ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-90g-10us-5ns-1000ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-90g-100us-5ns-1000ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-90g-1000us-5ns-1000ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-90g-10000us-5ns-1000ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-900g-5us-5ns-100ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-900g-10us-5ns-100ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-900g-100us-5ns-100ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-900g-1000us-5ns-100ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-900g-10000us-5ns-100ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-5000g-5us-5ns-18ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-5000g-10us-5ns-18ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-5000g-100us-5ns-18ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-5000g-1000us-5ns-18ps-18ps-150uW',
+'240613/240613_SPAD-QD-10MHz-3f-5000g-10000us-5ns-18ps-18ps-150uW'
+]
+threshs = [1,1,2,10,65,1,1,5,20,100,1,5,15,75,500,10,10,50,300,2500] # threshold for sum of counts over trace, below which there is no fitting done
 irf_width = 0 # width of gaussian irf in ns
 
+def parse(filename):
+  # split filename into individual values
+  base_filename = filename.split('/')[-1]
+  base_filename = base_filename.split('.')[0]
+  parts = base_filename.split('-')
+  
+  # extract parameter values
+  freq = int(parts[2].replace('MHz', ''))
+  frames = int(parts[3].replace('f', ''))
+  gate_num = int(parts[4].replace('g', ''))
+  gate_integ = int(parts[5].replace('us', ''))
+  gate_width = int(parts[6].replace('ns', ''))
+  gate_step = float(parts[7].replace('ps', '')) / 1000  # Convert from ps to ns
+  gate_offset = float(parts[8].replace('ps', '')) / 1000  # Convert from ps to ns
+
+  return freq, frames, gate_num, gate_integ, gate_width, gate_step, gate_offset
 
 # exponential decay helper function
 def decay(x, amp, tau):
@@ -80,10 +109,10 @@ def fit_exps(filename, freq, frames,
   except RuntimeError:
     params = [0, 0]
 
-  print(str(track) + ' pixels successfully fit')
-  return A, intensity, tau, times, full_trace, params
+  print(str(track) + ' pixels successfully fit\n')
+  return A, intensity, tau, times, full_trace, params, track
 
-def plot_all(tau, A, intensity, gate_integ, gate_step, times, full_trace, params, filename):
+def plot_all(tau, A, intensity, gate_integ, gate_step, gate_num, thresh, track, times, full_trace, params, filename):
   for i in range(len(tau)):
     for j in range(len(tau[0])):
       if tau[i][j] > 1000:
@@ -98,7 +127,8 @@ def plot_all(tau, A, intensity, gate_integ, gate_step, times, full_trace, params
       if A[i][j] < 0:
         A[i][j] = 0
 
-  fig,ax=plt.subplots(2,2,figsize=(9,9))
+  fig,ax=plt.subplots(2,2,figsize=(7,7))
+  fig.suptitle(f'{gate_integ*1e-3} ms integ, {gate_step} ns step, {gate_integ*gate_num*1e-3} ms acq time, {thresh} thresh, {track} fits', fontsize = 12)
 
   im1 = ax[0, 0].imshow(A,cmap='plasma')
   ax[0, 0].set_title('Amplitudes')
@@ -120,25 +150,29 @@ def plot_all(tau, A, intensity, gate_integ, gate_step, times, full_trace, params
   ax[1, 1].plot(times, decay(times, params[0], params[1]), label='Fit: tau = {:.2f}'.format(params[1]), color='black')
   ax[1, 1].set_xlabel('Time, ns')
   ax[1, 1].set_ylabel('Counts')
+  val = max(full_trace)
+  ax[1, 1].set_ylim(0, 1.5 * val)
   ax[1, 1].tick_params(axis='x', which='both', bottom=True, top=True) # not working 
   ax[1, 1].tick_params(axis='y', which='both', left=True, right=True)
   ax[1, 1].legend()
 
-
-  for axi in ax.ravel():
-    axi.set_xticks([])
-    axi.set_yticks([])
+  for i, axi in enumerate(ax.ravel()):
+    if i != 3:
+      axi.set_xticks([])
+      axi.set_yticks([])
 
   plt.tight_layout()
-  plt.savefig(filename + 'results.png')
+  plt.savefig(filename + '_results.png')
 
-  plt.show()
+  # plt.show()
   
-def run_exps(filename, freq, frames, gate_num, gate_integ, gate_width, gate_step, gate_offset, irf_width, thresh):
-  A, intensity, tau, times, full_trace, params = fit_exps(filename, freq, frames, 
-  gate_num, gate_integ, gate_width, 
-  gate_step, gate_offset, irf_width, thresh)
+def run_exps(filename, irf_width, thresh):
+  freq, frames, gate_num, gate_integ, gate_width, gate_step, gate_offset = parse(filename)
+  print(f'Starting {gate_integ} us integration, {gate_step} ns step')
 
-  plot_all(tau, A, intensity, gate_integ, gate_step, times, full_trace, params, filename)
+  A, intensity, tau, times, full_trace, params, track = fit_exps(filename, freq, frames, gate_num, gate_integ, gate_width, gate_step, gate_offset, irf_width, thresh)
 
-run_exps(filename, freq, frames, gate_num, gate_integ, gate_width, gate_step, gate_offset, irf_width, thresh)
+  plot_all(tau, A, intensity, gate_integ, gate_step, gate_num, thresh, track, times, full_trace, params, filename)
+
+for i in range(len(filenames)):
+  run_exps(filenames[i], irf_width, threshs[i])
