@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.optimize as opt
+import emcee
 from skimage.io import imread
 import json
 
@@ -15,11 +16,19 @@ class Fitter:
 
     def decay(self, x, amp, tau):
         return amp * np.exp(-x / tau)
+    
+    def decay_double(self, x, amp1, tau1, amp2, tau2):
+        return amp1 * np.exp(-x / tau1) + amp2 * np.exp(-x / tau2)
 
     def fit_decay(self, times, data):
-        initial_guess = [np.max(data), 2.0]
-        params, _ = opt.curve_fit(self.decay, times, data, p0=initial_guess)
-        return params
+        if (self.config['components'] == 1):
+            initial_guess = [np.max(data), 2.0]
+            params, _ = opt.curve_fit(self.decay, times, data, p0=initial_guess)
+            return params
+        elif (self.config['components'] == 2):
+            initial_guess = [np.max(data), 2.0, np.max(data)/2, 1.0]
+            params, _ = opt.curve_fit(self.decay_double, times, data, p0=initial_guess)
+            return params
 
     def fit_exps(self, filename):
         image = imread(filename + '.tif')
@@ -44,8 +53,9 @@ class Fitter:
                     except RuntimeError:
                         params = [0, 0]
 
-                    self.A[i][j] += params[0]
-                    self.tau[i][j] += params[1]
+                    if (self.config['components'] == 2):
+                        self.A[i][j] += (params[0], params[2])
+                        self.tau[i][j] += (params[1], params[3])
 
         loc = np.argmax(self.full_trace)
         try:
@@ -54,6 +64,35 @@ class Fitter:
             params = [0, 0]
 
         return self.A, self.intensity, self.tau, self.times, self.full_trace, params, self.track
+    
+    def like(self, params, times, data):
+        model = self.decay_double(times, params[0], params[1], params[2], params[3])
+        sigma2 = 0.1**2
+        return -0.5 * np.sum((data - model)**2 / sigma2 + np.log(sigma2))
+
+    def prior(self, params):
+        if any(param <= 0 for param in params):
+            return -np.inf
+        return 0
+
+    def prob(self, params, times, data):
+        lp = self.prior(params)
+        if not np.isfinite(lp):
+            return -np.inf
+        return lp + self.like(params, times, data)
+
+    def mcmc(self, times, data):
+        ndim = 4  # can adjust this if triple exponential is desired
+        walkers = 32
+        guess = [np.max(data), 2.0, np.max(data) / 2, 1.0] 
+        pos = guess + (1e-4 * np.random.randn(walkers, ndim))
+
+        sampler = emcee.EnsembleSampler(walkers, ndim, self.prob, args=(times, data))
+        sampler.run_mcmc(pos, 5000, progress=True)
+
+        samples = sampler.get_chain(discard=100, thin=15, flat=True)
+        params = np.mean(samples, axis=0)
+        return params
 
     def save_results(self, filename, results):
         np.savez(filename + '_fit_results.npz', A=results[0], intensity=results[1], tau=results[2], times=results[3], full_trace=results[4], params=results[5], track=results[6])
