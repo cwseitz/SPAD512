@@ -6,10 +6,8 @@ from skimage.io import imsave, imread
 from scipy.signal import deconvolve
 
 '''
-Script to fit deconvolved exponentials accross a widefield FLIM image and display the full results. 
-To-do: 
-- Automate threshold determination
-- Choose better start point for exponential fitting
+Old script for running exponential analysis. 
+Now separated into Fitter and Plotter classes in fit_exps.py and plot_exps.py respectively.
 '''
 
 # define parameters
@@ -18,23 +16,6 @@ filenames = [
 ]
 threshs = [300] # threshold for sum of counts over trace, below which there is no fitting done
 irf_width = 0 # width of gaussian irf in ns
-
-def parse(filename):
-  # split filename into individual values
-  base_filename = filename.split('/')[-1]
-  base_filename = base_filename.split('.')[0]
-  parts = base_filename.split('-')
-  
-  # extract parameter values
-  freq = int(parts[2].replace('MHz', ''))
-  frames = int(parts[3].replace('f', ''))
-  gate_num = int(parts[4].replace('g', ''))
-  gate_integ = int(parts[5].replace('us', ''))
-  gate_width = int(parts[6].replace('ns', ''))
-  gate_step = float(parts[7].replace('ps', '')) / 1000  # Convert from ps to ns
-  gate_offset = float(parts[8].replace('ps', '')) / 1000  # Convert from ps to ns
-
-  return freq, frames, gate_num, gate_integ, gate_width, gate_step, gate_offset
 
 # exponential decay helper function
 def decay(x, amp, tau):
