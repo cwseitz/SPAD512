@@ -1,0 +1,14 @@
+{
+   "freq": 10,
+   "frames": 3,
+   "gate_num": 1000,
+   "gate_integ": 10,
+   "gate_width": 5,
+   "gate_step": 5,
+   "gate_offset": 0.018,
+   "power": 150,
+   "bits": 8,
+   "globstrs_1bit": [],
+   "folder": [],
+   "roi_dim": 256
+}
