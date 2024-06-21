@@ -15,7 +15,8 @@ class IntensityReader:
         filename = self.savepath + self.prefix
         return filename
 
-    def read_bin(self, globstr, nframes=1000):
+    def read_bin(self,globstr,nframes=1000):
+        """nframes per .bin file (typically 1000/file)"""
         files = glob(globstr)
         stacks = []
         for file in files:
@@ -28,10 +29,14 @@ class IntensityReader:
         stack = np.concatenate(stacks, axis=0)
         return stack
 
-    def stack_1bit(self):
-        for n, globstr in enumerate(self.globstrs_1bit):
-            stack = self.read_bin(globstr, nframes=1000)
-            imsave(f'{self.filename}_stack{n}.tif', stack)
+    def stack_1bit(self,globstrs='RAW*',nframes=1000):
+        binfiles = glob(self.path+globstrs)
+        out = []
+        for n, binfile in enumerate(binfiles):
+            this_stack = self.read_bin(binfile, nframes=nframes)
+            out.append(this_stack)
+        stack = np.concatenate(np.array(out),axis=0)
+        imsave(f'{self.filename}.tif', stack)
 
     def stack(self):
         files = sorted(glob(f'{self.path}/*.png'))
