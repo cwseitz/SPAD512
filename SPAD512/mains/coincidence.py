@@ -5,8 +5,8 @@ from skimage.feature import blob_log
 from scipy.ndimage import median_filter
 from coherence import *
 
-path = '/research2/shared/cwseitz/Data/SPAD/240604/data/intensity_images/'
-file = '240604_SPAD-QD-500kHz-50kHz-1us-350uW-1-trimmed.tif'
+path = '/Users/cwseitz/Desktop/'
+file = '240621_SPAD-QD-500kHz-50kHz-30k-400uW-1bit-1-snip1.tif'
 
 def compute_r(stack):
     spac_sum = np.sum(stack,axis=(1,2))
@@ -37,12 +37,7 @@ for n in range(ndet):
     ax[1].plot(np.sum(stack[:,x-patchw:x+patchw,y-patchw:y+patchw],axis=(1,2)))
     ax[0].set_title(f'Coincidence ratio: {r}')
     plt.show()
-    
+
 #bins = np.linspace(0,1,10)
 #plt.hist(ratios,bins=bins)
 #plt.show()
-    
-    
-    
-    
-
