@@ -3,7 +3,43 @@ from glob import glob
 from skimage.io import imsave, imread
 from datetime import datetime
 
-class Reader:
+class IntensityReader:
+    def __init__(self, config):
+        self.path = config['path']
+        self.savepath = config['savepath']
+        self.roi_dim = config['roi_dim']
+        self.prefix = config['prefix']
+        self.filename = self.name()
+
+    def name(self):
+        filename = self.savepath + self.prefix
+        return filename
+
+    def read_bin(self, globstr, nframes=1000):
+        files = glob(globstr)
+        stacks = []
+        for file in files:
+            byte = np.fromfile(file, dtype='uint8')
+            bits = np.unpackbits(byte)
+            bits = np.array(np.split(bits, nframes))
+            bits = bits.reshape((nframes, 512, 512)).swapaxes(1, 2)
+            bits = np.flip(bits, axis=1)
+            stacks.append(bits)
+        stack = np.concatenate(stacks, axis=0)
+        return stack
+
+    def stack_1bit(self):
+        for n, globstr in enumerate(self.globstrs_1bit):
+            stack = self.read_bin(globstr, nframes=1000)
+            imsave(f'{self.filename}_stack{n}.tif', stack)
+
+    def stack(self):
+        files = sorted(glob(f'{self.path}/*.png'))
+        stack = np.array([imread(f) for f in files])
+        imsave(f'{self.filename}.tif', stack[:, :self.roi_dim, :self.roi_dim])
+
+
+class GatedReader:
     def __init__(self, config):
         self.freq = config['freq']
         self.frames = config['frames']
@@ -38,6 +74,7 @@ class Reader:
         return stack
 
     def stack_1bit(self):
+        """shouldn't be needed for gated acquisitions"""
         for n, globstr in enumerate(self.globstrs_1bit):
             stack = self.read_bin(globstr, nframes=1000)
             imsave(f'{self.filename}_stack{n}.tif', stack)
