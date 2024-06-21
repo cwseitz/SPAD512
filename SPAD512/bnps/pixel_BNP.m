@@ -1,5 +1,12 @@
 function lifetime = pixel_BNP(raw, PhCount, Iter, RatioThresh, Number_species, PI_alpha, alpha_lambda, beta_lambda, freq, irf_mean, irf_sigma, save_size, step, offset)
-%% BNP analysis of a single pixel from a time gated .tiff
+    %% BNP analysis of a single pixel from a time gated .tiff
+    % Load the raw data
+    loadedData = load('raw_data.mat');
+    % Check if 'raw' is correctly loaded
+    if ~isfield(loadedData, 'raw')
+        error('saved wrong, no raw field');
+    end
+    raw = loadedData.raw;
 
     Dt = format_data(raw, step, offset);
     Data = initialize(Dt, PhCount, Number_species, PI_alpha, alpha_lambda, beta_lambda, freq, irf_mean, irf_sigma, save_size);
@@ -14,6 +21,18 @@ function lifetime = pixel_BNP(raw, PhCount, Iter, RatioThresh, Number_species, P
 end
     
 function [Dt] = format_data(raw, step, offset)
+    % Check the type of raw and attempt to convert if not numeric
+    if ~isa(raw, 'numeric')
+        try
+            raw = str2num(raw); %#ok<ST2NM>
+            if isempty(raw)
+                error('raw not convertible empty');
+            end
+        catch
+            error('raw not convertible caught');
+        end
+    end
+    
     bin_width = step; % bin spacing (gate step)
     start = offset; % bin start (relevant to gate width, offset)
 
@@ -28,6 +47,7 @@ function [Dt] = format_data(raw, step, offset)
     data = data(randperm(length(data))); % shuffle to unbias non-complete photon sets
     Dt = reshape(data, 1, []);
 end
+
 
 function Data = initialize(Dt, PhCount, Number_species, PI_alpha, alpha_lambda, beta_lambda, freq, irf_mean, irf_sigma, save_size)
     Data.T_max = (1e3/freq);  % interpulse window
@@ -67,9 +87,9 @@ function lifetime = ev_lifetime(Data, Thresh)
     tmp = tmp(tmp < LifetimeThresh);
     lifetime = mean(tmp);
     
-    figure;
-    histogram(tmp, 'Normalization', 'pdf');
-    xlabel('Lifetime (ns)');
-    ylabel('Probability Density Function');
-    title('Histogram of Lifetimes');
+    % figure;
+    % histogram(tmp, 'Normalization', 'pdf');
+    % xlabel('Lifetime (ns)');
+    % ylabel('Probability Density Function');
+    % title('Histogram of Lifetimes');
 end

@@ -2,7 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import subprocess
 from scipy.io import savemat
+from skimage.io import imread
 
+'''
+BNP analysis of FLIM data via BNP-LA (Dr. Mohamadareza Fazel's MATLAB package)
+'''
 class BNP:
     def __init__(self, config):
         self.config = config
@@ -10,8 +14,11 @@ class BNP:
         self.times = (np.arange(config['gate_num']) * config['gate_step']) + config['gate_offset']
 
     def image_BNP(self):
-        image = np.zeros((5, 5))
+        image = imread(self.config['filename'])
         length, x, y = np.shape(image)
+        self.full_trace = np.zeros((length))
+        self.intensity = np.zeros((x, y))
+        self.tau = np.zeros((x,y))
 
         for i in range(x):
             for j in range(y):
@@ -20,12 +27,17 @@ class BNP:
                 if (np.sum(trace) > self.config['thresh']):
                     self.full_trace += trace
                     self.intensity[i][j] += np.sum(trace)
+                    
+                    if not np.issubdtype(trace.dtype, np.number):
+                        trace = trace.astype(np.float64)
 
-                    savemat('raw.mat', {'raw', trace})
+                    savemat('raw_data.mat', {'raw': trace})
+                    print(f"Data for pixel ({i}, {j}) saved to raw_data.mat")
 
                     cmd = [
                         "matlab", "-batch",
                         (
+                            rf"addpath('C:\Users\ishaa\Documents\FLIM\SPAD512\SPAD512\bnps'); addpath('C:\Users\ishaa\Documents\FLIM\SPAD512\SPAD512\bnps\BNP-LA-main\Functions');"
                             f"pixel_BNP('raw_data.mat', {self.config['PhCount']}, {self.config['Iter']}, "
                             f"{self.config['RatioThresh']}, {self.config['Number_species']}, {self.config['PI_alpha']}, "
                             f"{self.config['alpha_lambda']}, {self.config['beta_lambda']}, {self.config['freq']}, "
@@ -35,11 +47,13 @@ class BNP:
                     ]
 
                     result = subprocess.run(cmd, capture_output=True, text=True)
-
-                    self.tau[i][j] += result.stdout
-                    track += 1
                     print(result.stdout)
                     print(result.stderr)
+
+                    # self.tau[i][j] += result.stdout
+                    # track += 1
+                    # print(result.stdout)
+                    # print(result.stderr)
 
         cmd = [
                 "matlab", "-batch",
@@ -62,10 +76,10 @@ class BNP:
 
 # testing code
 config = {
-    'gate_num': 10,
-    'gate_step': 1,
-    'gate_offset': 0,
-    'thresh': 0.5,
+    'gate_num': 1000,
+    'gate_step': 0.09,
+    'gate_offset': 0.018,
+    'thresh': 5000,
     'PhCount': 5000,
     'Iter': 2500,
     'RatioThresh': 0.2,
@@ -77,6 +91,7 @@ config = {
     'irf_mean': 12,
     'irf_sigma': 12,
     'save_size': 5,
+    'filename': "240604/240604_10ms_adjusted.tif"
 }
 
 bnp = BNP(config)
