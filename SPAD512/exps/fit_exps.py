@@ -44,7 +44,7 @@ class Fitter:
                 trace = image[:self.config['gate_num'], i, j]
                 if (np.sum(trace) > self.config['thresh']):
                     self.full_trace += trace
-                    self.intensity[i][j] += sum(trace)
+                    self.intensity[i][j] += np.sum(trace)
 
                     loc = np.argmax(trace)
                     try:
