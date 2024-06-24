@@ -3,10 +3,9 @@ import time
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-from multiprocessing import Pool
 from skimage.io import imsave, imread
 from datetime import datetime
-from SPAD512.exps import Fitter
+from scipy.signal import convolve, deconvolve
 
 ''' 
 Simulation of exponential fitting of fluorescent lifetime imaging data acquired by a time-gated SPAD
@@ -39,7 +38,9 @@ class Generator:
             date =  datetime.now().strftime('%y%m%d')
             self.filename = f'{date}_SPAD-QD-{self.freq}MHz-1f-{self.numsteps}g-{int(self.integ*1e3)}us-{self.width}ns-{int(self.step*1e3)}ps-{int(self.offset*1e3)}ps-simulated.tif'
 
-    def genTrace(self):
+        self.times = (np.arange(self.numsteps) * self.step) + self.offset
+
+    def genTrace(self, convolve=False):
         numgates = int(1e3 * self.freq * self.integ)
         lam = 1/self.tau
 
@@ -51,20 +52,37 @@ class Generator:
             draws = np.random.rand(numgates) < prob[i]
             data[i] = np.sum(draws)
 
+        if convolve:
+            data = self.convolveTrace(data)
+
         return data
 
-    def convolveTrace():
-        return 0
+    def convolveTrace(self, trace):
+        irf_ns = self.config['irf_width']
+        irf_ind = irf_ns/self.step
+        irf = np.exp(-self.times**2 / irf_ind)
+        irf /= np.sum(irf)  # normalize
+
+        detected = convolve(trace, irf, mode='full') / irf.sum()
+
+        '''DELETE THIS CODE'''
+        x = np.arange(len(detected[:len(trace)])) * self.step
+        plt.figure(figsize=(6, 4))
+        plt.plot(x, detected[:len(trace)], 'bo', markersize=3, label='Data')
+        plt.xlabel('Time, ns')
+        plt.ylabel('Counts')
+        plt.title(f'Simulated Decay for {self.integ} ms integration, {1e3*self.step} ps step, {self.tau} ns lifetime')
+        plt.show()
+        return detected[:len(trace)]
 
     def plotTrace(self):
         data = self.genTrace()
-        times = (np.arange(self.numsteps) * self.step) + self.offset
-
+        
         def decay(self, x, amp, tau):
             return amp * np.exp(-x / tau)
     
         initial_guess = [np.max(data), 2.0]
-        params, _ = opt.curve_fit(self.decay, times, data, p0=initial_guess)
+        params, _ = opt.curve_fit(self.decay, self.times, data, p0=initial_guess)
 
         x = np.arange(len(data)) * self.step
         plt.figure(figsize=(6, 4))
@@ -81,7 +99,7 @@ class Generator:
 
         for i in range(self.x):
             for j in range(self.y):
-                self.image[:, i, j] = self.genTrace()
+                self.image[:, i, j] = self.genTrace(convolve=True)
 
         imsave(self.filename + '.tif', self.image)
 

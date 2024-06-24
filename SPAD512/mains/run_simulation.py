@@ -60,5 +60,5 @@ class Simulator:
 
 if __name__ == '__main__':
     obj = Simulator(config_path)
-    # obj.run_single()
+    obj.run_single()
     obj.plot_single()
