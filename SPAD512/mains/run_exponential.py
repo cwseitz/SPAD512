@@ -27,7 +27,7 @@ class Analyzer:
         tic = time.time()
         filename = '240613/240613_SPAD-QD-10MHz-3f-5000g-1000us-5ns-18ps-18ps-150uW'
         fit = Fitter(self.config)
-        results = fit.fit_exps(filename)
+        results = fit.fit_exps(filename=filename)
         fit.save_results(filename, results)
         toc = time.time()
         print(f"Exponential fitting done in {toc-tic} seconds: {filename}_fit_results.npz")

@@ -6,11 +6,19 @@ class Plotter:
     def __init__(self, config):
         self.config = config
 
+        # compatibility with simulation .json formatting
+        if 'integ' not in config:
+            self.config['integ'] = self.config['integrations']
+        if 'step' not in config:
+            self.config['step'] = self.config['gatesteps']
+            
+
     def decay(self, x, amp, tau):
         return amp * np.exp(-x / tau)
 
     def plot_all(self, results, filename, show=False):
         A = results['A'].astype(float)
+        print(A)
         intensity = results['intensity'].astype(float)
         tau = results['tau'].astype(float)
         times = results['times'].astype(float)
@@ -25,15 +33,15 @@ class Plotter:
                 if tau[i][j] < -1000:
                     tau[i][j] = 0
 
-        for i in range(len(A)):
-            for j in range(len(A[0])):
-                if A[i][j] > 100:
-                    A[i][j] = 0
-                if A[i][j] < 0:
-                    A[i][j] = 0
+        # for i in range(len(A)):
+        #     for j in range(len(A[0])):
+        #         if A[i][j] > 10000:
+        #             A[i][j] = 0
+        #         if A[i][j] < 0:
+        #             A[i][j] = 0
 
         fig, ax = plt.subplots(2, 2, figsize=(7, 7))
-        fig.suptitle(f'{self.config["gate_integ"]*1e-3} ms integ, {self.config["gate_step"]} ns step, {self.config["gate_integ"]*self.config["gate_num"]*1e-3} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
+        fig.suptitle(f'{self.config["integ"]*1e-3} ms integ, {self.config["step"]} ns step, {self.config["integ"]*self.config["numsteps"]*1e-3} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
 
         im1 = ax[0, 0].imshow(A, cmap='plasma')
         ax[0, 0].set_title('Amplitudes')
