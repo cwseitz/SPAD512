@@ -36,12 +36,13 @@ class IntensityReader:
             this_stack = self.read_bin(binfile, nframes=nframes)
             out.append(this_stack)
         stack = np.concatenate(np.array(out),axis=0)
+        stack = stack[:,self.roi_dim:,self.roi_dim:]
         imsave(f'{self.filename}.tif', stack)
 
     def stack(self):
         files = sorted(glob(f'{self.path}/*.png'))
         stack = np.array([imread(f) for f in files])
-        imsave(f'{self.filename}.tif', stack[:, :self.roi_dim, :self.roi_dim])
+        imsave(f'{self.filename}.tif', stack[:, self.roi_dim:, self.roi_dim:])
 
 
 class GatedReader:

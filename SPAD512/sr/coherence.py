@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def Eind(npixels):
     """Get indexers for the E matrix"""
@@ -66,6 +67,11 @@ def G2(adu):
     fft = fft[:,:,np.newaxis]
     fftc = fftc[:,np.newaxis,:]
     corr = np.fft.ifft(fft*fftc,axis=0)
+    fig,ax=plt.subplots(1,3,sharex=True,sharey=True)
+    ax[0].imshow(np.real(corr[0]),vmin=0.0,vmax=1.0)
+    ax[1].imshow(np.real(corr[200]),vmin=0.0,vmax=1.0)
+    ax[2].imshow(np.real(corr[10000]),vmin=0.0,vmax=1.0)
+    plt.show()
     _Exy = np.real(corr)/nt #take zero lag
 
     Exy = np.zeros((nt,2*nx-1,2*nx-1),dtype=np.float64)
@@ -75,10 +81,10 @@ def G2(adu):
     Vind, RLind, Hind, Dind = Sind(nx)
     
     Exy[:,Vind[0],Vind[1]] = _Exy[:,Ev[0],Ev[1]]
-    Exy[:,RLind[0],RLind[1]] = _Exy[:,Er[0],Er[1]] #or _Exy[:,El[0],El[1]]
+    Exy[:,RLind[0],RLind[1]] = _Exy[:,Er[0],Er[1]]
     Exy[:,Hind[0],Hind[1]] = _Exy[:,Eh[0],Eh[1]]
     #Exy[:,Dind[0],Dind[1]] = _Exy[:,Ed[0],Ed[1]]
-    Exy[:,Dind[0],Dind[1]] = 0.0 #diagonals are <x^2>/<x>^2 = 1 + 1/mu
+    Exy[:,Dind[0],Dind[1]] = 0.0
     
     ExEy[Vind[0],Vind[1]] = _ExEy[Ev[0],Ev[1]]
     ExEy[RLind[0],RLind[1]] = _ExEy[Er[0],Er[1]]
