@@ -6,6 +6,7 @@ import matplotlib.colors as mcolors
 from skimage.io import imsave, imread
 from datetime import datetime
 from scipy.signal import convolve, deconvolve
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 ''' 
 Simulation of exponential fitting of fluorescent lifetime imaging data acquired by a time-gated SPAD
@@ -58,12 +59,22 @@ class Generator:
         return data
 
     def convolveTrace(self, trace):
+        irf_mean = self.config['irf_mean']
         irf_ns = self.config['irf_width']
-        irf_ind = irf_ns/self.step
-        irf = np.exp(-self.times**2 / irf_ind)
+        irf_sigma = irf_ns/self.step
+
+        irf = np.exp(-((self.times - irf_mean)**2) / (2 * irf_sigma**2))
         irf /= np.sum(irf)  # normalize
 
         detected = convolve(trace, irf, mode='full') / irf.sum()
+
+        # plt.figure(figsize=(6, 4))
+        # plt.plot(self.times, detected[:900], 'bo', markersize=3, label='Data')
+        # plt.xlabel('Time, ns')
+        # plt.ylabel('Counts')
+        # plt.legend()
+        # plt.title(f'Simulated Decay for {self.integ} ms integration, {1e3*self.step} ps step, {self.tau} ns lifetime')
+        # plt.show()
 
         return detected[:len(trace)]
 
@@ -86,12 +97,19 @@ class Generator:
         plt.title(f'Simulated Decay for {self.integ} ms integration, {1e3*self.step} ps step, {self.tau} ns lifetime')
         plt.show()
 
+    def helper(self, pixel):
+        return self.genTrace(convolve=True)
+
+
     def genImage(self):
         self.image = np.zeros((self.numsteps, self.x, self.y), dtype=float)
 
-        for i in range(self.x):
-            for j in range(self.y):
-                self.image[:, i, j] = self.genTrace(convolve=True)
+        with ProcessPoolExecutor() as executor:
+            futures = {executor.submit(self.helper, (i, j)): (i, j) for i in range(self.x) for j in range(self.y)}
+
+            for future in as_completed(futures):
+                i, j = futures[future]
+                self.image[:, i, j] = future.result()
 
         imsave(self.filename + '.tif', self.image)
 

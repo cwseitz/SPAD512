@@ -80,12 +80,12 @@ import numpy as np
 from scipy.signal import convolve
 from scipy.ndimage import gaussian_filter1d
 
-def tv_denoise(signal, weight, iterations=100):
-    """ Perform total variation denoising. """
+def tv_denoise(signal, weight, iterations=10):
+    """Perform total variation denoising."""
     for _ in range(iterations):
         grad = np.gradient(signal)
         grad_norm = np.sqrt(grad**2 + 1e-8)
-        signal -= weight * np.divmod(grad, grad_norm)
+        signal -= weight * grad / grad_norm
     return signal
 
 def richardson_lucy_tv_deconvolution(signal, psf, iterations=50, tv_weight=0.01, tv_iterations=10):
@@ -96,10 +96,11 @@ def richardson_lucy_tv_deconvolution(signal, psf, iterations=50, tv_weight=0.01,
         relative_blur = signal / (convolve(estimate, psf, mode='same') + 1e-8)
         estimate *= convolve(relative_blur, psf_mirror, mode='same')
         estimate = tv_denoise(estimate, tv_weight, tv_iterations)
-
+    
     return estimate
 
-deconvolved = richardson_lucy_tv_deconvolution(detected, irf, iterations=50, tv_weight=0.01, tv_iterations=10)
+deconvolved = richardson_lucy_tv_deconvolution(detected, irf, iterations=100, tv_weight=0.001, tv_iterations=50)
+
 
 # plot results
 plt.plot(time, decay, label='Original Trace')

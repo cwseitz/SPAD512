@@ -4,14 +4,15 @@
     "width": 5,
     "offset": 0.018,
     "thresh": 300,
-    "irf_width": 15, 
+    "irf_mean": 15,
+    "irf_width": 0.5, 
     "components": 1,
     "integrations": 1,
     "gatesteps": 0.1,
     "lifetimes": 10,
     "iterations": 1000,
     "zeta": 0.05,
-    "x": 5,
-    "y": 5,
+    "x": 100,
+    "y": 100,
     "filename": "simulation1"
 }
