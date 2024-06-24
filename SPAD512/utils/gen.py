@@ -65,14 +65,6 @@ class Generator:
 
         detected = convolve(trace, irf, mode='full') / irf.sum()
 
-        '''DELETE THIS CODE'''
-        x = np.arange(len(detected[:len(trace)])) * self.step
-        plt.figure(figsize=(6, 4))
-        plt.plot(x, detected[:len(trace)], 'bo', markersize=3, label='Data')
-        plt.xlabel('Time, ns')
-        plt.ylabel('Counts')
-        plt.title(f'Simulated Decay for {self.integ} ms integration, {1e3*self.step} ps step, {self.tau} ns lifetime')
-        plt.show()
         return detected[:len(trace)]
 
     def plotTrace(self):

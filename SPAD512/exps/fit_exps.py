@@ -2,6 +2,7 @@ import numpy as np
 from scipy import optimize as opt
 from skimage.io import imread
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from scipy.signal import convolve, deconvolve
 
 class Fitter:
     def __init__(self, config, numsteps=0, step=0):
@@ -10,9 +11,11 @@ class Fitter:
         if numsteps:
             self.times = (np.arange(numsteps) * step) + config['offset']
             self.numsteps = numsteps
+            self.step = step
         else:
             self.times = (np.arange(config['numsteps']) * config['step']) + config['offset']
             self.numsteps = config['numsteps']
+            self.step = config['step']
 
         self.A = None
         self.intensity = None
@@ -43,6 +46,8 @@ class Fitter:
             passed = True
             self.intensity[i][j] += np.sum(trace)
             loc = np.argmax(trace)
+            
+            # trace = self.deconv(trace)
 
             if self.config['components'] == 1:
                 try:
