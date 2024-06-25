@@ -18,6 +18,9 @@ class Plotter:
         
         return term1*term2
     
+    def decay_double(self, x, amp1, tau1, amp2, tau2):
+        return amp1 * np.exp(-x / tau1) + amp2 * np.exp(-x / tau2)
+    
     def plot_all(self, results, filename, show=False):
         A1 = results['A1'].astype(float)
         A2 = results['A2'].astype(float)
@@ -137,7 +140,7 @@ class Plotter:
 
             ax[1, 2].set_title('Fully binned trace')
             ax[1, 2].scatter(times, full_trace, s=5)
-            ax[1, 2].plot(times, self.decay_conv(times, full_params[0], 1/full_params[1]), label='Fit: tau = {:.2f}'.format(full_params[1]), color='black')
+            ax[1, 2].plot(times, self.decay_double(times, full_params[0], 1/full_params[1], full_params[2], 1/full_params[3]), label='Fit: tau = {:.2f}, {:.2f}'.format(full_params[1], full_params[3]), color='black')
             ax[1, 2].set_xlabel('Time, ns')
             ax[1, 2].set_ylabel('Counts')
             val = max(full_trace)

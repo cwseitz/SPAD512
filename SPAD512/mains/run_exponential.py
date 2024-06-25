@@ -6,9 +6,9 @@ import time
 from SPAD512.exps import Fitter, Plotter
 from SPAD512.utils import GatedReader
 
-read = False # read from folder (data not stacked into .tif yet)
-file = '240613_SPAD-QD-10MHz-3f-900g-1000us-5ns-100ps-18ps-150uW' # irrelevant if read = True
-config_path = 'SPAD512/mains/run_exponential.json'
+read = False # read from folder (if read=True, file var below is irrelevant)
+file = '240613/240613_SPAD-QD-10MHz-3f-5000g-1000us-5ns-18ps-18ps-150uW' # make sure to remove .tif suffix
+config_path = 'SPAD512/SPAD512/mains/run_exponential.json' # no leading slash, keep .json suffix
 show = True # show final plot
 
 class Analyzer:
@@ -24,12 +24,12 @@ class Analyzer:
         else:
             filename = file
         
-        tic = time.time()
-        fit = Fitter(self.config)
-        results = fit.fit_exps(filename=filename)
-        fit.save_results(filename, results)
-        toc = time.time()
-        print(f"Exponential fitting done in {toc-tic} seconds: {filename}_fit_results.npz")
+        # tic = time.time()
+        # fit = Fitter(self.config)
+        # results = fit.fit_exps(filename=filename)
+        # fit.save_results(filename, results)
+        # toc = time.time()
+        # print(f"Exponential fitting done in {toc-tic} seconds: {filename}_fit_results.npz")
 
         plot = Plotter(self.config)
         results = np.load(filename + '_fit_results.npz')

@@ -63,7 +63,6 @@ class Fitter:
     def fit_trace(self, trace, i, j):
         success = False
         if np.sum(trace) > self.config['thresh']:
-            self.intensity[i][j] += np.sum(trace)
             loc = np.argmax(trace)
 
             if self.config['components'] == 1:
@@ -73,7 +72,7 @@ class Fitter:
                     success = True
                 except RuntimeError:
                     params = [0, 0, 0 , 0]
-                return (params[0], 0, params[1], 0, i, j, success)
+                return (params[0], params[1], 0, 0, i, j, success)
             
             elif self.config['components'] == 2:
                 try:
@@ -83,12 +82,9 @@ class Fitter:
                     success = True
                 except RuntimeError:
                     params = [0, 0, 0, 0]
-                return (params[0], params[2], params[1], params[3], i, j, success)
-            
-            return (0, 0, 0, 0, i, j, success)
-        
-        else:
-            trace = np.zeros((self.numsteps), dtype=float)
+                return (params[0], params[1], params[2], params[3], i, j, success)
+
+        return (0, 0, 0, 0, i, j, success)
 
     def fit_exps(self, filename=None, image=None):
         if filename:
@@ -108,9 +104,10 @@ class Fitter:
         self.full_trace = np.zeros((self.numsteps), dtype=float)
 
         with ProcessPoolExecutor() as executor:
+            print('entering parallelization')
             futures = [executor.submit(self.fit_trace, image[:self.numsteps, i, j], i, j) for i in range(x) for j in range(y)]
             for future in as_completed(futures):
-                amp1, amp2, tau1, tau2, i, j, success = future.result()
+                amp1, tau1, amp2, tau2, i, j, success = future.result()
                 if success:
                     self.A1[i][j] += amp1
                     self.A2[i][j] += amp2
@@ -119,13 +116,14 @@ class Fitter:
                     self.full_trace += image[:self.numsteps, i, j]
                     self.intensity[i][j] += np.sum(image[:self.numsteps, i, j])
                     self.track += 1
-                    print(f'Pixel ({i}, {j}) fit')
+                    print(f'Pixel ({i}, {j}) fit: {tau1}, {tau2}')
 
-        loc = np.argmax(self.full_trace)
         try:
-            params = self.fit_decay(self.times[loc:], self.full_trace[loc:])
+            params = self.fit_trace[self.full_trace, 0, 0]
         except RuntimeError:
             params = [0, 0]
+
+        print(params)
 
         return self.A1, self.A2, self.tau1, self.tau2, self.intensity, self.full_trace, params, self.track, self.times, 
     
