@@ -18,11 +18,13 @@ class Fitter:
             self.numsteps = config['numsteps']
             self.step = config['step']
 
-        self.A = None
+        self.A1 = None
+        self.tau1 = None
+        self.A2 = None
+        self.tau2 = None
         self.intensity = None
-        self.tau = None
         self.full_trace = None
-        self.track = 0
+        self.track = 0    
 
     def decay(self, x, amp, tau):
         return amp * np.exp(-x / tau)
@@ -38,6 +40,15 @@ class Fitter:
         
         return term1*term2
 
+    # def decay_double_conv(self, x, A, lam):
+    #     sigma = self.config['irf_width']/self.step
+        
+    #     term1 = (1/2) * A * np.exp((1/2) * lam * (2*self.config['irf_mean'] + lam*(sigma**2) - 2*x))
+    #     term2 = lam * erfc((self.config['irf_mean'] + lam*(sigma**2) - x)/(sigma*np.sqrt(2)))
+        
+    #     return term1*term2
+
+
     def fit_decay(self, times, data):
         if self.config['components'] == 1:
             initial_guess = [np.max(data), 2.0]
@@ -52,7 +63,6 @@ class Fitter:
     def fit_trace(self, trace, i, j):
         success = False
         if np.sum(trace) > self.config['thresh']:
-            success = True
             self.intensity[i][j] += np.sum(trace)
             loc = np.argmax(trace)
 
@@ -60,7 +70,7 @@ class Fitter:
                 try:
                     params = self.fit_decay(self.times[loc:], trace[loc:])
                     params[1] = 1/params[1]
-                    self.track += 1
+                    success = True
                 except RuntimeError:
                     params = [0, 0, 0 , 0]
                 return (params[0], 0, params[1], 0, i, j, success)
@@ -68,7 +78,9 @@ class Fitter:
             elif self.config['components'] == 2:
                 try:
                     params = self.fit_decay(self.times[loc:], trace[loc:])
-                    self.track += 1
+                    params[1] = 1/params[1]
+                    params[3] = 1/params[3]
+                    success = True
                 except RuntimeError:
                     params = [0, 0, 0, 0]
                 return (params[0], params[2], params[1], params[3], i, j, success)
@@ -88,29 +100,45 @@ class Fitter:
             print('no filename or image given')
             return 0
 
-        self.A = np.zeros((x, y), dtype=float)
+        self.A1 = np.zeros((x, y), dtype=float)
+        self.A2 = np.zeros((x, y), dtype=float)
+        self.tau1 = np.zeros((x, y), dtype=float)
+        self.tau2 = np.zeros((x, y), dtype=float)
         self.intensity = np.zeros((x, y), dtype=float)
-        self.tau = np.zeros((x, y), dtype=float)
         self.full_trace = np.zeros((self.numsteps), dtype=float)
 
         with ProcessPoolExecutor() as executor:
             futures = [executor.submit(self.fit_trace, image[:self.numsteps, i, j], i, j) for i in range(x) for j in range(y)]
             for future in as_completed(futures):
-                amp1, amp2, tau1, tau2, i, j, success = future.result() # need to add processing code for amp2 and tau2 multi-exponent fit
+                amp1, amp2, tau1, tau2, i, j, success = future.result()
                 if success:
+                    self.A1[i][j] += amp1
+                    self.A2[i][j] += amp2
+                    self.tau1[i][j] += tau1
+                    self.tau2[i][j] += tau2
                     self.full_trace += image[:self.numsteps, i, j]
                     self.intensity[i][j] += np.sum(image[:self.numsteps, i, j])
-                    self.A[i][j] += amp1
-                    self.tau[i][j] += tau1
+                    self.track += 1
+                    print(f'Pixel ({i}, {j}) fit')
 
         loc = np.argmax(self.full_trace)
         try:
             params = self.fit_decay(self.times[loc:], self.full_trace[loc:])
-            params[1] = 1/params[1]
         except RuntimeError:
             params = [0, 0]
 
-        return self.A, self.intensity, self.tau, self.times, self.full_trace, params, self.track
+        return self.A1, self.A2, self.tau1, self.tau2, self.intensity, self.full_trace, params, self.track, self.times, 
     
     def save_results(self, filename, results):
-        np.savez(filename + '_fit_results.npz', A=results[0], intensity=results[1], tau=results[2], times=results[3], full_trace=results[4], params=results[5], track=results[6])   
+        np.savez(
+            filename + '_fit_results.npz', 
+            A1=results[0], 
+            A2=results[1], 
+            tau1=results[2], 
+            tau2=results[3], 
+            intensity=results[4], 
+            full_trace=results[5], 
+            full_params=results[6], 
+            track=results[7],
+            times=results[8]
+        )   

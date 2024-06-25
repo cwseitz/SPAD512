@@ -4,28 +4,27 @@ from skimage.io import imread, imsave
 import json
 import time
 from SPAD512.exps import Fitter, Plotter
-from SPAD512.utils import Reader
+from SPAD512.utils import GatedReader
 
 read = False # read from folder (data not stacked into .tif yet)
-file = '240613/240613_SPAD-QD-10MHz-3f-5000g-1000us-5ns-18ps-18ps-150uW' # irrelevant if read = True
+file = '240613_SPAD-QD-10MHz-3f-900g-1000us-5ns-100ps-18ps-150uW' # irrelevant if read = True
 config_path = 'SPAD512/mains/run_exponential.json'
-show = False # show final plot
+show = True # show final plot
 
 class Analyzer:
     def __init__(self, config_path):
         with open(config_path) as f:
             self.config = json.load(f)
 
-    def run(self, show=True, read=False, file = ''):
+    def run(self, show=True, read=False, file=None):
         if (read==True):
-            data = Reader(self.config)
+            data = GatedReader(self.config)
             filename = data.create_data()
             print(f"Data created: {filename}")
         else:
             filename = file
         
         tic = time.time()
-        filename = '240613/240613_SPAD-QD-10MHz-3f-5000g-1000us-5ns-18ps-18ps-150uW'
         fit = Fitter(self.config)
         results = fit.fit_exps(filename=filename)
         fit.save_results(filename, results)
@@ -37,9 +36,9 @@ class Analyzer:
         plot.plot_all(results, filename, show=show)
         print(f"Results plotted: {filename}_results.png")
 
-
-info = Analyzer(config_path)
-info.run(show=show, read=read, file=file)
+if __name__=='__main__':
+    info = Analyzer(config_path)
+    info.run(show=show, read=read, file=file)
 
 # utils/read from folder
 # option for utils/rebin
