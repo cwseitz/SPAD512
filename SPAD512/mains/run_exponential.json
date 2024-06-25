@@ -11,7 +11,7 @@
    "globstrs_1bit": [],
    "folder": [],
    "roi_dim": 256,
-   "thresh": 2500,
+   "thresh": 4000,
    "irf_mean": 15,
    "irf_width": 0.5, 
    "curve": "mono_conv"
