@@ -7,8 +7,8 @@ from SPAD512.exps import Fitter, Plotter
 from SPAD512.utils import GatedReader
 
 read = False # read from folder (data not stacked into .tif yet)
-file = '240613_SPAD-QD-10MHz-3f-900g-1000us-5ns-100ps-18ps-150uW' # irrelevant if read = True
-config_path = 'SPAD512/mains/run_exponential.json'
+file = '240613_SPAD-QD-10MHz-3f-5000g-1000us-5ns-18ps-18ps-150uW' # irrelevant if read = True
+config_path = 'SPAD512\\SPAD512\\mains\\run_exponential.json'
 show = True # show final plot
 
 class Analyzer:

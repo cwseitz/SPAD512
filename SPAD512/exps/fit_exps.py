@@ -1,22 +1,96 @@
 import numpy as np
 from scipy import optimize as opt
-from skimage.io import imread
+import tifffile as tf
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from scipy.signal import convolve, deconvolve
 from scipy.special import erfc
 
+class Trace:
+    def __init__(self, config, data, i, j):
+        self.config = config
+        self.step = config['step']
+        self.times = config['times']
+        self.curve = config['curve']  # Options for curve: 'mono', 'mono_conv', 'bi', 'bi_conv'
+        self.irf_width = config['irf_width']
+        self.irf_mean = config['irf_mean']
+        self.thresh = config['thresh']
+        del self.config
+
+        self.data = data
+        self.i = i
+        self.j = j
+        
+        self.success = False
+        self.sum = np.sum(self.data)
+
+    def mono(self, x, amp, tau):
+        return amp * np.exp(-x / tau)
+    
+    def bi(self, x, amp1, tau1, amp2, tau2):
+        return amp1 * np.exp(-x / tau1) + amp2 * np.exp(-x / tau2)
+
+    def mono_conv(self, x, A, lam):
+        sigma = self.irf_width/self.step
+        
+        term1 = (1/2) * A * np.exp((1/2) * lam * (2*self.irf_mean + lam*(sigma**2) - 2*x))
+        term2 = lam * erfc((self.irf_mean + lam*(sigma**2) - x)/(sigma*np.sqrt(2)))
+        
+        return term1*term2
+
+    # def bi_conv(self, x, A, lam):
+    #     sigma = self.config['irf_width']/self.step
+        
+    #     term1 = (1/2) * A * np.exp((1/2) * lam * (2*self.config['irf_mean'] + lam*(sigma**2) - 2*x))
+    #     term2 = lam * erfc((self.config['irf_mean'] + lam*(sigma**2) - x)/(sigma*np.sqrt(2)))
+        
+    #     return term1*term2
+
+    def fit_decay(self):
+        match self.curve:
+            case 'mono':
+                loc = np.argmax(self.trace)
+                initial_guess = [np.max(self.data), 2.0]
+                params, _ = opt.curve_fit(self.mono, self.times[loc:], self.data[loc:], p0=initial_guess)
+                return (params[0], params[1], 0, 0) 
+
+            case 'bi':
+                loc = np.argmax(self.trace)
+                initial_guess = [np.max(self.data), 2.0, np.max(self.data) / 2, 1.0]
+                params, _ = opt.curve_fit(self.bi, self.times[loc:], self.data[loc:], p0=initial_guess)
+                return params 
+
+            case 'mono_conv':
+                initial_guess = [np.max(self.data), 2.0]
+                params, _ = opt.curve_fit(self.mono_conv, self.times, self.data, p0=initial_guess)
+                return (params[0], params[1], 0, 0) 
+
+            case 'bi_conv':
+                return 0
+
+            case _:
+                raise Exception('Curve choice invalid in config.json, choose from mono, bi, mono_conv, and bi_conv.')
+
+    def fit_trace(self):
+        if self.sum > self.thresh:
+            try:
+                self.params = self.fit_decay()
+                self.success = True
+            except RuntimeError:
+                self.params = [0, 0, 0, 0]
+        else: self.params = [0, 0, 0, 0]
+    
 class Fitter:
     def __init__(self, config, numsteps=0, step=0):
         self.config = config
 
         if numsteps:
-            self.times = (np.arange(numsteps) * step) + config['offset']
-            self.numsteps = numsteps
-            self.step = step
+            self.config['times'] = (np.arange(numsteps) * step) + config['offset']
+            self.config['numsteps'] = numsteps
+            self.config['step'] = step
         else:
-            self.times = (np.arange(config['numsteps']) * config['step']) + config['offset']
-            self.numsteps = config['numsteps']
-            self.step = config['step']
+            self.config['times'] = (np.arange(config['numsteps']) * config['step']) + config['offset']
+            self.config['numsteps'] = numsteps = config['numsteps']
+            self.config['step'] = config['step']
 
         self.A1 = None
         self.tau1 = None
@@ -26,108 +100,50 @@ class Fitter:
         self.full_trace = None
         self.track = 0    
 
-    def decay(self, x, amp, tau):
-        return amp * np.exp(-x / tau)
-    
-    def decay_double(self, x, amp1, tau1, amp2, tau2):
-        return amp1 * np.exp(-x / tau1) + amp2 * np.exp(-x / tau2)
+    @staticmethod
+    def helper(config, data, i, j):
+        dt = Trace(config, data, i, j)
+        dt.fit_trace()
+        if dt.success: print(dt.params)
+        return dt.params, dt.success, dt.sum, i, j
 
-    def decay_conv(self, x, A, lam):
-        sigma = self.config['irf_width']/self.step
-        
-        term1 = (1/2) * A * np.exp((1/2) * lam * (2*self.config['irf_mean'] + lam*(sigma**2) - 2*x))
-        term2 = lam * erfc((self.config['irf_mean'] + lam*(sigma**2) - x)/(sigma*np.sqrt(2)))
-        
-        return term1*term2
-
-    # def decay_double_conv(self, x, A, lam):
-    #     sigma = self.config['irf_width']/self.step
-        
-    #     term1 = (1/2) * A * np.exp((1/2) * lam * (2*self.config['irf_mean'] + lam*(sigma**2) - 2*x))
-    #     term2 = lam * erfc((self.config['irf_mean'] + lam*(sigma**2) - x)/(sigma*np.sqrt(2)))
-        
-    #     return term1*term2
-
-
-    def fit_decay(self, times, data):
-        if self.config['components'] == 1:
-            initial_guess = [np.max(data), 2.0]
-            params, _ = opt.curve_fit(self.decay_conv, times, data, p0=initial_guess)
-            return params
-
-        elif self.config['components'] == 2:
-            initial_guess = [np.max(data), 2.0, np.max(data) / 2, 1.0]
-            params, _ = opt.curve_fit(self.decay_double, times, data, p0=initial_guess)
-            return params
-
-    def fit_trace(self, trace, i, j):
-        success = False
-        if np.sum(trace) > self.config['thresh']:
-            self.intensity[i][j] += np.sum(trace)
-            loc = np.argmax(trace)
-
-            if self.config['components'] == 1:
-                try:
-                    params = self.fit_decay(self.times[loc:], trace[loc:])
-                    params[1] = 1/params[1]
-                    success = True
-                except RuntimeError:
-                    params = [0, 0, 0 , 0]
-                return (params[0], 0, params[1], 0, i, j, success)
-            
-            elif self.config['components'] == 2:
-                try:
-                    params = self.fit_decay(self.times[loc:], trace[loc:])
-                    params[1] = 1/params[1]
-                    params[3] = 1/params[3]
-                    success = True
-                except RuntimeError:
-                    params = [0, 0, 0, 0]
-                return (params[0], params[2], params[1], params[3], i, j, success)
-            
-            return (0, 0, 0, 0, i, j, success)
-        
-        else:
-            trace = np.zeros((self.numsteps), dtype=float)
 
     def fit_exps(self, filename=None, image=None):
         if filename:
-            image = imread(filename + '.tif')
+            with tf.TiffFile(filename + '.tif') as tif:
+                image = tif.asarray(key=range(self.config['numsteps']))  # Only read the first 5000 frames
             length, x, y = np.shape(image)
         elif image is not None:
+            image = image[:self.config['numsteps'],:,:]
             length, x, y = np.shape(image)
         else:
-            print('no filename or image given')
-            return 0
+            raise Exception('No filename or image provided to fit_exps, make sure to provide one or the other.')
 
         self.A1 = np.zeros((x, y), dtype=float)
         self.A2 = np.zeros((x, y), dtype=float)
         self.tau1 = np.zeros((x, y), dtype=float)
         self.tau2 = np.zeros((x, y), dtype=float)
         self.intensity = np.zeros((x, y), dtype=float)
-        self.full_trace = np.zeros((self.numsteps), dtype=float)
+        self.full_trace = np.zeros((self.config['numsteps']), dtype=float)
 
         with ProcessPoolExecutor() as executor:
-            futures = [executor.submit(self.fit_trace, image[:self.numsteps, i, j], i, j) for i in range(x) for j in range(y)]
+            futures = [executor.submit(self.helper, self.config, image[:, i, j], i, j) for i in range(x) for j in range(y)]
             for future in as_completed(futures):
-                amp1, amp2, tau1, tau2, i, j, success = future.result()
+                outputs, success, sum, i, j = future.result()
                 if success:
-                    self.A1[i][j] += amp1
-                    self.A2[i][j] += amp2
-                    self.tau1[i][j] += tau1
-                    self.tau2[i][j] += tau2
-                    self.full_trace += image[:self.numsteps, i, j]
-                    self.intensity[i][j] += np.sum(image[:self.numsteps, i, j])
+                    self.A1[i][j] += outputs[0]
+                    self.tau1[i][j] += outputs[1]
+                    self.A2[i][j] += outputs[2]
+                    self.tau2[i][j] += outputs[3]
+                    self.intensity[i][j] += sum
+
+                    self.full_trace += image[:, i, j]
                     self.track += 1
-                    print(f'Pixel ({i}, {j}) fit')
+                    print(f'Pixel ({i}, {j}) fit. Parameters: {outputs}.')
 
-        loc = np.argmax(self.full_trace)
-        try:
-            params = self.fit_decay(self.times[loc:], self.full_trace[loc:])
-        except RuntimeError:
-            params = [0, 0]
+        outputs, success, sum, i, j = self.helper(self.config, self.full_trace, 0, 0)
 
-        return self.A1, self.A2, self.tau1, self.tau2, self.intensity, self.full_trace, params, self.track, self.times, 
+        return self.A1, self.A2, self.tau1, self.tau2, self.intensity, self.full_trace, outputs, self.track, self.config['times']
     
     def save_results(self, filename, results):
         np.savez(

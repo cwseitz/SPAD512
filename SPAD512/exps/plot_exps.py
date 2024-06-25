@@ -28,6 +28,7 @@ class Plotter:
         full_params = results['full_params'].astype(float)
         track = results['track'].astype(int)
         times = results['times'].astype(float)
+        show=True
         
         for i in range(len(tau1)):
             for j in range(len(tau1[0])):
@@ -47,7 +48,7 @@ class Plotter:
         #         if A[i][j] < 0:
         #             A[i][j] = 0
         
-        if (self.config['components']==1):
+        if (self.config['curve']==('mono' or 'mono_conv')):
             fig, ax = plt.subplots(2, 2, figsize=(7, 7))
             fig.suptitle(f'{self.config["integ"]*1e-3} ms integ, {self.config["step"]} ns step, {self.config["integ"]*self.config["numsteps"]*1e-3} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
             # fig.suptitle('Simulated fit with IRF=N(15, 0.5), 1 ms integ/100 ps step')
@@ -89,7 +90,7 @@ class Plotter:
 
             if show: plt.show()
         
-        if (self.config['components']==2):
+        if (self.config['curve']==('bi' or 'bi_conv')):
             fig, ax = plt.subplots(2, 3, figsize=(8, 9))
             fig.suptitle(f'{self.config["integ"]*1e-3} ms integ, {self.config["step"]} ns step, {self.config["integ"]*self.config["numsteps"]*1e-3} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
             # fig.suptitle('Simulated fit with IRF=N(15, 0.5), 1 ms integ/100 ps step')
