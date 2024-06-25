@@ -4,7 +4,7 @@ from skimage.io import imread, imsave
 import json
 import time
 
-from SPAD512.exps import Fitter, Plotter
+from SPAD512.exps import Fitter_MCMC, Plotter
 from SPAD512.utils import Generator
 
 config_path = 'SPAD512/mains/run_simulation.json'
@@ -29,7 +29,7 @@ class Simulator:
                     print(f'Data for {tau} ns tau, {integ} ms integ, {step} ns step generated in {toc-tic} seconds')
                     
                     tic = time.time()
-                    fit = Fitter(self.config, numsteps=dt.numsteps, step=step)
+                    fit = Fitter_MCMC(self.config, numsteps=dt.numsteps, step=step)
                     results = fit.fit_exps(image=dt.image)
                     self.means[i][j] += np.mean(results[2])
                     self.stdevs[i][j] += np.std(results[2])
@@ -46,7 +46,7 @@ class Simulator:
         print(f'Data generated in {toc-tic} seconds')
 
         tic = time.time()
-        fit = Fitter(self.config, numsteps=self.config['numsteps'], step=self.config['gatesteps'])
+        fit = Fitter_MCMC(self.config, numsteps=self.config['numsteps'], step=self.config['gatesteps'])
         results = fit.fit_exps(image=dt.image)
         fit.save_results(self.config['filename'], results)
         toc = time.time()

@@ -12,7 +12,7 @@
     "lifetimes": 10,
     "iterations": 1000,
     "zeta": 0.05,
-    "x": 100,
-    "y": 100,
+    "x": 1,
+    "y": 1,
     "filename": "simulation1"
 }
