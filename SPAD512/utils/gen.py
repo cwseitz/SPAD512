@@ -24,8 +24,8 @@ class Generator:
         self.x = config['x']
         self.y = config['y']
 
-        self.integ = integ if integ else config['integrations']
-        self.step = step if step else config['gatesteps']
+        self.integ = integ if integ else config['integ']
+        self.step = step if step else config['step']
         self.tau = tau if tau else config['lifetimes']
 
         if self.config['numsteps']:

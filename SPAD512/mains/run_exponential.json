@@ -12,6 +12,7 @@
    "folder": [],
    "roi_dim": 256,
    "thresh": 300,
+   "irf_mean": 15,
    "irf_width": 100, 
    "components": 2
 }

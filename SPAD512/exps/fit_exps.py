@@ -55,8 +55,6 @@ class Fitter:
             success = True
             self.intensity[i][j] += np.sum(trace)
             loc = np.argmax(trace)
-            
-            # trace = self.deconv(trace)
 
             if self.config['components'] == 1:
                 try:
