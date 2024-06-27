@@ -14,7 +14,7 @@
     "thresh": 300,
     "irf_mean": 15,
     "irf_width": 0.5, 
-    "curve": "mono_conv",
+    "fit": "mh_mono_conv",
 
     
     "lifetimes": 10,

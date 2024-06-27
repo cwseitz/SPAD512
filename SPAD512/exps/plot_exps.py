@@ -51,7 +51,7 @@ class Plotter:
         #         if A[i][j] < 0:
         #             A[i][j] = 0
         
-        if self.config['curve'] in ('mono', 'mono_conv', 'app_mono_conv', 'log_mono_conv', 'mono_conv_mcmc'):
+        if self.config['fit'] in ('mono', 'mono_conv', 'app_mono_conv', 'log_mono_conv', 'mono_conv_mcmc'):
             fig, ax = plt.subplots(2, 2, figsize=(7, 7))
             fig.suptitle(f'{self.config["integ"]} us integ, {self.config["step"]} ps step, {self.config["integ"]*self.config["numsteps"]*1e3} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
             # fig.suptitle('Simulated fit with IRF=N(15, 0.5), 1 ms integ/100 ps step')
@@ -94,7 +94,7 @@ class Plotter:
 
             if show: plt.show()
         
-        if (self.config['curve']==('bi' or 'bi_conv')):
+        if (self.config['fit']==('bi' or 'bi_conv')):
             fig, ax = plt.subplots(2, 3, figsize=(8, 9))
             fig.suptitle(f'{self.config["integ"]*1e-3} ms integ, {self.config["step"]} ns step, {self.config["integ"]*self.config["numsteps"]*1e-3} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
             # fig.suptitle('Simulated fit with IRF=N(15, 0.5), 1 ms integ/100 ps step')

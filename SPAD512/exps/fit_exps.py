@@ -4,13 +4,14 @@ import tifffile as tf
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from scipy.signal import convolve, deconvolve
 from scipy.special import erfc
+import matplotlib.pyplot as plt
 
 class Trace:
     def __init__(self, config, data, i, j):
         self.config = config
         self.step = config['step']
         self.times = config['times']
-        self.curve = config['curve']  # Options for curve: 'mono', 'mono_conv', 'bi', 'bi_conv'
+        self.curve = config['fit']  # Options for curve: 'mono', 'mono_conv', 'bi', 'bi_conv'
         self.irf_width = config['irf_width']
         self.irf_mean = config['irf_mean']
         self.thresh = config['thresh']
@@ -66,25 +67,55 @@ class Trace:
         ym = func(x, A, lam)
         return -0.5 * np.sum((y - ym)**2)
 
-    def proposal(self, params):
-        return params + np.random.normal(0, 0.1, size=params.shape)
+    def prop_lam(self, curr):
+        return curr + np.random.normal(0, 0.5)
 
-    def met_hast(self, x, y, func, guess_params, iter=10000):
+    def prop_A(self, curr):
+        return curr + np.random.normal(0, 100)
+
+    def gibbs_mh(self, x, y, func, guess_params, iter=1000):
         curr_params = guess_params
-        curr_like = self.log_like(curr_params, x, y, func)
         samples = []
         
         for _ in range(iter):
-            prop_params = self.proposal(curr_params)
-            prop_like = self.log_like(prop_params, x, y, func)
+            # Update A
+            prop_A = self.prop_A(curr_params[0])
+            prop_params_A = [prop_A, curr_params[1]]
+            prop_like_A = self.log_like(prop_params_A, x, y, func)
+            curr_like_A = self.log_like(curr_params, x, y, func)
             
-            if np.log(np.random.rand()) < (prop_like - curr_like):
-                curr_params = prop_params
-                curr_like = prop_like
-                
-            samples.append(curr_params)
+            if np.log(np.random.rand()) < (prop_like_A - curr_like_A):
+                curr_params[0] = prop_A
+            
+            # Update lambda
+            prop_lam = self.prop_lam(curr_params[1])
+            prop_params_lam = [curr_params[0], prop_lam]
+            prop_like_lam = self.log_like(prop_params_lam, x, y, func)
+            curr_like_lam = self.log_like(curr_params, x, y, func)
+            
+            if np.log(np.random.rand()) < (prop_like_lam - curr_like_lam):
+                curr_params[1] = prop_lam
+            
+            samples.append(np.copy(curr_params))
         
         return np.array(samples)
+    
+    # def met_hast(self, x, y, func, guess_params, iter=10000):
+    #     curr_params = guess_params
+    #     curr_like = self.log_like(curr_params, x, y, func)
+    #     samples = []
+        
+    #     for _ in range(iter):
+    #         prop_params = self.proposal(curr_params)
+    #         prop_like = self.log_like(prop_params, x, y, func)
+            
+    #         if np.log(np.random.rand()) < (prop_like - curr_like):
+    #             curr_params = prop_params
+    #             curr_like = prop_like
+                
+    #         samples.append(curr_params)
+        
+    #     return np.array(samples)
 
 
 
@@ -114,10 +145,17 @@ class Trace:
                 params, _ = opt.curve_fit(self.log_mono_conv, self.times[loc:], self.data[loc:], p0=guess)
                 return (params[0], params[1], 0, 0)
             
-            case 'mono_conv_mcmc':
+            case 'mh_mono_conv':
                 guess = np.array([1.0, 0.5])
-                samples = self.met_hast(self.times, self.data, self.log_mono_conv, guess)
-                return (np.mean(samples[3000:,0]), np.mean(samples[3000:,1]), 0 ,0)
+                samples = self.gibbs_mh(self.times, self.data, self.log_mono_conv, guess)
+
+                x = range(len(samples))
+                fig, ax = plt.subplots()
+                print(samples)
+                ax.plot(x, [x[1:] for x in samples])
+                plt.show()
+
+                return (np.mean(samples[:,0]), np.mean(samples[:,1]), 0 ,0)
 
             case 'bi_conv':
                 return 0
@@ -193,7 +231,7 @@ class Fitter:
 
                     self.full_trace += image[:, i, j]
                     self.track += 1
-                    print(f'Pixel ({i}, {j}) fit. Parameters: {outputs}.')
+                    print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns\n')
 
         outputs, success, sum, i, j = self.helper(self.config, self.full_trace, 0, 0)
 
