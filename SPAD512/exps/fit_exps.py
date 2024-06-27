@@ -11,7 +11,7 @@ class Trace:
         self.config = config
         self.step = config['step']
         self.times = config['times']
-        self.curve = config['fit']  # Options for curve: 'mono', 'mono_conv', 'bi', 'bi_conv'
+        self.curve = config['fit']  # Options for curve: 'mono', 'mono_conv', 'log_mono_conv', 'mh_mono_conv', 'bi'
         self.irf_width = config['irf_width']
         self.irf_mean = config['irf_mean']
         self.thresh = config['thresh']
