@@ -4,8 +4,8 @@ import matplotlib.colors as mcolors
 from skimage.io import imread
 
 # Define parameters
-filenames = '240613/240613_SPAD-QD-10MHz-3f-5000g-1000us-5ns-18ps-18ps-150uW'
-threshs = [100, 200, 300]  # Thresholds for sum of counts over trace
+filenames = 'mains\\240613_SPAD-QD-10MHz-3f-900g-1000us-5ns-100ps-18ps-150uW'
+threshs = [100, 200, 300, 400, 500]  # Thresholds for sum of counts over trace
 
 def lentrace(filename):
     # Split filename into individual values

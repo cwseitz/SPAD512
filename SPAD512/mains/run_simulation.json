@@ -12,15 +12,15 @@
 
     
     "thresh": 300,
-    "irf_mean": 15,
-    "irf_width": 0.5, 
-    "fit": "mh_mono_conv",
+    "irf_mean": 10,
+    "irf_width": 0.1, 
+    "fit": "mono_conv",
 
     
     "lifetimes": 10,
     "iterations": 1000,
     "zeta": 0.05,
-    "x": 1,
-    "y": 1,
+    "x": 10,
+    "y": 10,
     "filename": "simulation1"
 }

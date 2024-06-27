@@ -68,17 +68,16 @@ class Trace:
         return -0.5 * np.sum((y - ym)**2)
 
     def prop_lam(self, curr):
-        return curr + np.random.normal(0, 0.5)
+        return curr + np.random.normal(0, 5)
 
     def prop_A(self, curr):
-        return curr + np.random.normal(0, 100)
+        return curr + np.random.normal(0, 5000)
 
-    def gibbs_mh(self, x, y, func, guess_params, iter=1000):
+    def gibbs_mh(self, x, y, func, guess_params, iter=10000):
         curr_params = guess_params
         samples = []
         
         for _ in range(iter):
-            # Update A
             prop_A = self.prop_A(curr_params[0])
             prop_params_A = [prop_A, curr_params[1]]
             prop_like_A = self.log_like(prop_params_A, x, y, func)
@@ -87,7 +86,6 @@ class Trace:
             if np.log(np.random.rand()) < (prop_like_A - curr_like_A):
                 curr_params[0] = prop_A
             
-            # Update lambda
             prop_lam = self.prop_lam(curr_params[1])
             prop_params_lam = [curr_params[0], prop_lam]
             prop_like_lam = self.log_like(prop_params_lam, x, y, func)
@@ -134,9 +132,8 @@ class Trace:
                 return params 
 
             case 'mono_conv':
-                loc = np.argmax(self.data)
                 guess = [np.max(self.data), 2]
-                params, _ = opt.curve_fit(self.mono_conv, self.times[loc:], self.data[loc:], p0=guess)
+                params, _ = opt.curve_fit(self.mono_conv, self.times, self.data, p0=guess)
                 return (params[0], params[1], 0, 0) 
 
             case 'log_mono_conv':
@@ -152,10 +149,10 @@ class Trace:
                 x = range(len(samples))
                 fig, ax = plt.subplots()
                 print(samples)
-                ax.plot(x, [x[1:] for x in samples])
+                ax.plot(x, [x[0:] for x in samples])
                 plt.show()
 
-                return (np.mean(samples[:,0]), np.mean(samples[:,1]), 0 ,0)
+                return (np.mean(samples[int(3*len(samples)/5):,0]), np.mean(samples[int(3*len(samples)/5):,1]), 0 ,0)
 
             case 'bi_conv':
                 return 0

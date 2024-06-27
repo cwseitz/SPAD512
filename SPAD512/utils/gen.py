@@ -68,13 +68,14 @@ class Generator:
 
         detected = convolve(trace, irf, mode='full') / irf.sum()
 
-        # plt.figure(figsize=(6, 4))
-        # plt.plot(self.times, detected[:900], 'bo', markersize=3, label='Data')
-        # plt.xlabel('Time, ns')
-        # plt.ylabel('Counts')
-        # plt.legend()
-        # plt.title(f'Simulated Decay for {self.integ} ms integration, {1e3*self.step} ps step, {self.tau} ns lifetime')
-        # plt.show()
+        plt.figure(figsize=(6, 4))
+        plt.plot(self.times, detected[:900], 'bo', markersize=3, label='Convolved')
+        plt.plot(self.times, trace, 'ro', markersize=3, label='Original')
+        plt.xlabel('Time, ns')
+        plt.ylabel('Counts')
+        plt.legend()
+        plt.title(f'Simulated exponential/GME curves for 10 ns lifetime, IRF=N(10,0.1)')
+        plt.show()
 
         return detected[:len(trace)]
 

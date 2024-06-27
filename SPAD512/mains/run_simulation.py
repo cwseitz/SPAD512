@@ -7,7 +7,7 @@ import time
 from SPAD512.exps import Fitter, Plotter
 from SPAD512.utils import Generator
 
-config_path = 'run_simulation.json'
+config_path = 'mains\\run_simulation.json'
 show = True # show final plot
 
 class Simulator:
