@@ -7,8 +7,32 @@ import time
 from SPAD512.exps import Fitter, Plotter
 from SPAD512.utils import Generator
 
+'''
+Simulation of SPAD time-gated FLIM. Make sure units in .json are consistent with below.
+
+    "freq": MHz, pulsed laser frequency
+    "numsteps": counts, number of gate step increments
+    "integ": us, exposure time for a single gate
+    "width": ns, width of a single gate
+    "step": ps, increment size between gates
+    "offset": ps, initial increment for first gate step
+    "thresh": counts, sum of trace over pixel needed to not discard pixel in analysis
+    "irf_mean": ns, mean value of gaussian IRF
+    "irf_width": ns, stdev of gaussian IRF
+    "fit": ('mono', 'mono_conv', 'log_mono_conv', 'mh_mono_conv', 'bi'), analysis method to use
+    "lifetimes": ns, lifetimes to simulate (no need to use array if only 1 value)
+    "iterations": counts, number of iterations to run
+    "zeta": 0<zeta<1, efficiency of photon acquisition
+    "x": counts, number of columns to simulate
+    "y": counts, number of rows to simulate 
+        Note: x*y gives the total number of trials for a particular integ/step/lifetime combo, if running more than 1 set of 3.
+    "filename": str, name and path to save data with, leave empty for auto generation
+'''
+
 config_path = 'mains\\run_simulation.json'
 show = True # show final plot
+
+
 
 class Simulator:
     def __init__(self, config_path):

@@ -11,11 +11,8 @@ class Plotter:
         return amp * np.exp(-x / tau)
 
     def decay_conv(self, x, A, lam):
-        sigma = self.config['irf_width']/self.config['step']
-        
-        term1 = (1/2) * A * np.exp((1/2) * lam * (2*self.config['irf_mean'] + lam*(sigma**2) - 2*x))
-        term2 = lam * erfc((self.config['irf_mean'] + lam*(sigma**2) - x)/(sigma*np.sqrt(2)))
-        
+        term1 = (1/2) * A * np.exp((1/2) * lam * (2*self.config['irf_mean'] + lam*(self.config['irf_width']**2) - 2*x))
+        term2 = lam * erfc((self.config['irf_mean'] + lam*(self.config['irf_width']**2) - x)/(self.config['irf_width']*np.sqrt(2)))
         return term1*term2
     
     def decay_double(self, x, amp1, tau1, amp2, tau2):
@@ -52,8 +49,8 @@ class Plotter:
         
         if self.config['fit'] in ('mono', 'mono_conv', 'app_mono_conv', 'log_mono_conv', 'mh_mono_conv'):
             fig, ax = plt.subplots(2, 2, figsize=(7, 7))
-            # fig.suptitle(f'{self.config["integ"]} us integ, {self.config["step"]} ps step, {self.config["integ"]*self.config["numsteps"]*1e3} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
-            fig.suptitle('Guessed IRF=N(10, 0.1), QD image; 1 ms integ/100 ps step')
+            fig.suptitle(f'{self.config["integ"]} us integ, {self.config["step"]} ps step, {self.config["integ"]*self.config["numsteps"]*1e-3} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
+            # fig.suptitle('Guessed IRF=N(10, 0.1), QD image; 1 ms integ/100 ps step')
 
             im1 = ax[0, 0].imshow(A1, cmap='plasma')
             ax[0, 0].set_title('Amplitudes')
@@ -74,7 +71,6 @@ class Plotter:
             im3 = ax[1, 0].imshow(tau1, cmap=custom2)
             plt.colorbar(im3, ax=ax[1, 0], label='ns')
             im3.set_clim(6, 14)
-
         
             ax[1, 1].set_title('Fully binned trace')
             ax[1, 1].scatter(times, full_trace, s=5)
@@ -97,9 +93,9 @@ class Plotter:
 
             if show: plt.show()
         
-        if (self.config['fit']==('bi' or 'bi_conv')):
+        if (self.config['fit'] in ('bi', 'bi_conv')):
             fig, ax = plt.subplots(2, 3, figsize=(8, 9))
-            fig.suptitle(f'{self.config["integ"]*1e-3} ms integ, {self.config["step"]} ns step, {self.config["integ"]*self.config["numsteps"]*1e-3} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
+            fig.suptitle(f'{self.config["integ"]} us integ, {self.config["step"]} ps step, {self.config["integ"]*self.config["numsteps"]*1e-3} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
             # fig.suptitle('Simulated fit with IRF=N(15, 0.5), 1 ms integ/100 ps step')
 
             if (np.mean(A1) < np.mean(A2)):

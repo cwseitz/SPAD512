@@ -34,11 +34,8 @@ class Trace:
         return amp1 * np.exp(-x / tau1) + amp2 * np.exp(-x / tau2)
 
     def mono_conv(self, x, A, lam):
-        sigma = self.irf_width/self.step
-
-        term1 = (1/2) * A * np.exp((1/2) * lam * (2*float(self.irf_mean) + lam*(sigma**2) - 2*x))
-        term2 = lam * erfc((float(self.irf_mean) + lam*(sigma**2) - x)/(sigma*np.sqrt(2)))
-
+        term1 = (1/2) * A * np.exp((1/2) * lam * (2*float(self.irf_mean) + lam*(self.irf_width**2) - 2*x))
+        term2 = lam * erfc((float(self.irf_mean) + lam*(self.irf_width**2) - x)/(self.irf_width*np.sqrt(2)))
         return term1*term2
 
     def log_mono_conv(self, x, A, lam):
@@ -174,13 +171,13 @@ class Fitter:
         self.config = config
 
         if numsteps:
-            self.config['times'] = (np.arange(numsteps) * step) + config['offset']
+            self.config['times'] = ((np.arange(numsteps) * step) + config['offset']) * 1e-3 # need times in ns
             self.config['numsteps'] = numsteps
-            self.config['step'] = step
+            self.config['step'] = step * 1e-3 # need step in ns
         else:
-            self.config['times'] = (np.arange(config['numsteps']) * config['step']) + config['offset']
-            self.config['numsteps'] = numsteps = config['numsteps']
-            self.config['step'] = config['step']
+            self.config['times'] = ((np.arange(config['numsteps']) * config['step']) + config['offset']) * 1e-3
+            self.config['numsteps'] = config['numsteps']
+            self.config['step'] = config['step'] * 1e-3
 
         self.A1 = None
         self.tau1 = None
@@ -247,3 +244,5 @@ class Fitter:
             track=results[7],
             times=results[8]
         )   
+
+        self.config['step'] = self.config['step'] * 1e3 # reverse change made in initializaiton

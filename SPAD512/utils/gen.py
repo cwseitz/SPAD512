@@ -17,32 +17,33 @@ class Generator:
         self.config = config
 
         self.freq = config['freq']
-        self.offset = config['offset']
+        self.offset = config['offset'] * 1e-3 # ps --> ns 
         self.width = config['width']
-        self.iter = config['iterations']
         self.zeta = config['zeta']
-        self.x = config['x']
+        self.x = config['x'] 
         self.y = config['y']
 
         self.integ = integ if integ else config['integ']
         self.step = step if step else config['step']
+        self.step *= 1e-3 # ps --> ns
         self.tau = tau if tau else config['lifetimes']
 
         if self.config['numsteps']:
             self.numsteps = self.config['numsteps']
         else:
-            self.numsteps = int(1e3 / (self.freq*self.step))
+            self.numsteps = int(1e6 / (self.freq*self.step))
 
         if self.config['filename']:
             self.filename = self.config['filename']
         else: 
             date =  datetime.now().strftime('%y%m%d')
-            self.filename = f'{date}_SPAD-QD-{self.freq}MHz-1f-{self.numsteps}g-{int(self.integ*1e3)}us-{self.width}ns-{int(self.step*1e3)}ps-{int(self.offset*1e3)}ps-simulated.tif'
+            self.filename = f'{date}_SPAD-QD-{self.freq}MHz-1f-{self.numsteps}g-{int(self.integ)}us-{self.width}ns-{int((self.step)*1e3)}ps-{int((self.offset)*1e3)}ps-simulated'
+            self.config['filename'] = self.filename
 
-        self.times = (np.arange(self.numsteps) * self.step) + self.offset
+        self.times = (np.arange(self.numsteps) * self.step) + self.offset # ns
 
     def genTrace(self, convolve=True):
-        numgates = int(1e3 * self.freq * self.integ)
+        numgates = int(self.freq * self.integ)
         lam = 1/self.tau
 
         data = np.zeros(self.numsteps, dtype=int)
@@ -60,22 +61,21 @@ class Generator:
 
     def convolveTrace(self, trace):
         irf_mean = self.config['irf_mean']
-        irf_ns = self.config['irf_width']
-        irf_sigma = irf_ns/self.step
+        irf_width = self.config['irf_width']
 
-        irf = np.exp(-((self.times - irf_mean)**2) / (2 * irf_sigma**2))
+        irf = np.exp(-((self.times - irf_mean)**2) / (2 * irf_width**2))
         irf /= np.sum(irf)  # normalize
 
         detected = convolve(trace, irf, mode='full') / irf.sum()
 
-        plt.figure(figsize=(6, 4))
-        plt.plot(self.times, detected[:900], 'bo', markersize=3, label='Convolved')
-        plt.plot(self.times, trace, 'ro', markersize=3, label='Original')
-        plt.xlabel('Time, ns')
-        plt.ylabel('Counts')
-        plt.legend()
-        plt.title(f'Simulated exponential/GME curves for 10 ns lifetime, IRF=N(10,0.1)')
-        plt.show()
+        # plt.figure(figsize=(6, 4))
+        # plt.plot(self.times, detected[:900], 'bo', markersize=3, label='Convolved')
+        # plt.plot(self.times, trace, 'ro', markersize=3, label='Original')
+        # plt.xlabel('Time, ns')
+        # plt.ylabel('Counts')
+        # plt.legend()
+        # plt.title(f'Simulated exponential/GME curves for 10 ns lifetime, IRF=N(10,0.1)')
+        # plt.show()
 
         return detected[:len(trace)]
 
@@ -89,7 +89,7 @@ class Generator:
         plt.xlabel('Time, ns')
         plt.ylabel('Counts')
         plt.legend()
-        plt.title(f'Simulated Decay for {self.integ} ms integration, {1e3*self.step} ps step, {self.tau} ns lifetime')
+        plt.title(f'Simulated Decay for {self.integ*1e-3} ms integration, {1e-3*self.step} ns step, {self.tau} ns lifetime')
         plt.show()
 
     def helper(self, pixel):
