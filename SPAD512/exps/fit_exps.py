@@ -22,7 +22,10 @@ class Trace:
         
         self.success = False
         self.sum = np.sum(self.data)
+    
 
+
+    '''Helper methods for LMA fitting'''
     def mono(self, x, amp, tau):
         return amp * np.exp(-x / tau)
     
@@ -31,11 +34,21 @@ class Trace:
 
     def mono_conv(self, x, A, lam):
         sigma = self.irf_width/self.step
-        
-        term1 = (1/2) * A * np.exp((1/2) * lam * (2*self.irf_mean + lam*(sigma**2) - 2*x))
-        term2 = lam * erfc((self.irf_mean + lam*(sigma**2) - x)/(sigma*np.sqrt(2)))
-        
+
+        term1 = (1/2) * A * np.exp((1/2) * lam * (2*float(self.irf_mean) + lam*(sigma**2) - 2*x))
+        term2 = lam * erfc((float(self.irf_mean) + lam*(sigma**2) - x)/(sigma*np.sqrt(2)))
+
         return term1*term2
+
+    def log_mono_conv(self, x, A, lam):
+        sigma = self.irf_width / self.step
+
+        log_term1 = np.log(A) + (1/2) * lam * (2*self.irf_mean + lam*(sigma**2) - 2*x)
+        log_term2 = np.log(lam) + np.log(erfc((self.irf_mean + lam*(sigma**2) - x) / (sigma * np.sqrt(2))))
+
+        full = np.exp(log_term1 + log_term2)
+
+        return full
 
     # def bi_conv(self, x, A, lam):
     #     sigma = self.config['irf_width']/self.step
@@ -45,24 +58,66 @@ class Trace:
         
     #     return term1*term2
 
+
+
+    '''Helper methods for Metropolis-Hastings'''
+    def log_like(self, params, x, y, func):
+        A, lam = params
+        ym = func(x, A, lam)
+        return -0.5 * np.sum((y - ym)**2)
+
+    def proposal(self, params):
+        return params + np.random.normal(0, 0.1, size=params.shape)
+
+    def met_hast(self, x, y, func, guess_params, iter=10000):
+        curr_params = guess_params
+        curr_like = self.log_like(curr_params, x, y, func)
+        samples = []
+        
+        for _ in range(iter):
+            prop_params = self.proposal(curr_params)
+            prop_like = self.log_like(prop_params, x, y, func)
+            
+            if np.log(np.random.rand()) < (prop_like - curr_like):
+                curr_params = prop_params
+                curr_like = prop_like
+                
+            samples.append(curr_params)
+        
+        return np.array(samples)
+
+
+
     def fit_decay(self):
         match self.curve:
             case 'mono':
-                loc = np.argmax(self.trace)
-                initial_guess = [np.max(self.data), 2.0]
-                params, _ = opt.curve_fit(self.mono, self.times[loc:], self.data[loc:], p0=initial_guess)
+                loc = np.argmax(self.data)
+                guess = [np.max(self.data), 2.0]
+                params, _ = opt.curve_fit(self.mono, self.times[loc:], self.data[loc:], p0=guess)
                 return (params[0], params[1], 0, 0) 
 
             case 'bi':
-                loc = np.argmax(self.trace)
-                initial_guess = [np.max(self.data), 2.0, np.max(self.data) / 2, 1.0]
-                params, _ = opt.curve_fit(self.bi, self.times[loc:], self.data[loc:], p0=initial_guess)
+                loc = np.argmax(self.data)
+                guess = [np.max(self.data), 2.0, np.max(self.data) / 2, 1.0]
+                params, _ = opt.curve_fit(self.bi, self.times[loc:], self.data[loc:], p0=guess)
                 return params 
 
             case 'mono_conv':
-                initial_guess = [np.max(self.data), 2.0]
-                params, _ = opt.curve_fit(self.mono_conv, self.times, self.data, p0=initial_guess)
+                loc = np.argmax(self.data)
+                guess = [np.max(self.data), 2]
+                params, _ = opt.curve_fit(self.mono_conv, self.times[loc:], self.data[loc:], p0=guess)
                 return (params[0], params[1], 0, 0) 
+
+            case 'log_mono_conv':
+                loc = np.argmax(self.data)
+                guess = [np.max(self.data), 2.0]
+                params, _ = opt.curve_fit(self.log_mono_conv, self.times[loc:], self.data[loc:], p0=guess)
+                return (params[0], params[1], 0, 0)
+            
+            case 'mono_conv_mcmc':
+                guess = np.array([1.0, 0.5])
+                samples = self.met_hast(self.times, self.data, self.log_mono_conv, guess)
+                return (np.mean(samples[3000:,0]), np.mean(samples[3000:,1]), 0 ,0)
 
             case 'bi_conv':
                 return 0
@@ -104,7 +159,6 @@ class Fitter:
     def helper(config, data, i, j):
         dt = Trace(config, data, i, j)
         dt.fit_trace()
-        if dt.success: print(dt.params)
         return dt.params, dt.success, dt.sum, i, j
 
 
@@ -132,9 +186,9 @@ class Fitter:
                 outputs, success, sum, i, j = future.result()
                 if success:
                     self.A1[i][j] += outputs[0]
-                    self.tau1[i][j] += outputs[1]
+                    self.tau1[i][j] += 1/(outputs[1]+1e-10)
                     self.A2[i][j] += outputs[2]
-                    self.tau2[i][j] += outputs[3]
+                    self.tau2[i][j] += 1/(outputs[3]+1e-10)
                     self.intensity[i][j] += sum
 
                     self.full_trace += image[:, i, j]

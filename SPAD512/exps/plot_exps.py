@@ -51,9 +51,9 @@ class Plotter:
         #         if A[i][j] < 0:
         #             A[i][j] = 0
         
-        if (self.config['curve']==('mono' or 'mono_conv')):
+        if self.config['curve'] in ('mono', 'mono_conv', 'app_mono_conv', 'log_mono_conv', 'mono_conv_mcmc'):
             fig, ax = plt.subplots(2, 2, figsize=(7, 7))
-            fig.suptitle(f'{self.config["integ"]*1e-3} ms integ, {self.config["step"]} ns step, {self.config["integ"]*self.config["numsteps"]*1e-3} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
+            fig.suptitle(f'{self.config["integ"]} us integ, {self.config["step"]} ps step, {self.config["integ"]*self.config["numsteps"]*1e3} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
             # fig.suptitle('Simulated fit with IRF=N(15, 0.5), 1 ms integ/100 ps step')
 
             im1 = ax[0, 0].imshow(A1, cmap='plasma')
@@ -72,9 +72,10 @@ class Plotter:
             plt.colorbar(im3, ax=ax[1, 0], label='ns')
             im3.set_clim(9, 11)
 
+            print(full_params)
             ax[1, 1].set_title('Fully binned trace')
             ax[1, 1].scatter(times, full_trace, s=5)
-            ax[1, 1].plot(times, self.decay_conv(times, full_params[0], 1/full_params[1]), label='Fit: tau = {:.2f}'.format(full_params[1]), color='black')
+            ax[1, 1].plot(times, self.decay_conv(times, full_params[0], full_params[1]), label='Fit: tau = {:.2f}'.format(1/full_params[1]), color='black')
             ax[1, 1].set_xlabel('Time, ns')
             ax[1, 1].set_ylabel('Counts')
             val = max(full_trace)

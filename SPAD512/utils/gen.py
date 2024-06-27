@@ -41,7 +41,7 @@ class Generator:
 
         self.times = (np.arange(self.numsteps) * self.step) + self.offset
 
-    def genTrace(self, convolve=False):
+    def genTrace(self, convolve=True):
         numgates = int(1e3 * self.freq * self.integ)
         lam = 1/self.tau
 
@@ -80,17 +80,11 @@ class Generator:
 
     def plotTrace(self):
         data = self.genTrace()
-        
-        def decay(self, x, amp, tau):
-            return amp * np.exp(-x / tau)
-    
-        initial_guess = [np.max(data), 2.0]
-        params, _ = opt.curve_fit(self.decay, self.times, data, p0=initial_guess)
 
         x = np.arange(len(data)) * self.step
         plt.figure(figsize=(6, 4))
         plt.plot(x, data, 'bo', markersize=3, label='Data')
-        plt.plot(x, decay(x, *params), 'r--', label='Fit: tau = {:.2f}'.format(params[1]))
+        # plt.plot(x, decay(x, *params), 'r--', label='Fit: tau = {:.2f}'.format(params[1]))
         plt.xlabel('Time, ns')
         plt.ylabel('Counts')
         plt.legend()
@@ -99,7 +93,6 @@ class Generator:
 
     def helper(self, pixel):
         return self.genTrace(convolve=True)
-
 
     def genImage(self):
         self.image = np.zeros((self.numsteps, self.x, self.y), dtype=float)
