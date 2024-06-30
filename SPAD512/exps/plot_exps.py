@@ -31,25 +31,33 @@ class Plotter:
         
         for i in range(len(tau1)):
             for j in range(len(tau1[0])):
-                if tau1[i][j] > 1000:
+                if tau1[i][j] > 100:
                     tau1[i][j] = 0
-                if tau1[i][j] < -1000:
+                    A1[i][j] = 0
+                if tau1[i][j] < 0:
                     tau1[i][j] = 0
-                if tau2[i][j] > 1000:
+                    A1[i][j] = 0
+                if tau2[i][j] > 100:
                     tau2[i][j] = 0
-                if tau2[i][j] < -1000:
+                    A2[i][j] = 0
+                if tau2[i][j] < 0:
                     tau2[i][j] = 0
+                    A2[i][j] = 0
 
-        # for i in range(len(A)):
-        #     for j in range(len(A[0])):
-        #         if A[i][j] > 10000:
-        #             A[i][j] = 0
-        #         if A[i][j] < 0:
-        #             A[i][j] = 0
+        for i in range(len(A1)):
+            for j in range(len(A1[0])):
+                if A1[i][j] > 10000:
+                    A1[i][j] = 10000
+                if A1[i][j] < 0:
+                    A1[i][j] = 0
+                if A2[i][j] > 10000:
+                    A2[i][j] = 10000
+                if A2[i][j] < 0:
+                    A2[i][j] = 0
         
         if self.config['fit'] in ('mono', 'mono_conv', 'app_mono_conv', 'log_mono_conv', 'mh_mono_conv'):
             fig, ax = plt.subplots(2, 2, figsize=(7, 7))
-            fig.suptitle(f'{self.config["integ"]} us integ, {self.config["step"]} ps step, {self.config["integ"]*self.config["numsteps"]*1e-3} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
+            fig.suptitle(f'{self.config["integ"]} us integ, {int(self.config["step"])} ps step, {int(self.config["integ"]*self.config["numsteps"]*1e-3)} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
             # fig.suptitle('Guessed IRF=N(10, 0.1), QD image; 1 ms integ/100 ps step')
 
             im1 = ax[0, 0].imshow(A1, cmap='plasma')
@@ -94,41 +102,47 @@ class Plotter:
             if show: plt.show()
         
         if (self.config['fit'] in ('bi', 'bi_conv')):
-            fig, ax = plt.subplots(2, 3, figsize=(8, 9))
-            fig.suptitle(f'{self.config["integ"]} us integ, {self.config["step"]} ps step, {self.config["integ"]*self.config["numsteps"]*1e-3} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
+            fig, ax = plt.subplots(2, 3, figsize=(12, 8))
+            fig.suptitle(f'{self.config["integ"]} us integ, {int(self.config["step"])} ps step, {int(self.config["integ"]*self.config["numsteps"]*1e-3)} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
             # fig.suptitle('Simulated fit with IRF=N(15, 0.5), 1 ms integ/100 ps step')
 
+            colors = [(0, 0, 0)] + [plt.cm.plasma(i) for i in np.linspace(0, 1, 255)]
+            custom = mcolors.LinearSegmentedColormap.from_list('custom_plasma', colors, N=256)
             if (np.mean(A1) < np.mean(A2)):
-                im1 = ax[0, 0].imshow(A1, cmap='plasma')
+                im1 = ax[0, 0].imshow(A1, cmap=custom)
                 ax[0, 0].set_title('Smaller Amplitude')
                 plt.colorbar(im1, ax=ax[0, 0], label='cts')
 
-                im2 = ax[0, 1].imshow(A2, cmap='plasma')
+                im2 = ax[0, 1].imshow(A2, cmap=custom)
                 ax[0, 1].set_title('Larger Amplitude')
                 plt.colorbar(im2, ax=ax[0, 1], label='cts')
             else:
-                im1 = ax[0, 0].imshow(A2, cmap='plasma')
+                im1 = ax[0, 0].imshow(A2, cmap=custom)
                 ax[0, 0].set_title('Smaller Amplitude')
                 plt.colorbar(im1, ax=ax[0, 0], label='cts')
 
-                im2 = ax[0, 1].imshow(A1, cmap='plasma')
+                im2 = ax[0, 1].imshow(A1, cmap=custom)
                 ax[0, 1].set_title('Larger Amplitude')
                 plt.colorbar(im2, ax=ax[0, 1], label='cts')
 
+            colors = [(0, 0, 0)] + [plt.cm.seismic(i) for i in np.linspace(0, 1, 255)]
+            custom = mcolors.LinearSegmentedColormap.from_list('custom_seismic', colors, N=256)
+            # colors2 =  [(0, 0, 0)] + [plt.cm.PiYG(i) for i in np.linspace(0, 1, 255)]
+            # custom2 = mcolors.LinearSegmentedColormap.from_list('custom_PiYG', colors2, N=256)
             if (np.mean(tau1) < np.mean(tau2)):
-                im3 = ax[1, 0].imshow(tau1, cmap='hsv')
+                im3 = ax[1, 0].imshow(tau1, cmap=custom)
                 ax[1, 0].set_title('Smaller Lifetime')
                 plt.colorbar(im3, ax=ax[1, 0], label='ns')
 
-                im4 = ax[1, 1].imshow(tau2, cmap='plasma')
+                im4 = ax[1, 1].imshow(tau2, cmap=custom)
                 ax[1, 1].set_title('Larger Lifetime')
                 plt.colorbar(im4, ax=ax[1, 1], label='cts')
             else:
-                im3 = ax[1, 0].imshow(tau2, cmap='hsv')
+                im3 = ax[1, 0].imshow(tau2, cmap=custom)
                 ax[1, 0].set_title('Smaller Lifetime')
                 plt.colorbar(im3, ax=ax[1, 0], label='ns')
 
-                im4 = ax[1, 1].imshow(tau1, cmap='plasma')
+                im4 = ax[1, 1].imshow(tau1, cmap=custom)
                 ax[1, 1].set_title('Larger Lifetime')
                 plt.colorbar(im4, ax=ax[1, 1], label='cts')
 
@@ -141,7 +155,7 @@ class Plotter:
 
             ax[1, 2].set_title('Fully binned trace')
             ax[1, 2].scatter(times, full_trace, s=5)
-            ax[1, 2].plot(times, self.decay_double(times, full_params[0], 1/full_params[1], full_params[2], 1/full_params[3]), label='Fit: tau = {:.2f}, {:.2f}'.format(full_params[1], full_params[3]), color='black')
+            ax[1, 2].plot(times, self.decay_double(times, full_params[0], 1/full_params[1], full_params[2], 1/full_params[3]), label='Fit: tau = {:.2f}, {:.2f}'.format(1/full_params[1], 1/full_params[3]), color='black')
             ax[1, 2].set_xlabel('Time, ns')
             ax[1, 2].set_ylabel('Counts')
             val = max(full_trace)

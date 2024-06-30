@@ -5,6 +5,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from scipy.signal import convolve, deconvolve
 from scipy.special import erfc
 import matplotlib.pyplot as plt
+import time
 
 class Trace:
     def __init__(self, config, data, i, j):
@@ -27,11 +28,8 @@ class Trace:
 
 
     '''Helper methods for LMA fitting'''
-    def mono(self, x, amp, tau):
-        return amp * np.exp(-x / tau)
-    
-    def bi(self, x, amp1, tau1, amp2, tau2):
-        return amp1 * np.exp(-x / tau1) + amp2 * np.exp(-x / tau2)
+    def mono(self, x, amp, lam):
+        return amp * np.exp(-x * lam)
 
     def mono_conv(self, x, A, lam):
         term1 = (1/2) * A * np.exp((1/2) * lam * (2*float(self.irf_mean) + lam*(self.irf_width**2) - 2*x))
@@ -47,7 +45,10 @@ class Trace:
         full = np.exp(log_term1 + log_term2)
 
         return full
-
+        
+    def bi(self, x, amp1, lam1, amp2, lam2):
+        return amp1 * np.exp(-x * lam1) + amp2 * np.exp(-x * lam2)
+    
     # def bi_conv(self, x, A, lam):
     #     sigma = self.config['irf_width']/self.step
         
@@ -118,18 +119,18 @@ class Trace:
         match self.curve:
             case 'mono':
                 loc = np.argmax(self.data)
-                guess = [np.max(self.data), 2.0]
+                guess = [np.max(self.data), 0.1]
                 params, _ = opt.curve_fit(self.mono, self.times[loc:], self.data[loc:], p0=guess)
                 return (params[0], params[1], 0, 0) 
 
             case 'bi':
                 loc = np.argmax(self.data)
-                guess = [np.max(self.data), 2.0, np.max(self.data) / 2, 1.0]
+                guess = [np.max(self.data), 0.1, np.max(self.data) / 2, 0.05]
                 params, _ = opt.curve_fit(self.bi, self.times[loc:], self.data[loc:], p0=guess)
                 return params 
 
             case 'mono_conv':
-                guess = [np.max(self.data), 2]
+                guess = [np.max(self.data), 0.1]
                 params, _ = opt.curve_fit(self.mono_conv, self.times, self.data, p0=guess)
                 return (params[0], params[1], 0, 0) 
 
@@ -195,6 +196,8 @@ class Fitter:
 
 
     def fit_exps(self, filename=None, image=None):
+        tic = time.time()
+        print('Reading image')
         if filename:
             with tf.TiffFile(filename + '.tif') as tif:
                 image = tif.asarray(key=range(self.config['numsteps']))  # Only read the first 5000 frames
@@ -204,6 +207,8 @@ class Fitter:
             length, x, y = np.shape(image)
         else:
             raise Exception('No filename or image provided to fit_exps, make sure to provide one or the other.')
+        toc = time.time()
+        print(f'Image read in {toc-tic} seconds')
 
         self.A1 = np.zeros((x, y), dtype=float)
         self.A2 = np.zeros((x, y), dtype=float)

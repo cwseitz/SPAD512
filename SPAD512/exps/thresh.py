@@ -3,12 +3,10 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from skimage.io import imread
 
-# Define parameters
-filenames = 'mains\\240613_SPAD-QD-10MHz-3f-900g-1000us-5ns-100ps-18ps-150uW'
-threshs = [100, 200, 300, 400, 500]  # Thresholds for sum of counts over trace
+filenames = '240613/240613_SPAD-QD-10MHz-3f-5000g-1000us-5ns-18ps-18ps-150uW'
+threshs = [100, 200, 300, 400, 500]  # thresholds to test
 
 def lentrace(filename):
-    # Split filename into individual values
     base_filename = filename.split('/')[-1]
     base_filename = base_filename.split('.')[0]
     parts = base_filename.split('-')
@@ -18,10 +16,10 @@ def lentrace(filename):
     return gate_num
 
 def display_intensity_image(filename, thresh):
-    # Read image and set initial arrays
     image = imread(filename + '.tif')
     length, x, y = np.shape(image)
     length = lentrace(filename + '.tif')
+    image = image[:length, :, :]
 
     intensity = np.zeros((x, y))
 
