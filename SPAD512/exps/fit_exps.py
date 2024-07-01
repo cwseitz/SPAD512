@@ -27,42 +27,59 @@ class Trace:
     
 
 
-    '''Helper methods for LMA fitting'''
-    def mono(self, x, amp, lam):
-        return amp * np.exp(-x * lam)
+    '''Fitting functions'''
+    def mono(self, x, p):
+        A, lam = p
+        return A * np.exp(-lam * x)
 
-    def mono_conv(self, x, A, lam):
-        term1 = (1/2) * A * np.exp((1/2) * lam * (2*float(self.irf_mean) + lam*(self.irf_width**2) - 2*x))
-        term2 = lam * erfc((float(self.irf_mean) + lam*(self.irf_width**2) - x)/(self.irf_width*np.sqrt(2)))
+    def mono_conv(self, x, p):
+        A, lam = p
+        term1 = (A*lam/2) * np.exp((1/2) * lam * (2*float(self.irf_mean) + lam*(self.irf_width**2) - 2*x))
+        term2 = erfc((float(self.irf_mean) + lam*(self.irf_width**2) - x)/(self.irf_width*np.sqrt(2)))
         return term1*term2
 
-    def log_mono_conv(self, x, A, lam):
-        sigma = self.irf_width / self.step
+    def log_mono_conv(self, x, p):
+        A, lam = p
+        if (A <= 0):
+            A = 1e-10
+        if (lam <= 0):
+            lam = 1e-10
+        
+        term1 = np.log(A*lam/2) + ((1/2) * lam * (2*float(self.irf_mean) + lam*(self.irf_width**2) - 2*x))
+        term2 = np.log(erfc((float(self.irf_mean) + lam*(self.irf_width**2) - x)/(self.irf_width*np.sqrt(2))))
+        return term1 + term2
+        
+    def bi(self, x, p):
+        A1, lam1, A2, lam2 = p
+        return A1 * np.exp(-x * lam1) + A2 * np.exp(-x * lam2)
 
-        log_term1 = np.log(A) + (1/2) * lam * (2*self.irf_mean + lam*(sigma**2) - 2*x)
-        log_term2 = np.log(lam) + np.log(erfc((self.irf_mean + lam*(sigma**2) - x) / (sigma * np.sqrt(2))))
+    def bi_conv(self, x, p):
+        A1, lam1, A2, lam2 = p
 
-        full = np.exp(log_term1 + log_term2)
+        term1 = (A1*lam1/2) * np.exp((1/2) * lam1 * (2*float(self.irf_mean) + lam1*(self.irf_width**2) - 2*x))
+        term2 = erfc((float(self.irf_mean) + lam1*(self.irf_width**2) - x)/(self.irf_width*np.sqrt(2)))
+        term3 = (A2*lam2/2) * np.exp((1/2) * lam2 * (2*float(self.irf_mean) + lam2*(self.irf_width**2) - 2*x))
+        term4 = erfc((float(self.irf_mean) + lam2*(self.irf_width**2) - x)/(self.irf_width*np.sqrt(2)))
 
+        full = (term1*term2) + (term3*term4)
         return full
-        
-    def bi(self, x, amp1, lam1, amp2, lam2):
-        return amp1 * np.exp(-x * lam1) + amp2 * np.exp(-x * lam2)
-    
-    # def bi_conv(self, x, A, lam):
-    #     sigma = self.config['irf_width']/self.step
-        
-    #     term1 = (1/2) * A * np.exp((1/2) * lam * (2*self.config['irf_mean'] + lam*(sigma**2) - 2*x))
-    #     term2 = lam * erfc((self.config['irf_mean'] + lam*(sigma**2) - x)/(sigma*np.sqrt(2)))
-        
-    #     return term1*term2
 
+    def func_wrap(self, x, *params):
+        p = np.array(params)
+
+        match self.curve:
+            case 'mono': return self.mono(x, p)
+            case 'bi' | 'mh_bi' | 'nnls_bi' : return self.bi(x, p)
+            case 'mono_conv' | 'mh_mono_conv': return self.mono_conv(x, p)
+            case 'log_mono_conv': return self.log_mono_conv(x, p)
+            case 'bi_conv' | 'nnls_bi_conv': return self.bi_conv(x, p)
+            case _:
+                raise Exception('Curve choice invalid in config.json, choose from mono, bi, mono_conv, and bi_conv.')
 
 
     '''Helper methods for Metropolis-Hastings'''
     def log_like(self, params, x, y, func):
-        A, lam = params
-        ym = func(x, A, lam)
+        ym = func(x, params)
         return -0.5 * np.sum((y - ym)**2)
 
     def prop_lam(self, curr):
@@ -74,89 +91,106 @@ class Trace:
     def gibbs_mh(self, x, y, func, guess_params, iter=10000):
         curr_params = guess_params
         samples = []
-        
+
         for _ in range(iter):
-            prop_A = self.prop_A(curr_params[0])
-            prop_params_A = [prop_A, curr_params[1]]
-            prop_like_A = self.log_like(prop_params_A, x, y, func)
-            curr_like_A = self.log_like(curr_params, x, y, func)
-            
-            if np.log(np.random.rand()) < (prop_like_A - curr_like_A):
-                curr_params[0] = prop_A
-            
-            prop_lam = self.prop_lam(curr_params[1])
-            prop_params_lam = [curr_params[0], prop_lam]
-            prop_like_lam = self.log_like(prop_params_lam, x, y, func)
-            curr_like_lam = self.log_like(curr_params, x, y, func)
-            
-            if np.log(np.random.rand()) < (prop_like_lam - curr_like_lam):
-                curr_params[1] = prop_lam
-            
+            for i in range(len(guess_params)):  
+                if (i%2 == 0): prop = self.prop_A(curr_params[i])
+                else: prop = self.prop_lam(curr_params[i])
+
+                prop_params = curr_params
+                prop_params[i] = prop
+
+                prop_like = self.log_like(prop_params, x, y, func)
+                curr_like = self.log_like(curr_params, x, y, func)
+
+                if np.log(np.random.rand()) < (prop_like - curr_like):
+                    curr_params[i] = prop
+
             samples.append(np.copy(curr_params))
-        
         return np.array(samples)
-    
-    # def met_hast(self, x, y, func, guess_params, iter=10000):
-    #     curr_params = guess_params
-    #     curr_like = self.log_like(curr_params, x, y, func)
-    #     samples = []
-        
-    #     for _ in range(iter):
-    #         prop_params = self.proposal(curr_params)
-    #         prop_like = self.log_like(prop_params, x, y, func)
-            
-    #         if np.log(np.random.rand()) < (prop_like - curr_like):
-    #             curr_params = prop_params
-    #             curr_like = prop_like
-                
-    #         samples.append(curr_params)
-        
-    #     return np.array(samples)
 
 
 
     def fit_decay(self):
+        single = False
+        
         match self.curve:
             case 'mono':
                 loc = np.argmax(self.data)
                 guess = [np.max(self.data), 0.1]
-                params, _ = opt.curve_fit(self.mono, self.times[loc:], self.data[loc:], p0=guess)
-                return (params[0], params[1], 0, 0) 
-
+                xdat = self.times[loc:]
+                ydat = self.data[loc:] 
+                single = True  
             case 'bi':
                 loc = np.argmax(self.data)
                 guess = [np.max(self.data), 0.1, np.max(self.data) / 2, 0.05]
-                params, _ = opt.curve_fit(self.bi, self.times[loc:], self.data[loc:], p0=guess)
-                return params 
-
+                xdat = self.times[loc:]
+                ydat = self.data[loc:]
             case 'mono_conv':
                 guess = [np.max(self.data), 0.1]
-                params, _ = opt.curve_fit(self.mono_conv, self.times, self.data, p0=guess)
-                return (params[0], params[1], 0, 0) 
-
+                xdat = self.times
+                ydat = self.data
+                single = True
             case 'log_mono_conv':
-                loc = np.argmax(self.data)
                 guess = [np.max(self.data), 2.0]
-                params, _ = opt.curve_fit(self.log_mono_conv, self.times[loc:], self.data[loc:], p0=guess)
-                return (params[0], params[1], 0, 0)
-            
+                xdat = self.times
+                ydat = np.log(self.data + 1e-10)
+                single = True
+            case 'bi_conv':
+                guess = [np.max(self.data), 4, np.max(self.data) / 2, 18]
+                xdat = self.times
+                ydat = self.data
             case 'mh_mono_conv':
                 guess = np.array([1.0, 0.5])
-                samples = self.gibbs_mh(self.times, self.data, self.log_mono_conv, guess)
+                # samples = self.gibbs_mh(self.times, self.data, self.mono_conv, guess)
+                # x = range(len(samples))
+                # fig, ax = plt.subplots()
+                # print(samples)
+                # ax.plot(x, [x[0:] for x in samples])
+                # plt.show()
+                # # return (np.mean(samples[int(3*len(samples)/5):,0]), np.mean(samples[int(3*len(samples)/5):,1]), 0 ,0)
+            case 'mh_bi':
+                guess = [np.max(self.data), 0.1, np.max(self.data) / 2, 0.05]
+                # loc = np.argmax(self.data)
+                # samples = self.gibbs_mh(self.times[loc:], self.data[loc:], self.bi, guess)
+                # return samples[-1]
+            case 'nnls_bi':
+                loc = np.argmax(self.data)
+                guess = [np.max(self.data), 0.25, np.max(self.data) / 2, 0.05]
+                xdat = self.times[loc:]
+                ydat = self.data[loc:]
 
-                x = range(len(samples))
-                fig, ax = plt.subplots()
-                print(samples)
-                ax.plot(x, [x[0:] for x in samples])
-                plt.show()
+                params, _ = opt.curve_fit(self.func_wrap, xdat, ydat, p0=guess)
+                
+                A_d = np.vstack([np.exp(-params[1]*xdat), np.exp(-params[3]*xdat)]).T
+                weights, _ = opt.nnls(A_d, ydat)
 
-                return (np.mean(samples[int(3*len(samples)/5):,0]), np.mean(samples[int(3*len(samples)/5):,1]), 0 ,0)
+                return (weights[0], params[1], weights[1], params[3])
+            case 'nnls_bi_conv':
+                loc = np.argmax(self.data)
+                guess = [np.max(self.data), 0.25, np.max(self.data) / 2, 0.05]
+                xdat = self.times
+                ydat = self.data
 
-            case 'bi_conv':
-                return 0
+                params, _ = opt.curve_fit(self.func_wrap, xdat, ydat, p0=guess)
+                
+                A1_matrix = np.exp((1/2) * params[1] * (2 * float(self.irf_mean) + params[1] * (self.irf_width ** 2) - 2 * xdat)) * erfc((float(self.irf_mean) + params[1] * (self.irf_width ** 2) - xdat) / (self.irf_width * np.sqrt(2)))
+                A2_matrix = np.exp((1/2) * params[3] * (2 * float(self.irf_mean) + params[3] * (self.irf_width ** 2) - 2 * xdat)) * erfc((float(self.irf_mean) + params[3] * (self.irf_width ** 2) - xdat) / (self.irf_width * np.sqrt(2)))
+                A_d = np.vstack([A1_matrix, A2_matrix]).T
+
+                weights, _ = opt.nnls(A_d, ydat)
+
+                return (weights[0], params[1], weights[1], params[3])
 
             case _:
                 raise Exception('Curve choice invalid in config.json, choose from mono, bi, mono_conv, and bi_conv.')
+
+        params, _ = opt.curve_fit(self.func_wrap, xdat, ydat, p0=guess)
+
+        if single:
+            return (params[0], params[1], 0, 0)
+        
+        return params
 
     def fit_trace(self):
         if self.sum > self.thresh:
