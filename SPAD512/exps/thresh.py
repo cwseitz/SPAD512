@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from skimage.io import imread
 
-filenames = '240613_SPAD-QD-10MHz-3f-900g-1000us-5ns-100ps-18ps-150uW'
+filenames = '240613/240613_SPAD-QD-10MHz-3f-5000g-1000us-5ns-18ps-18ps-150uW'
 threshs = [100]  # thresholds to test
 
 def lentrace(filename):

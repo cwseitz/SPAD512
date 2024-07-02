@@ -3,6 +3,7 @@ from scipy import optimize as opt
 import tifffile as tf
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from scipy.signal import convolve, deconvolve
+from scipy.fft import fft, ifft, fftfreq
 from scipy.special import erfc
 import matplotlib.pyplot as plt
 import time
@@ -110,7 +111,24 @@ class Trace:
         return np.array(samples)
 
 
+    '''Deconvolution helper methods'''
+    def gaussian(self, x, mu, sigma):
+        kernel = np.exp(-(x-mu)**2/(2*sigma**2))
+        kernel /= np.sum(kernel)
+        return kernel
+    
+    def deconvolve_fourier(self, alpha=1):
+        F_data = fft(self.data)
+        
+        irf = self.gaussian(self.times, self.irf_mean, self.irf_width)
+        F_irf = fft(irf)
 
+        F_dc = F_data * np.conj(F_irf) / (np.abs(F_irf)**2 + alpha**2)
+        deconvolved = ifft(F_dc)
+        deconvolved /= np.sum(deconvolved)
+
+        return deconvolved
+    
     def fit_decay(self):
         single = False
         
@@ -119,7 +137,8 @@ class Trace:
                 loc = np.argmax(self.data)
                 guess = [np.max(self.data), 0.1]
                 xdat = self.times[loc:]
-                ydat = self.data[loc:] 
+                # ydat = self.deconvolve_fourier(self.data/np.sum(self.data))
+                ydat = self.times[loc:]
                 single = True  
             case 'bi':
                 loc = np.argmax(self.data)

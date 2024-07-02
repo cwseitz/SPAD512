@@ -137,45 +137,23 @@ class Plotter:
 
             colors = [(0, 0, 0)] + [plt.cm.plasma(i) for i in np.linspace(0, 1, 255)]
             custom = mcolors.LinearSegmentedColormap.from_list('custom_plasma', colors, N=256)
-            if (np.mean(A1) < np.mean(A2)):
-                im1 = ax[0, 0].imshow(A1, cmap=custom)
-                ax[0, 0].set_title('Smaller Amplitude')
-                plt.colorbar(im1, ax=ax[0, 0], label='cts')
-
-                im2 = ax[0, 1].imshow(A2, cmap=custom)
-                ax[0, 1].set_title('Larger Amplitude')
-                plt.colorbar(im2, ax=ax[0, 1], label='cts')
-            else:
-                im1 = ax[0, 0].imshow(A2, cmap=custom)
-                ax[0, 0].set_title('Smaller Amplitude')
-                plt.colorbar(im1, ax=ax[0, 0], label='cts')
-
-                im2 = ax[0, 1].imshow(A1, cmap=custom)
-                ax[0, 1].set_title('Larger Amplitude')
-                plt.colorbar(im2, ax=ax[0, 1], label='cts')
-
-
+            im1 = ax[0, 0].imshow(A1, cmap=custom)
+            ax[0, 0].set_title('Smaller Amplitude')
+            plt.colorbar(im1, ax=ax[0, 0], label='cts')
+            im2 = ax[0, 1].imshow(A2, cmap=custom)
+            ax[0, 1].set_title('Larger Amplitude')
+            plt.colorbar(im2, ax=ax[0, 1], label='cts')
 
             colors = [(0, 0, 0)] + [plt.cm.seismic(i) for i in np.linspace(0, 1, 255)]
             custom = mcolors.LinearSegmentedColormap.from_list('custom_seismic', colors, N=256)
             # colors2 =  [(0, 0, 0)] + [plt.cm.PiYG(i) for i in np.linspace(0, 1, 255)]
             # custom2 = mcolors.LinearSegmentedColormap.from_list('custom_PiYG', colors2, N=256)
-            if (np.mean(tau1) < np.mean(tau2)):
-                im3 = ax[1, 0].imshow(tau1, cmap=custom)
-                ax[1, 0].set_title('Smaller Lifetime')
-                plt.colorbar(im3, ax=ax[1, 0], label='ns')
-
-                im4 = ax[1, 1].imshow(tau2, cmap=custom)
-                ax[1, 1].set_title('Larger Lifetime')
-                plt.colorbar(im4, ax=ax[1, 1], label='cts')
-            else:
-                im3 = ax[1, 0].imshow(tau2, cmap=custom)
-                ax[1, 0].set_title('Smaller Lifetime')
-                plt.colorbar(im3, ax=ax[1, 0], label='ns')
-
-                im4 = ax[1, 1].imshow(tau1, cmap=custom)
-                ax[1, 1].set_title('Larger Lifetime')
-                plt.colorbar(im4, ax=ax[1, 1], label='cts')
+            im3 = ax[1, 0].imshow(tau1, cmap=custom)
+            ax[1, 0].set_title('Smaller Lifetime')
+            plt.colorbar(im3, ax=ax[1, 0], label='ns')
+            im4 = ax[1, 1].imshow(tau2, cmap=custom)
+            ax[1, 1].set_title('Larger Lifetime')
+            plt.colorbar(im4, ax=ax[1, 1], label='cts')
 
             colors = [(1, 0, 0)] + [(i, i, i) for i in np.linspace(0, 1, 255)]
             custom = mcolors.LinearSegmentedColormap.from_list('custom_gray', colors, N=256)
@@ -186,7 +164,7 @@ class Plotter:
 
             ax[1, 2].set_title('Fully binned trace')
             ax[1, 2].scatter(times, full_trace, s=5)
-            if self.config['fit'] in ('nnls_bi_conv', 'bi_conv', 'bi'):
+            if self.config['fit'] in ('nnls_bi_conv', 'bi_conv'):
                 ax[1, 2].plot(times, self.bi_conv(times, full_params[0], 1/full_params[1], full_params[2], 1/full_params[3]), label='Fit: tau = {:.2f}, {:.2f}'.format(1/full_params[1], 1/full_params[3]), color='black')
             else:
                 ax[1, 2].plot(times, self.decay_double(times, full_params[0], 1/full_params[1], full_params[2], 1/full_params[3]), label='Fit: tau = {:.2f}, {:.2f}'.format(1/full_params[1], 1/full_params[3]), color='black')

@@ -1,18 +1,18 @@
 {
    "freq": 10,
    "frames": 3,
-   "numsteps": 900,
+   "numsteps": 5000,
    "integ": 1000,
    "width": 5,
-   "step": 100,
+   "step": 18,
    "offset": 18,
    "power": 150,
    "bits": 8,
    "globstrs_1bit": [],
    "folder": [],
    "roi_dim": 256,
-   "thresh": 100,
+   "thresh": 1000,
    "irf_mean": 10,
    "irf_width": 1.5, 
-   "fit": "nnls_bi_conv"
+   "fit": "bi_conv"
 }
