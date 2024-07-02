@@ -17,6 +17,7 @@ Simulation of SPAD time-gated FLIM. Make sure units in .json are consistent with
     "step": ps, increment size between gates
     "offset": ps, initial increment for first gate step
     "thresh": counts, sum of trace over pixel needed to not discard pixel in analysis
+    "kernel_size": counts, number of pixels to take as the kernel size for each pixel (1 --> 3x3 box around each pixel)
     "irf_mean": ns, mean value of gaussian IRF
     "irf_width": ns, stdev of gaussian IRF
     "fit": ('mono', 'mono_conv', 'log_mono_conv', 'mh_mono_conv', 'bi'), analysis method to use
@@ -68,6 +69,8 @@ class Simulator:
         dt.genImage()
         toc = time.time()
         print(f'Data generated in {toc-tic} seconds')
+
+        print(dt.image)
 
         tic = time.time()
         fit = Fitter(self.config, numsteps=self.config['numsteps'], step=self.config['step'])

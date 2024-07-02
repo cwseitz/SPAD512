@@ -2,7 +2,7 @@ import numpy as np
 from scipy import optimize as opt
 import tifffile as tf
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from scipy.signal import convolve, deconvolve
+from scipy.signal import convolve, deconvolve, butter, filtfilt
 from scipy.fft import fft, ifft, fftfreq
 from scipy.special import erfc
 import matplotlib.pyplot as plt
@@ -78,6 +78,7 @@ class Trace:
                 raise Exception('Curve choice invalid in config.json, choose from mono, bi, mono_conv, and bi_conv.')
 
 
+
     '''Helper methods for Metropolis-Hastings'''
     def log_like(self, params, x, y, func):
         ym = func(x, params)
@@ -111,14 +112,26 @@ class Trace:
         return np.array(samples)
 
 
+
     '''Deconvolution helper methods'''
     def gaussian(self, x, mu, sigma):
         kernel = np.exp(-(x-mu)**2/(2*sigma**2))
         kernel /= np.sum(kernel)
         return kernel
+
+    def butter_lpf(self, data, cutoff=1, order=2):
+        fs = 1/(max(self.times)/len(self.times)) # sampling frequency
+        nyq = 0.5*fs   
+        cutoff_norm = cutoff/nyq
+
+        b, a = butter(order, cutoff_norm, btype='low', analog=False)
+        y = filtfilt(b, a, data)
+        return y
     
     def deconvolve_fourier(self, alpha=1):
-        F_data = fft(self.data)
+        data_filt = self.butter_lpf(self.data)
+        data_filt /= np.sum(data_filt)
+        F_data = fft(data_filt)
         
         irf = self.gaussian(self.times, self.irf_mean, self.irf_width)
         F_irf = fft(irf)
@@ -127,8 +140,21 @@ class Trace:
         deconvolved = ifft(F_dc)
         deconvolved /= np.sum(deconvolved)
 
+        fig, ax = plt.subplots(1, 3)
+        ax[0].plot(self.times, self.data, label='Original')
+        ax[0].legend()
+        ax[1].plot(self.times, F_dc, label='Filtered', color='orange')
+        ax[1].legend()
+        ax[2].plot(self.times, F_irf, label='Deconvolved', color='green')
+        ax[2].legend()
+        plt.legend()
+        plt.show()
+
         return deconvolved
     
+
+
+    '''Fitting main function'''
     def fit_decay(self):
         single = False
         
@@ -136,15 +162,20 @@ class Trace:
             case 'mono':
                 loc = np.argmax(self.data)
                 guess = [np.max(self.data), 0.1]
-                xdat = self.times[loc:]
-                # ydat = self.deconvolve_fourier(self.data/np.sum(self.data))
-                ydat = self.times[loc:]
+                # xdat = self.times[loc:]
+                # ydat = self.data[loc:]
+                xdat = self.times
+                ydat = self.deconvolve_fourier(self.data/np.sum(self.data))
+                
                 single = True  
             case 'bi':
                 loc = np.argmax(self.data)
                 guess = [np.max(self.data), 0.1, np.max(self.data) / 2, 0.05]
-                xdat = self.times[loc:]
-                ydat = self.data[loc:]
+                # xdat = self.times[loc:]
+                # ydat = self.data[loc:]
+                xdat = self.times
+                ydat = self.deconvolve_fourier(self.data/np.sum(self.data))
+                print('JGASKERGHAEAODHGKASJGLIWEUHFWDJFHLIWEUH')
             case 'mono_conv':
                 guess = [np.max(self.data), 0.1]
                 xdat = self.times
@@ -243,11 +274,20 @@ class Fitter:
 
     @staticmethod
     def helper(config, data, i, j):
-        dt = Trace(config, data, i, j)
+        length, x, y = np.shape(data)
+        
+        data_knl = np.zeros(length)
+        for a in range(x):
+            for b in range(y):
+                data_knl += data[:, a, b]
+
+        dt = Trace(config, data_knl, i, j)
         dt.fit_trace()
-        return dt.params, dt.success, dt.sum, i, j
+        return dt.params, dt.success, dt.sum, dt.i, dt.j
 
 
+
+    '''Parallelizing helper function'''
     def fit_exps(self, filename=None, image=None):
         tic = time.time()
         print('Reading image')
@@ -270,8 +310,10 @@ class Fitter:
         self.intensity = np.zeros((x, y), dtype=float)
         self.full_trace = np.zeros((self.config['numsteps']), dtype=float)
 
+        ksize = self.config['kernel_size']
         with ProcessPoolExecutor() as executor:
-            futures = [executor.submit(self.helper, self.config, image[:, i, j], i, j) for i in range(x) for j in range(y)]
+            futures = [executor.submit(self.helper, self.config, image[:, (i-ksize):(i+ksize+1), (j-ksize):(j+ksize+1)], i, j) for i in range(ksize,x-ksize) for j in range(ksize, y-ksize)]
+            # futures = [executor.submit(self.helper, self.config, image[:, (i-ksize):(i+ksize+1), (j-ksize):(j+ksize+1)], i, j) for i in range(179, 181) for j in range(171, 173)]
             for future in as_completed(futures):
                 outputs, success, sum, i, j = future.result()
                 if success:
@@ -285,7 +327,9 @@ class Fitter:
                     self.track += 1
                     print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns\n')
 
-        outputs, success, sum, i, j = self.helper(self.config, self.full_trace, 0, 0)
+        full_reshaped = self.full_trace.reshape(900,1,1)
+
+        outputs, success, sum, i, j = self.helper(self.config, full_reshaped, 0, 0)
 
         return self.A1, self.A2, self.tau1, self.tau2, self.intensity, self.full_trace, outputs, self.track, self.config['times']
     

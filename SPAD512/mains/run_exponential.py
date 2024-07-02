@@ -28,36 +28,37 @@ Script for exponential analyses of time-gated FLIM data. .json formatting info b
     "fit": ('mono', 'mono_conv', 'log_mono_conv', 'mh_mono_conv', 'bi'), analysis method to use
 '''
 
-read = False # read from folder (if read=False, must specify a file below)
-file = '240613/240613_SPAD-QD-10MHz-3f-5000g-1000us-5ns-18ps-18ps-150uW' # make sure to remove .tif suffix
-config_path = 'SPAD512/SPAD512/mains/run_exponential.json' # no leading slash, keep .json suffix
+read = False # read from folder (if read=False {default}, must specify a file below)
+file = '240613_SPAD-QD-10MHz-3f-900g-1000us-5ns-100ps-18ps-150uW' # make sure to remove .tif suffix
+config_path = 'mains\\run_exponential.json' # no leading slash, keep .json suffix
 show = True # show final plot
 
 class Analyzer:
-    def __init__(self, config_path):
+    def __init__(self, config_path, read=False, file=None):
         with open(config_path) as f:
             self.config = json.load(f)
-
-    def run(self, show=True, read=False, file=None):
         if read:
             data = GatedReader(self.config)
-            filename = data.create_data()
-            print(f"Data created: {filename}")
+            self.filename = data.create_data()
+            print(f"Data created: {self.filename}")
         else:
-            filename = file
-        
+            self.filename = file
+
+    def fit(self):
         tic = time.time()
         fit = Fitter(self.config)
-        results = fit.fit_exps(filename=filename)
-        fit.save_results(filename, results)
+        results = fit.fit_exps(filename=self.filename)
+        fit.save_results(self.filename, results)
         toc = time.time()
-        print(f"Exponential fitting done in {toc-tic} seconds: {filename}_fit_results.npz")
+        print(f"Exponential fitting done in {toc-tic} seconds: {self.filename}_fit_results.npz")
 
+    def plot(self, show=True):
         plot = Plotter(self.config)
-        results = np.load(filename + '_fit_results.npz')
-        plot.plot_all(results, filename, show=show)
-        print(f"Results plotted: {filename}_results.png")
+        results = np.load(self.filename + '_fit_results.npz')
+        plot.plot_all(results, self.filename, show=show)
+        print(f"Results plotted: {self.filename}_results.png")
 
 if __name__=='__main__':
-    info = Analyzer(config_path)
-    info.run(show=show, read=read, file=file)
+    info = Analyzer(config_path, file=file)
+    info.fit()
+    info.plot(show=show)

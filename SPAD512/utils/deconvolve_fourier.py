@@ -1,15 +1,41 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import fftconvolve, convolve, deconvolve
+from scipy.signal import fftconvolve, convolve, deconvolve, butter, filtfilt
 from scipy.fft import fft, ifft, fftfreq
 
 
-
-'''data creation'''
-def gaussian_kernel(x, mu, sigma):
-    kernel = np.exp(-(x-mu)**2 / (2 * sigma**2)) 
+'''Deconvolution helper methods'''
+def gaussian(self, x, mu, sigma):
+    kernel = np.exp(-(x-mu)**2/(2*sigma**2))
     kernel /= np.sum(kernel)
     return kernel
+
+def butter_lpf(self, data, cutoff, fs, order):
+    T = 1 # sample period
+    fs = 1/(max(self.times)/len(self.times)) # sampling frequency
+    cutoff = 2
+
+    nyq = 0.5*fs
+    order = 2
+    n = int(T*fs)   
+    cutoff_norm = cutoff/nyq
+
+    b, a = butter(order, cutoff_norm, btype='low', analog=False)
+    y = filtfilt(b, a, data)
+    return y
+
+def deconvolve_fourier(self, alpha=1):
+    data_filt = self.butter_lpf(self.data)
+    F_data = fft(data_filt)
+    
+    irf = self.gaussian(self.times, self.irf_mean, self.irf_width)
+    F_irf = fft(irf)
+
+    F_dc = F_data * np.conj(F_irf) / (np.abs(F_irf)**2 + alpha**2)
+    deconvolved = ifft(F_dc)
+    deconvolved /= np.sum(deconvolved)
+
+    return deconvolved
 
 length = 900
 time = np.linspace(0, 90, length)
@@ -20,7 +46,7 @@ decay /= np.sum(decay)
 
 irf_width = 3
 irf_mean = 10
-irf = gaussian_kernel(time, irf_mean, irf_width)
+irf = gaussian(time, irf_mean, irf_width)
 irf /= np.sum(irf)  # normalize
 
 detected = convolve(decay, irf, mode='full') / irf.sum()
@@ -37,9 +63,7 @@ F_deconvolved = F_observed * np.conj(F_gaussian) / (np.abs(F_gaussian)**2 + alph
 deconvolved = ifft(F_deconvolved)
 normed = deconvolved/(np.sum(deconvolved))
 
-print(decay)
-print(detected)
-print(deconvolved)
+
 
 plt.plot(time, decay, label='Original Trace')
 plt.plot(time, detected, label='Convolved Signal')

@@ -130,10 +130,10 @@ class Plotter:
             fig.suptitle(f'{self.config["integ"]} us integ, {int(self.config["step"])} ps step, {int(self.config["integ"]*self.config["numsteps"]*1e-3)} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
             # fig.suptitle('Simulated fit with IRF=N(15, 0.5), 1 ms integ/100 ps step')
 
-            A1 = median_filter(A1, size = 3)
-            A2 = median_filter(A2, size = 3)
-            tau1 = median_filter(tau1, size = 3)
-            tau2 = median_filter(tau2, size = 3)
+            # A1 = median_filter(A1, size = 3)
+            # A2 = median_filter(A2, size = 3)
+            # tau1 = median_filter(tau1, size = 3)
+            # tau2 = median_filter(tau2, size = 3)
 
             colors = [(0, 0, 0)] + [plt.cm.plasma(i) for i in np.linspace(0, 1, 255)]
             custom = mcolors.LinearSegmentedColormap.from_list('custom_plasma', colors, N=256)
