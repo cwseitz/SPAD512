@@ -38,6 +38,7 @@ class IntensityReader:
         stack = np.concatenate(np.array(out),axis=0)
         stack = stack[:,self.roi_dim:,self.roi_dim:]
         imsave(f'{self.filename}.tif', stack)
+        return stack
 
     def stack(self):
         files = sorted(glob(f'{self.path}/*.png'))
