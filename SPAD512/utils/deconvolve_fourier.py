@@ -5,37 +5,37 @@ from scipy.fft import fft, ifft, fftfreq
 
 
 '''Deconvolution helper methods'''
-def gaussian(self, x, mu, sigma):
+def gaussian(x, mu, sigma):
     kernel = np.exp(-(x-mu)**2/(2*sigma**2))
     kernel /= np.sum(kernel)
     return kernel
 
-def butter_lpf(self, data, cutoff, fs, order):
-    T = 1 # sample period
-    fs = 1/(max(self.times)/len(self.times)) # sampling frequency
-    cutoff = 2
+# def butter_lpf(self, data, cutoff, fs, order):
+#     T = 1 # sample period
+#     fs = 1/(max(self.times)/len(self.times)) # sampling frequency
+#     cutoff = 2
 
-    nyq = 0.5*fs
-    order = 2
-    n = int(T*fs)   
-    cutoff_norm = cutoff/nyq
+#     nyq = 0.5*fs
+#     order = 2
+#     n = int(T*fs)   
+#     cutoff_norm = cutoff/nyq
 
-    b, a = butter(order, cutoff_norm, btype='low', analog=False)
-    y = filtfilt(b, a, data)
-    return y
+#     b, a = butter(order, cutoff_norm, btype='low', analog=False)
+#     y = filtfilt(b, a, data)
+#     return y
 
-def deconvolve_fourier(self, alpha=1):
-    data_filt = self.butter_lpf(self.data)
-    F_data = fft(data_filt)
+# def deconvolve_fourier(self, alpha=1):
+#     data_filt = self.butter_lpf(self.data)
+#     F_data = fft(data_filt)
     
-    irf = self.gaussian(self.times, self.irf_mean, self.irf_width)
-    F_irf = fft(irf)
+#     irf = self.gaussian(self.times, self.irf_mean, self.irf_width)
+#     F_irf = fft(irf)
 
-    F_dc = F_data * np.conj(F_irf) / (np.abs(F_irf)**2 + alpha**2)
-    deconvolved = ifft(F_dc)
-    deconvolved /= np.sum(deconvolved)
+#     F_dc = F_data * np.conj(F_irf) / (np.abs(F_irf)**2 + alpha**2)
+#     deconvolved = ifft(F_dc)
+#     deconvolved /= np.sum(deconvolved)
 
-    return deconvolved
+#     return deconvolved
 
 length = 900
 time = np.linspace(0, 90, length)

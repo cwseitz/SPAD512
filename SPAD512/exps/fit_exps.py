@@ -119,7 +119,7 @@ class Trace:
         kernel /= np.sum(kernel)
         return kernel
 
-    def butter_lpf(self, data, cutoff=1, order=2):
+    def butter_lpf(self, data, cutoff=.1, order=2):
         fs = 1/(max(self.times)/len(self.times)) # sampling frequency
         nyq = 0.5*fs   
         cutoff_norm = cutoff/nyq
@@ -137,16 +137,14 @@ class Trace:
         F_irf = fft(irf)
 
         F_dc = F_data * np.conj(F_irf) / (np.abs(F_irf)**2 + alpha**2)
-        deconvolved = ifft(F_dc)
+        deconvolved = np.abs(ifft(F_dc))
         deconvolved /= np.sum(deconvolved)
+        print(np.sum(deconvolved))
 
-        fig, ax = plt.subplots(1, 3)
-        ax[0].plot(self.times, self.data, label='Original')
-        ax[0].legend()
-        ax[1].plot(self.times, F_dc, label='Filtered', color='orange')
-        ax[1].legend()
-        ax[2].plot(self.times, F_irf, label='Deconvolved', color='green')
-        ax[2].legend()
+        plt.plot(self.times, self.data/np.sum(self.data), label='Original')
+        plt.plot(self.times, data_filt, label='Filtered')
+        plt.plot(self.times, deconvolved, label='Deconvolved')
+        plt.plot(self.times, irf, label='irf')
         plt.legend()
         plt.show()
 
@@ -175,7 +173,6 @@ class Trace:
                 # ydat = self.data[loc:]
                 xdat = self.times
                 ydat = self.deconvolve_fourier(self.data/np.sum(self.data))
-                print('JGASKERGHAEAODHGKASJGLIWEUHFWDJFHLIWEUH')
             case 'mono_conv':
                 guess = [np.max(self.data), 0.1]
                 xdat = self.times
