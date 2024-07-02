@@ -126,7 +126,7 @@ class Plotter:
                         tau2[i][j] = tau1[i][j]
                         tau1[i][j] = temp
 
-            fig, ax = plt.subplots(2, 3, figsize=(12, 8))
+            fig, ax = plt.subplots(2, 3, figsize=(11, 7))
             fig.suptitle(f'{self.config["integ"]} us integ, {int(self.config["step"])} ps step, {int(self.config["integ"]*self.config["numsteps"]*1e-3)} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
             # fig.suptitle('Simulated fit with IRF=N(15, 0.5), 1 ms integ/100 ps step')
 
