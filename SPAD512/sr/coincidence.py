@@ -25,7 +25,7 @@ def coincidence_ratio(stack,dt=1e-3,B=0.0):
         G2ms.append(G2m)
     G2ms = np.array(G2ms)
     G2m = np.mean(G2ms)
-    G20 = np.max([G20,B])
+    #G20 = np.max([G20,B])
     g20 = (G20-B)/(G2m-B)
     sigma = compute_sigma(G20,G2m,len(ms),B)
     return g20,sigma

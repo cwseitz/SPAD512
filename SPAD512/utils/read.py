@@ -1,7 +1,61 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from glob import glob
 from skimage.io import imsave, imread
 from datetime import datetime
+
+class IntensityReaderSparse:
+    def __init__(self, config):
+        self.path = config['path']
+        self.savepath = config['savepath']
+        self.prefix = config['prefix']
+        self.roi_dim = config['roi_dim']
+        self.filename = self.name()
+
+    def name(self):
+        filename = self.savepath + self.prefix
+        return filename
+
+    def read_1bit_sparse(self,globstr='RAW*',dummy=262144):
+        summed = np.zeros((512*512,))
+        files = sorted(glob(self.path+globstr))
+        for f in files:
+            print('Reading: ' + f)
+            bytes = np.fromfile(f,dtype='uint32')
+            idx = np.where(bytes == dummy)[0]
+            for n in range(len(idx)):
+                if n > 0:
+                    this_frame = bytes[idx[n-1]:idx[n]]
+                else:
+                    this_frame = bytes[:idx[n]]
+                this_frame = this_frame[1:]
+                summed[this_frame] += 1
+        summed = np.reshape(summed,(512,512))
+        summed = np.rot90(summed)
+        return summed
+
+    def read_1bit_sparse_roi(self,xmin,xmax,ymin,ymax,
+                             globstr='RAW*',dummy=262144):
+        stack = []
+        files = sorted(glob(self.path+globstr))
+        for f in files:
+            bytes = np.fromfile(f,dtype='uint32')
+            idx = np.where(bytes == dummy)[0]
+            for n in range(len(idx)):
+                print(f'Reading frame {n}')
+                frame = np.zeros((512*512),dtype='uint8')
+                if n > 0:
+                    this_frame = bytes[idx[n-1]:idx[n]]
+                else:
+                    this_frame = bytes[:idx[n]]
+                this_frame = this_frame[1:]
+                frame[this_frame] += 1
+                frame = np.reshape(frame,(512,512))
+                frame = np.rot90(frame)
+                stack.append(frame[xmin:xmax,ymin:ymax])
+                del frame
+        stack = np.array(stack)
+        return stack
 
 class IntensityReader:
     def __init__(self, config):
@@ -43,7 +97,7 @@ class IntensityReader:
     def stack(self):
         files = sorted(glob(f'{self.path}/*.png'))
         stack = np.array([imread(f) for f in files])
-        imsave(f'{self.filename}.tif', stack[:, self.roi_dim:, self.roi_dim:])
+        imsave(f'{self.filename}.tif', stack)
 
 
 class GatedReader:
