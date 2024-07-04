@@ -11,9 +11,9 @@ def concatenate(files):
     stacks = [imread(f) for f in files]
     return np.concatenate(stacks,axis=0)
 
-path = '/research2/shared/cwseitz/Data/SPAD/240702/data/intensity_images/snip1/'
-globstr = '240702_SPAD-QD-500kHz-100k-1us-1bit-*-snip1.tif'
-file8bit = '240702_SPAD-QD-500kHz-1k-10ms-8bit-1-snip1.tif'
+path = '/research2/shared/cwseitz/Data/SPAD/240702/data/intensity_images/snip2/'
+globstr = '240702_SPAD-QD-500kHz-100k-1us-1bit-*-snip2.tif'
+file8bit = '240702_SPAD-QD-500kHz-1k-10ms-8bit-1-snip2.tif'
 files1bit = glob(path+globstr)
 
 stack1bit = concatenate(files1bit)
