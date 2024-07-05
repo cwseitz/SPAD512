@@ -3,11 +3,9 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.special import factorial
 from skimage.io import imread
-from joblib import Parallel, delayed
 from scipy.stats import binom, poisson
 from scipy.signal import convolve
-from scipy.integrate import quad
-from scipy.ndimage import convolve1d
+from numba import jit, prange
 import time
 
 """
@@ -75,7 +73,7 @@ class PoissonBinomial2:
         start = time.time()
         log_like = np.sum(np.log(1e-8+sum_pmf[self.x,:,:]),axis=0) #slow but O(n)
         end = time.time()
-        print(end-start)
+        #print(end-start)
         return log_like
 
     def gaussian_prior(self, zeta_values):
@@ -91,5 +89,4 @@ class PoissonBinomial2:
         results = np.sum(likes*priors,axis=1) / num_samples
 
         return results
-        
 
