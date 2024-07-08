@@ -158,7 +158,25 @@ class Generator:
                 plt.show()
 
         if (numtau == 2):
-            norm = mcolors.TwoSlopeNorm(vmin=np.min(mean_image[0]), vcenter=tau, vmax=np.max(mean_image[0]))
+            if (np.mean(mean_image[0]) < np.mean(mean_image[1])):
+                temp = mean_image[1]
+                print(mean_image[1])
+                mean_image[1] = mean_image[0]
+                print(temp)
+                mean_image[0] = temp
+
+                temp = std_image[1]
+                std_image[1] = std_image[0]
+                std_image[0] = temp
+
+                if (tau[0] < tau[1]):
+                    temp = tau[1]
+                    tau[1] = tau[0]
+                    tau[0] = temp
+                
+            
+
+            norm = mcolors.TwoSlopeNorm(vmin=np.min(mean_image[0]), vcenter=tau[0], vmax=np.max(mean_image[0]))
             cax1 = ax[0, 0].imshow(mean_image[0], cmap='seismic', norm=norm)
             cbar1 = fig.colorbar(cax1, ax=ax[0, 0], shrink = 0.6)
             cbar1.set_label('Means, ns')
@@ -171,7 +189,7 @@ class Generator:
             ax[0, 0].set_xticklabels(steps)
             plt.setp(ax[0, 0].get_xticklabels(), rotation=45)
 
-            norm = mcolors.TwoSlopeNorm(vmin=np.min(mean_image[1]), vcenter=tau, vmax=np.max(mean_image[1]))
+            norm = mcolors.TwoSlopeNorm(vmin=np.min(mean_image[1]), vcenter=tau[1], vmax=np.max(mean_image[1]))
             cax2 = ax[1, 0].imshow(mean_image[1], cmap='seismic', norm=norm)
             cbar2 = fig.colorbar(cax2, ax=ax[0, 1], shrink = 0.6)
             cbar2.set_label('Means, ns')
@@ -212,8 +230,8 @@ class Generator:
             ax[1, 1].set_xticklabels(steps)
             plt.setp(ax[1, 1].get_xticklabels(), rotation=45)
 
-            plt.savefig(str(tau) + 'ns_full', bbox_inches='tight')
-            print('Figure saved as ' + str(tau) + 'ns_full.png')
+            plt.savefig(str(tau[0]) + 'ns_' + str(tau[1]) + 'ns_full', bbox_inches='tight')
+            print(str(tau[0]) + 'ns_' + str(tau[1]) + 'ns_full.png')
 
             if show:
                 plt.tight_layout()

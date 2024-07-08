@@ -30,7 +30,7 @@ Simulation of SPAD time-gated FLIM. Make sure units in .json are consistent with
     "filename": str, name and path to save data with, leave empty for auto generation
 '''
 
-config_path = 'SPAD512/SPAD512/mains/run_simulation.json'
+config_path = 'mains\\run_simulation.json'
 show = True # show final plot
 sim_steps = [18, 40]
 sim_integs = [2500, 5000]
@@ -42,31 +42,36 @@ class Simulator:
             self.config = json.load(f)
     
     def run_full(self, sim_steps, sim_integs): # array of vals for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
-        self.means = np.zeros((len(self.config['lifetimes']),len(sim_integs), len(sim_steps)))
-        self.stdevs = np.zeros((len(self.config['lifetimes']),len(sim_integs), len(sim_steps)))
+        # self.means = np.zeros((len(self.config['lifetimes']),len(sim_integs), len(sim_steps)))
+        # self.stdevs = np.zeros((len(self.config['lifetimes']),len(sim_integs), len(sim_steps)))
 
-        for i, integ in enumerate(sim_integs):
-            for j, step in enumerate(sim_steps):
-                tic = time.time()
-                dt = Generator(self.config, integ=integ, step=step)
-                dt.genImage()
-                toc = time.time()
-                print(f'Data for {integ} ms integ, {step} ns step generated in {toc-tic} seconds')
+        # for i, integ in enumerate(sim_integs):
+        #     for j, step in enumerate(sim_steps):
+        #         tic = time.time()
+        #         dt = Generator(self.config, integ=integ, step=step)
+        #         dt.genImage()
+        #         toc = time.time()
+        #         print(f'Data for {integ} ms integ, {step} ns step generated in {toc-tic} seconds')
                 
-                tic = time.time()
-                fit = Fitter(self.config, numsteps=dt.numsteps, step=step)
-                results = fit.fit_exps(image=dt.image)
+        #         tic = time.time()
+        #         fit = Fitter(self.config, numsteps=dt.numsteps, step=step)
+        #         results = fit.fit_exps(image=dt.image)
                 
-                self.means[0][i][j] += np.mean(results[2])
-                self.stdevs[0][i][j] += np.std(results[2])
-                if (len(self.config['lifetimes']) > 1):
-                    self.means[1][i][j] += np.mean(results[3])
-                    self.stdevs[1][i][j] += np.std(results[3])
+        #         self.means[0][i][j] += np.mean(results[2])
+        #         self.stdevs[0][i][j] += np.std(results[2])
 
-                toc = time.time()
-                print(f'Data analyzed in {toc-tic} seconds\n')
+        #         if (len(self.config['lifetimes']) > 1):
+        #             self.means[1][i][j] += np.mean(results[3])
+        #             self.stdevs[1][i][j] += np.std(results[3])
 
-        Generator.plotLifetimes(self.means, self.stdevs, self.config['integ'], self.config['step'], self.config['lifetimes'], show=True)
+        #         toc = time.time()
+        #         print(f'Data analyzed in {toc-tic} seconds\n')
+        # np.savez('yippee_fit_results.npz', means=self.means, stdevs=self.stdevs)
+         
+        results = np.load('yippee_fit_results.npz')
+        self.means = results['means'].astype(float)
+        self.stdevs = results['stdevs'].astype(float)
+        Generator.plotLifetimes(self.means, self.stdevs, sim_integs, sim_steps, self.config['lifetimes'], show=True)
 
     def run_single(self): # single vals (not in array) for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
         tic = time.time()
