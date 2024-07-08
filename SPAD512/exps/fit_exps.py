@@ -324,7 +324,8 @@ class Fitter:
                     self.track += 1
                     print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns\n')
 
-        full_reshaped = self.full_trace.reshape(900,1,1)
+        print(len(self.full_trace))
+        full_reshaped = self.full_trace.reshape(len(self.full_trace),1,1)
 
         outputs, success, sum, i, j = self.helper(self.config, full_reshaped, 0, 0)
 
