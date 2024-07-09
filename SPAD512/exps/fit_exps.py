@@ -139,14 +139,13 @@ class Trace:
         F_dc = F_data * np.conj(F_irf) / (np.abs(F_irf)**2 + alpha**2)
         deconvolved = np.abs(ifft(F_dc))
         deconvolved /= np.sum(deconvolved)
-        print(np.sum(deconvolved))
 
-        plt.plot(self.times, self.data/np.sum(self.data), label='Original')
-        plt.plot(self.times, data_filt, label='Filtered')
-        plt.plot(self.times, deconvolved, label='Deconvolved')
-        plt.plot(self.times, irf, label='irf')
-        plt.legend()
-        plt.show()
+        # plt.plot(self.times, self.data/np.sum(self.data), label='Original')
+        # plt.plot(self.times, data_filt, label='Filtered')
+        # plt.plot(self.times, deconvolved, label='Deconvolved')
+        # plt.plot(self.times, irf, label='irf')
+        # plt.legend()
+        # plt.show()
 
         return deconvolved
     
@@ -158,12 +157,12 @@ class Trace:
         
         match self.curve:
             case 'mono':
-                loc = np.argmax(self.data)
+                loc = min(np.argmax(self.data), len(self.data) - 2)
                 guess = [np.max(self.data), 0.1]
-                # xdat = self.times[loc:]
-                # ydat = self.data[loc:]
-                xdat = self.times
-                ydat = self.deconvolve_fourier(self.data/np.sum(self.data))
+                xdat = self.times[loc:]
+                ydat = self.data[loc:]
+                # xdat = self.times
+                # ydat = self.deconvolve_fourier(self.data/np.sum(self.data))
                 
                 single = True  
             case 'bi':
@@ -271,16 +270,19 @@ class Fitter:
 
     @staticmethod
     def helper(config, data, i, j):
-        length, x, y = np.shape(data)
-        
-        data_knl = np.zeros(length)
-        for a in range(x):
-            for b in range(y):
-                data_knl += data[:, a, b]
+        try: 
+            length, x, y = np.shape(data)
+            
+            data_knl = np.zeros(length)
+            for a in range(x):
+                for b in range(y):
+                    data_knl += data[:, a, b]
 
-        dt = Trace(config, data_knl, i, j)
-        dt.fit_trace()
-        return dt.params, dt.success, dt.sum, dt.i, dt.j
+            dt = Trace(config, data_knl, i, j)
+            dt.fit_trace()
+            return dt.params, dt.success, dt.sum, dt.i, dt.j
+        except KeyboardInterrupt:
+            print("Worker interrupted.")
 
 
 
@@ -298,7 +300,7 @@ class Fitter:
         else:
             raise Exception('No filename or image provided to fit_exps, make sure to provide one or the other.')
         toc = time.time()
-        print(f'Image read in {toc-tic} seconds')
+        print(f'Image read in {(toc-tic):.1f} seconds')
 
         self.A1 = np.zeros((x, y), dtype=float)
         self.A2 = np.zeros((x, y), dtype=float)
@@ -309,8 +311,11 @@ class Fitter:
 
         ksize = self.config['kernel_size']
         with ProcessPoolExecutor() as executor:
-            futures = [executor.submit(self.helper, self.config, image[:, (i-ksize):(i+ksize+1), (j-ksize):(j+ksize+1)], i, j) for i in range(ksize,x-ksize) for j in range(ksize, y-ksize)]
-            # futures = [executor.submit(self.helper, self.config, image[:, (i-ksize):(i+ksize+1), (j-ksize):(j+ksize+1)], i, j) for i in range(179, 181) for j in range(171, 173)]
+            try:
+                futures = [executor.submit(self.helper, self.config, image[:, (i-ksize):(i+ksize+1), (j-ksize):(j+ksize+1)], i, j) for i in range(ksize,x-ksize) for j in range(ksize, y-ksize)]
+            except KeyboardInterrupt:
+                print("Process interrupted.")
+                        
             for future in as_completed(futures):
                 outputs, success, sum, i, j = future.result()
                 if success:
@@ -322,9 +327,8 @@ class Fitter:
 
                     self.full_trace += image[:, i, j]
                     self.track += 1
-                    print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns\n')
+                    # print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns\n')
 
-        print(len(self.full_trace))
         full_reshaped = self.full_trace.reshape(len(self.full_trace),1,1)
 
         outputs, success, sum, i, j = self.helper(self.config, full_reshaped, 0, 0)

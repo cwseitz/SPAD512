@@ -13,8 +13,10 @@ Simulation of SPAD time-gated FLIM. Make sure units in .json are consistent with
     "freq": MHz, pulsed laser frequency
     "numsteps": counts, number of gate step increments
     "integ": us, exposure time for a single gate
+        - Need to specify array of values in sim_integs if running simulation on multiple
     "width": ns, width of a single gate
     "step": ps, increment size between gates
+        - Need to specify array of values in sim_steps if running simulation on multiple
     "offset": ps, initial increment for first gate step
     "thresh": counts, sum of trace over pixel needed to not discard pixel in analysis
     "kernel_size": counts, number of pixels to take as the kernel size for each pixel (1 --> 3x3 box around each pixel)
@@ -26,68 +28,71 @@ Simulation of SPAD time-gated FLIM. Make sure units in .json are consistent with
     "zeta": 0<zeta<1, efficiency of photon acquisition
     "x": counts, number of columns to simulate
     "y": counts, number of rows to simulate 
-        Note: x*y gives the total number of trials for a particular integ/step/lifetime combo, if running more than 1 set of 3.
+        - x*y gives the total number of iterations for a particular integ/step combo
     "filename": str, name and path to save data with, leave empty for auto generation
 '''
 
 config_path = 'mains\\run_simulation.json'
 show = True # show final plot
-sim_steps = [18, 40]
-sim_integs = [2500, 5000]
-
 
 class Simulator:
     def __init__(self, config_path):
         with open(config_path) as f:
             self.config = json.load(f)
     
-    def run_full(self, sim_steps, sim_integs): # array of vals for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
-        # self.means = np.zeros((len(self.config['lifetimes']),len(sim_integs), len(sim_steps)))
-        # self.stdevs = np.zeros((len(self.config['lifetimes']),len(sim_integs), len(sim_steps)))
+    def run_full(self): # array of vals for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
+        self.orig_steps = self.config['step'].copy()
+        self.orig_integs = self.config['integ'].copy()
 
-        # for i, integ in enumerate(sim_integs):
-        #     for j, step in enumerate(sim_steps):
-        #         tic = time.time()
-        #         dt = Generator(self.config, integ=integ, step=step)
-        #         dt.genImage()
-        #         toc = time.time()
-        #         print(f'Data for {integ} ms integ, {step} ns step generated in {toc-tic} seconds')
+        self.means = np.zeros((len(self.config['lifetimes']),len(self.orig_integs), len(self.orig_steps)))
+        self.stdevs = np.zeros((len(self.config['lifetimes']),len(self.orig_integs), len(self.orig_steps)))
+
+        for i, integ in enumerate(self.orig_integs):
+            for j, step in enumerate(self.orig_steps):
+                tic = time.time()
+                dt = Generator(self.config, integ=integ, step=step)
+                dt.genImage()
+                toc = time.time()
+                print(f'Data for {(integ * 1e-3):.3f} ms integ, {(step * 1e-3):.3f} ns step generated in {(toc-tic):.1f} seconds')
                 
-        #         tic = time.time()
-        #         fit = Fitter(self.config, numsteps=dt.numsteps, step=step)
-        #         results = fit.fit_exps(image=dt.image)
-                
-        #         self.means[0][i][j] += np.mean(results[2])
-        #         self.stdevs[0][i][j] += np.std(results[2])
+                tic = time.time()
+                fit = Fitter(self.config, numsteps=dt.numsteps, step=step)
+                results = fit.fit_exps(image=dt.image)
 
-        #         if (len(self.config['lifetimes']) > 1):
-        #             self.means[1][i][j] += np.mean(results[3])
-        #             self.stdevs[1][i][j] += np.std(results[3])
+                nonzero = results[2][results[2] != 0]
+                self.means[0,i,j] += np.mean(nonzero)
+                self.stdevs[0,i,j] += np.std(nonzero)
 
-        #         toc = time.time()
-        #         print(f'Data analyzed in {toc-tic} seconds\n')
-        # np.savez('yippee_fit_results.npz', means=self.means, stdevs=self.stdevs)
+                if (len(self.config['lifetimes']) > 1):
+                    nonzero = results[3][results[3] != 0]
+                    self.means[1,i,j] += np.mean(nonzero)
+                    self.stdevs[1,i,j] += np.std(nonzero)
+
+                toc = time.time()
+                print(f'Data analyzed in {(toc-tic):.1f} seconds\n')
+        np.savez(self.config['filename'] + '_results.npz', means=self.means, stdevs=self.stdevs)
          
-        results = np.load('yippee_fit_results.npz')
+        
+
+    def plot_sim(self,show=True):
+        results = np.load(self.config['filename'] + '_results.npz')
         self.means = results['means'].astype(float)
         self.stdevs = results['stdevs'].astype(float)
-        Generator.plotLifetimes(self.means, self.stdevs, sim_integs, sim_steps, self.config['lifetimes'], show=True)
+        Generator.plotLifetimes(self.means, self.stdevs, self.orig_integs, self.orig_steps, self.config['lifetimes'], self.config['filename'] + '_results', show=show)
 
     def run_single(self): # single vals (not in array) for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
         tic = time.time()
         dt = Generator(self.config)
         dt.genImage()
         toc = time.time()
-        print(f'Data generated in {toc-tic} seconds')
-
-        print(dt.image)
+        print(f'Data generated in {(toc-tic):.1f} seconds')
 
         tic = time.time()
         fit = Fitter(self.config, numsteps=self.config['numsteps'], step=self.config['step'])
         results = fit.fit_exps(image=dt.image)
         fit.save_results(self.config['filename'], results)
         toc = time.time()
-        print(f"Exponential fitting done in {toc-tic} seconds: {self.config['filename']}_fit_results.npz")
+        print(f"Exponential fitting done in {(toc-tic):.1f} seconds: {self.config['filename']}_fit_results.npz")
         
     def plot_single(self):
         plot = Plotter(self.config)
@@ -97,4 +102,5 @@ class Simulator:
 
 if __name__ == '__main__':
     obj = Simulator(config_path)
-    obj.run_full(sim_steps, sim_integs)
+    obj.run_full()
+    obj.plot_sim(show=show)

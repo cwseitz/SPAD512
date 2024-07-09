@@ -1,18 +1,18 @@
 {
     "freq": 10,
     "numsteps": 0,
-    "integ": [2500, 5000],
+    "integ": [1, 2.5, 5, 7.5, 10, 25, 50, 100, 250, 500, 750, 1000, 5000, 10000],
     "width": 5,
-    "step": [18, 40],
+    "step": [18, 40, 60, 100, 150, 200, 250, 500, 750, 1000, 1500, 2000, 2500, 5000],
     "offset": 18,
     "thresh": 0,
     "irf_mean": 10,
     "irf_width": 1.4, 
-    "fit": "nnls_bi",
+    "fit": "mono",
     "kernel_size": 0,
-    "lifetimes": [20, 1],
+    "lifetimes": [10],
     "zeta": 0.05,
-    "x": 10,
-    "y": 10,
-    "filename": ""
+    "x": 30,
+    "y": 30,
+    "filename": "C:\\Users\\ptrn499\\Documents\\Simulations\\sim_10_try2"
 }

@@ -168,7 +168,7 @@ class Plotter:
                 ax[1, 2].plot(times, self.bi_conv(times, full_params[0], 1/full_params[1], full_params[2], 1/full_params[3]), label='Fit: tau = {:.2f}, {:.2f}'.format(1/full_params[1], 1/full_params[3]), color='black')
             else:
                 ax[1, 2].plot(times, self.decay_double(times, full_params[0], 1/full_params[1], full_params[2], 1/full_params[3]), label='Fit: tau = {:.2f}, {:.2f}'.format(1/full_params[1], 1/full_params[3]), color='black')
-            print(full_params)
+
             ax[1, 2].set_xlabel('Time, ns')
             ax[1, 2].set_ylabel('Counts')
             val = max(full_trace)
