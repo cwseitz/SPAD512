@@ -39,11 +39,11 @@ class Simulator:
     def __init__(self, config_path):
         with open(config_path) as f:
             self.config = json.load(f)
-    
-    def run_full(self): # array of vals for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
+
         self.orig_steps = self.config['step'].copy()
         self.orig_integs = self.config['integ'].copy()
-
+    
+    def run_full(self): # array of vals for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
         self.means = np.zeros((len(self.config['lifetimes']),len(self.orig_integs), len(self.orig_steps)))
         self.stdevs = np.zeros((len(self.config['lifetimes']),len(self.orig_integs), len(self.orig_steps)))
 
@@ -58,7 +58,7 @@ class Simulator:
                 tic = time.time()
                 fit = Fitter(self.config, numsteps=dt.numsteps, step=step)
                 results = fit.fit_exps(image=dt.image)
-
+                
                 nonzero = results[2][results[2] != 0]
                 self.means[0,i,j] += np.mean(nonzero)
                 self.stdevs[0,i,j] += np.std(nonzero)
@@ -69,7 +69,7 @@ class Simulator:
                     self.stdevs[1,i,j] += np.std(nonzero)
 
                 toc = time.time()
-                print(f'Data analyzed in {(toc-tic):.1f} seconds\n')
+                print(f'Data analyzed in {(toc-tic):.1f} seconds. Mean lifetimes {(self.means[0,i,j]):.2f} ns, {(self.means[1,i,j]):.2f} ns. \n')
         np.savez(self.config['filename'] + '_results.npz', means=self.means, stdevs=self.stdevs)
          
         
@@ -78,6 +78,7 @@ class Simulator:
         results = np.load(self.config['filename'] + '_results.npz')
         self.means = results['means'].astype(float)
         self.stdevs = results['stdevs'].astype(float)
+
         Generator.plotLifetimes(self.means, self.stdevs, self.orig_integs, self.orig_steps, self.config['lifetimes'], self.config['filename'] + '_results', show=show)
 
     def run_single(self): # single vals (not in array) for 'integrations', 'gatesteps', and 'lifetimes' fields in .json

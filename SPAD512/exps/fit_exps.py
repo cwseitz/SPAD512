@@ -89,7 +89,6 @@ class Trace:
 
     def prop_A(self, curr):
         return curr + np.random.normal(0, 5000)
-
     def gibbs_mh(self, x, y, func, guess_params, iter=10000):
         curr_params = guess_params
         samples = []
@@ -168,10 +167,10 @@ class Trace:
             case 'bi':
                 loc = np.argmax(self.data)
                 guess = [np.max(self.data), 0.1, np.max(self.data) / 2, 0.05]
-                # xdat = self.times[loc:]
-                # ydat = self.data[loc:]
-                xdat = self.times
-                ydat = self.deconvolve_fourier(self.data/np.sum(self.data))
+                xdat = self.times[loc:]
+                ydat = self.data[loc:]
+                # xdat = self.times
+                # ydat = self.deconvolve_fourier(self.data/np.sum(self.data))
             case 'mono_conv':
                 guess = [np.max(self.data), 0.1]
                 xdat = self.times
@@ -201,7 +200,7 @@ class Trace:
                 # samples = self.gibbs_mh(self.times[loc:], self.data[loc:], self.bi, guess)
                 # return samples[-1]
             case 'nnls_bi':
-                loc = np.argmax(self.data)
+                loc = min(np.argmax(self.data), len(self.data) - 4)
                 guess = [np.max(self.data), 0.25, np.max(self.data) / 2, 0.05]
                 xdat = self.times[loc:]
                 ydat = self.data[loc:]
@@ -213,7 +212,7 @@ class Trace:
 
                 return (weights[0], params[1], weights[1], params[3])
             case 'nnls_bi_conv':
-                loc = np.argmax(self.data)
+                loc = min(np.argmax(self.data), len(self.data) - 4)
                 guess = [np.max(self.data), 0.25, np.max(self.data) / 2, 0.05]
                 xdat = self.times
                 ydat = self.data
@@ -236,6 +235,7 @@ class Trace:
         if single:
             return (params[0], params[1], 0, 0)
         
+        print('\n\n\n\n\n\n\n\n\n\n\n\n\n\n')
         return params
 
     def fit_trace(self):

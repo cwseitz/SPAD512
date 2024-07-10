@@ -48,7 +48,7 @@ class Generator:
         for i, lt in enumerate(self.tau):
             lam = 1/lt
             prob[i,:] += self.zeta * (np.exp(-lam * (self.offset + steps)) - np.exp(-lam * (self.offset + steps + self.width)))
-
+    
         for i in range(self.numsteps):
             comp =  np.random.choice(np.arange(len(self.tau)))
             draws = np.random.rand(numgates) < prob[comp,i]
@@ -113,7 +113,10 @@ class Generator:
         
         # plot mean
         if (numtau == 1):
-            norm = mcolors.TwoSlopeNorm(vmin=min(tau[0]-1, np.min(mean_image[0])), vcenter=tau[0], vmax=max(tau[0]+1, np.max(mean_image[0])))
+            print(type(np.max(mean_image[0])))
+            lower = min(max(tau[0] - 5, int(np.min(mean_image[0]))), tau[0] - 1)
+            upper = max(min(tau[0] + 5, int(np.max(mean_image[0] + 1))), tau[0] + 1)
+            norm = mcolors.TwoSlopeNorm(vmin=lower, vcenter=tau[0], vmax=upper)
             cax1 = ax[0].imshow(mean_image[0], cmap='seismic', norm=norm)
             cbar1 = fig.colorbar(cax1, ax=ax[0], shrink = 0.6)
             cbar1.set_label('Means, ns')
@@ -127,7 +130,6 @@ class Generator:
             plt.setp(ax[0].get_xticklabels(), rotation=45)
 
             # plot stdevs
-            std_image[0] = np.clip(std_image[0], -1, 2)
             norm = mcolors.TwoSlopeNorm(vmin=-1, vcenter=0, vmax=2)
             cax2 = ax[1].imshow(std_image[0], cmap='seismic', norm=norm)
             cbar2 = fig.colorbar(cax2, ax=ax[1], shrink = 0.6)
@@ -163,7 +165,9 @@ class Generator:
                     tau[1] = tau[0]
                     tau[0] = temp
 
-            norm = mcolors.TwoSlopeNorm(vmin=min(tau[0]-1, np.min(mean_image[0])), vcenter=tau[0], vmax=max(tau[0]+1, np.max(mean_image[0])))
+            lower = min(max(tau[0] - 5, int(np.min(mean_image[0]))), tau[0] - 1)
+            upper = max(min(tau[0] + 5, int(np.max(mean_image[0] + 1))), tau[0] + 1)
+            norm = mcolors.TwoSlopeNorm(vmin=lower, vcenter=tau[0], vmax=upper)
             cax1 = ax[0, 0].imshow(mean_image[0], cmap='seismic', norm=norm)
             cbar1 = fig.colorbar(cax1, ax=ax[0, 0], shrink = 0.6)
             cbar1.set_label('Means, ns')
@@ -176,7 +180,9 @@ class Generator:
             ax[0, 0].set_xticklabels(steps)
             plt.setp(ax[0, 0].get_xticklabels(), rotation=45)
 
-            norm = mcolors.TwoSlopeNorm(vmin=min(tau[1]-1, np.min(mean_image[1])), vcenter=tau[1], vmax=max(tau[1]+1, np.max(mean_image[1])))
+            lower = min(max(tau[1] - 5, int(np.min(mean_image[1]))), tau[1] - 1)
+            upper = max(min(tau[1] + 5, int(np.max(mean_image[1] + 1))), tau[1] + 1)
+            norm = mcolors.TwoSlopeNorm(vmin=lower, vcenter=tau[1], vmax=upper)
             cax2 = ax[0, 1].imshow(mean_image[1], cmap='seismic', norm=norm)
             cbar2 = fig.colorbar(cax2, ax=ax[0, 1], shrink = 0.6)
             cbar2.set_label('Means, ns')
@@ -189,7 +195,6 @@ class Generator:
             ax[0, 1].set_xticklabels(steps)
             plt.setp(ax[0, 1].get_xticklabels(), rotation=45)
 
-            std_image[0] = np.clip(std_image[0], -1, 2)
             norm = mcolors.TwoSlopeNorm(vmin=-1, vcenter=0, vmax=2)
             cax3 = ax[1, 0].imshow(std_image[0], cmap='seismic', norm=norm)
             cbar3 = fig.colorbar(cax3, ax=ax[1, 0], shrink = 0.6)
@@ -203,7 +208,6 @@ class Generator:
             ax[1, 0].set_xticklabels(steps)
             plt.setp(ax[1, 0].get_xticklabels(), rotation=45)
 
-            std_image[1] = np.clip(std_image[1], -1, 2)
             norm = mcolors.TwoSlopeNorm(vmin=-1, vcenter=0, vmax=2)
             cax3 = ax[1, 1].imshow(std_image[1], cmap='seismic', norm=norm)
             cbar3 = fig.colorbar(cax3, ax=ax[1, 1], shrink = 0.6)
