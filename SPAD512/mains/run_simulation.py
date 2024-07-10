@@ -51,7 +51,6 @@ class Simulator:
             for j, step in enumerate(self.orig_steps):
                 tic = time.time()
                 dt = Generator(self.config, integ=integ, step=step)
-                dt.plotTrace()
                 dt.genImage()
                 toc = time.time()
                 print(f'Data for {(integ * 1e-3):.3f} ms integ, {(step * 1e-3):.3f} ns step generated in {(toc-tic):.1f} seconds')
@@ -105,4 +104,4 @@ class Simulator:
 if __name__ == '__main__':
     obj = Simulator(config_path)
     obj.run_full()
-    # obj.plot_sim(show=show)
+    obj.plot_sim(show=show)

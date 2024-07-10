@@ -7,6 +7,7 @@ from scipy.fft import fft, ifft, fftfreq
 from scipy.special import erfc
 import matplotlib.pyplot as plt
 import time
+import warnings
 
 class Trace:
     def __init__(self, config, data, i, j):
@@ -152,6 +153,8 @@ class Trace:
 
     '''Fitting main function'''
     def fit_decay(self):
+        warnings.filterwarnings('ignore', category=RuntimeWarning)
+        warnings.filterwarnings('ignore', category=opt.OptimizeWarning)
         single = False
         
         match self.curve:
