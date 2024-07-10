@@ -44,7 +44,7 @@ tau = 10
 decay = 100* np.exp(-time / tau)
 decay /= np.sum(decay)
 
-irf_width = 3
+irf_width = 1
 irf_mean = 10
 irf = gaussian(time, irf_mean, irf_width)
 irf /= np.sum(irf)  # normalize
@@ -65,11 +65,10 @@ normed = deconvolved/(np.sum(deconvolved))
 
 
 
-plt.plot(time, decay, label='Original Trace')
+plt.plot(time, decay, label='Original Trace, tau = 10 ns')
 plt.plot(time, detected, label='Convolved Signal')
-plt.plot(time, deconvolved, label='Deconvolved Signal')
-plt.plot(time, irf, label='IRF')
-plt.plot(time, normed, label='Normalized Deconvolved')
+# plt.plot(time, irf, label='IRF, N(10, 1)')
+plt.plot(time, normed, label='Deconvolved Signal')
 plt.xlabel('Time (ns)')
 plt.ylabel('Intensity')
 plt.legend()

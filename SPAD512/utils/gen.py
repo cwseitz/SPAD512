@@ -48,28 +48,27 @@ class Generator:
         for i, lt in enumerate(self.tau):
             lam = 1/lt
             prob[i,:] += self.zeta * (np.exp(-lam * (self.offset + steps)) - np.exp(-lam * (self.offset + steps + self.width)))
-    
+            if convolve:
+                prob[i,:] = self.convolveProb(prob[i,:])
+
         for i in range(self.numsteps):
             comp =  np.random.choice(np.arange(len(self.tau)))
             draws = np.random.rand(numgates) < prob[comp,i]
             data[i] = np.sum(draws)
 
-        if convolve:
-            data_conv = self.convolveTrace(data)
+        return data
 
-        return data_conv
-
-    def convolveTrace(self, trace):
-        newtrace = trace
+    def convolveProb(self, trace):
         irf_mean = self.config['irf_mean']
         irf_width = self.config['irf_width']
+        irf = np.exp(-((self.times - irf_mean)**2) / (2 * irf_width**2))
+        irf /= (irf_width * np.sqrt(2*np.pi))
 
-        irf = np.exp(-((self.times - irf_mean)**2) / (2 * irf_width**2)) / (irf_width * np.sqrt(2*np.pi))
-        irf /= irf.sum()
+        irf /= np.sum(irf) # discrete normalization
 
-        detected = convolve(newtrace, irf, mode='full')    
+        detected = convolve(trace, irf, mode='full')   
 
-        return detected[:len(trace)]
+        return detected[:len(trace)] 
 
     def plotTrace(self):
         data = self.genTrace()
