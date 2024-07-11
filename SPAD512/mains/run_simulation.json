@@ -10,9 +10,9 @@
     "irf_width": 1.4, 
     "fit": "nnls_bi",
     "kernel_size": 0,
-    "lifetimes": [20, 5],
+    "lifetimes": [20, 10],
     "zeta": 0.05,
     "x": 25,
     "y": 25,
-    "filename": "240711/20_5_nnls_bi"
+    "filename": "240711/20_10_nnls_bi"
 }

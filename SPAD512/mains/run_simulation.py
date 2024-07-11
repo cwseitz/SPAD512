@@ -69,7 +69,7 @@ class Simulator:
                     self.stdevs[1,i,j] += np.std(nonzero)
 
                 toc = time.time()
-                print(f'Data analyzed in {(toc-tic):.1f} seconds. Mean lifetimes {(self.means[0,i,j]):.2f} ns \n')
+                print(f'Data analyzed in {(toc-tic):.1f} seconds. Mean lifetimes {(self.means[0,i,j]):.2f} ns, {(self.means[1,i,j]):.2f} ns \n')
         np.savez(self.config['filename'] + '_results.npz', means=self.means, stdevs=self.stdevs)
          
         
@@ -103,5 +103,18 @@ class Simulator:
 
 if __name__ == '__main__':
     obj = Simulator(config_path)
+
+    obj.config['filename'] = "240711/20_10_bi"
+    obj.config['fit'] = "bi"
+    obj.run_full()
+    obj.plot_sim(show=show)
+
+    obj.config['filename'] = "240711/20_10_bi_conv"
+    obj.config['fit'] = "bi_conv"
+    obj.run_full()
+    obj.plot_sim(show=show)
+
+    obj.config['filename'] = "240711/20_10_nnls_bi_conv"
+    obj.config['fit'] = "nnls_bi_conv"
     obj.run_full()
     obj.plot_sim(show=show)

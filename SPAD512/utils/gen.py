@@ -99,11 +99,10 @@ class Generator:
     def plotLifetimes(mean_image, std_image, integs, steps, tau, savename, show=True):
         numtau, xlen, ylen = np.shape(mean_image)
 
-        fig, ax = plt.subplots(numtau, 2, figsize=(12, 6))
-        
         # plot mean
         if (numtau == 1):
-            print(type(np.max(mean_image[0])))
+            fig, ax = plt.subplots(1,2,figsize=(12,6))
+
             lower = min(max(tau[0] - 5, int(np.min(mean_image[0]))), tau[0] - 1)
             upper = max(min(tau[0] + 5, int(np.max(mean_image[0] + 1))), tau[0] + 1)
             norm = mcolors.TwoSlopeNorm(vmin=lower, vcenter=tau[0], vmax=upper)
@@ -141,6 +140,8 @@ class Generator:
                 plt.show()
 
         if (numtau == 2):
+            fig, ax = plt.subplots(2,2,figsize=(10,10))
+
             if (np.mean(mean_image[0]) < np.mean(mean_image[1])):
                 temp = mean_image[1].copy()
                 mean_image[1] = mean_image[0]
@@ -185,7 +186,7 @@ class Generator:
             ax[0, 1].set_xticklabels(steps)
             plt.setp(ax[0, 1].get_xticklabels(), rotation=45)
 
-            norm = mcolors.TwoSlopeNorm(vmin=-1, vcenter=0, vmax=2)
+            norm = mcolors.TwoSlopeNorm(vmin=-1, vcenter=0, vmax=5)
             cax3 = ax[1, 0].imshow(std_image[0], cmap='seismic', norm=norm)
             cbar3 = fig.colorbar(cax3, ax=ax[1, 0], shrink = 0.6)
             cbar3.set_label('St Devs, ns')
@@ -198,7 +199,7 @@ class Generator:
             ax[1, 0].set_xticklabels(steps)
             plt.setp(ax[1, 0].get_xticklabels(), rotation=45)
 
-            norm = mcolors.TwoSlopeNorm(vmin=-1, vcenter=0, vmax=2)
+            norm = mcolors.TwoSlopeNorm(vmin=-1, vcenter=0, vmax=5)
             cax3 = ax[1, 1].imshow(std_image[1], cmap='seismic', norm=norm)
             cbar3 = fig.colorbar(cax3, ax=ax[1, 1], shrink = 0.6)
             cbar3.set_label('St Devs, ns')
