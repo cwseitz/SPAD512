@@ -18,6 +18,7 @@ class Trace:
         self.irf_width = config['irf_width']
         self.irf_mean = config['irf_mean']
         self.thresh = config['thresh']
+        self.width = config['width'] * 1e-3
         del self.config
 
         self.data = data
@@ -65,20 +66,6 @@ class Trace:
 
         full = (term1*term2) + (term3*term4)
         return full
-
-    def func_wrap(self, x, *params):
-        p = np.array(params)
-
-        match self.curve:
-            case 'mono': return self.mono(x, p)
-            case 'bi' | 'mh_bi' | 'nnls_bi' : return self.bi(x, p)
-            case 'mono_conv' | 'mh_mono_conv': return self.mono_conv(x, p)
-            case 'log_mono_conv': return self.log_mono_conv(x, p)
-            case 'bi_conv' | 'nnls_bi_conv': return self.bi_conv(x, p)
-            case _:
-                raise Exception('Curve choice invalid in config.json, choose from mono, bi, mono_conv, and bi_conv.')
-
-
 
     '''Helper methods for Metropolis-Hastings'''
     def log_like(self, params, x, y, func):
@@ -155,7 +142,7 @@ class Trace:
     def fit_decay(self):
         warnings.filterwarnings('ignore', category=RuntimeWarning)
         warnings.filterwarnings('ignore', category=opt.OptimizeWarning)
-        single = False
+        cases = []
         
         match self.curve:
             case 'mono':
@@ -165,62 +152,71 @@ class Trace:
                 ydat = self.data[loc:]
                 # xdat = self.times
                 # ydat = self.deconvolve_fourier(self.data/np.sum(self.data))
-                
-                single = True  
+                params, _ = opt.curve_fit(self.mono, xdat, ydat, p0=guess)
+                return (params[0], params[1], 0, 0) 
+
             case 'bi':
-                loc = np.argmax(self.data)
+                loc = min(np.argmax(self.data), len(self.data) - 4)
                 guess = [np.max(self.data), 0.1, np.max(self.data) / 2, 0.05]
                 xdat = self.times[loc:]
                 ydat = self.data[loc:]
                 # xdat = self.times
                 # ydat = self.deconvolve_fourier(self.data/np.sum(self.data))
+                params, _ = opt.curve_fit(self.bi, xdat, ydat, p0=guess)
+                return params
+
             case 'mono_conv':
                 guess = [np.max(self.data), 0.1]
                 xdat = self.times
                 ydat = self.data
-                single = True
-            case 'log_mono_conv':
+                params, _ = opt.curve_fit(self.mono_conv, xdat, ydat, p0=guess)
+                return (params[0], params[1], 0, 0) 
+
+            case 'mono_conv_log':
                 guess = [np.max(self.data), 2.0]
                 xdat = self.times
                 ydat = np.log(self.data + 1e-10)
-                single = True
+                params, _ = opt.curve_fit(self.log_mono_conv, xdat, ydat, p0=guess)
+                return (params[0], params[1], 0, 0) 
+
             case 'bi_conv':
                 guess = [np.max(self.data), 4, np.max(self.data) / 2, 18]
                 xdat = self.times
                 ydat = self.data
-            case 'mh_mono_conv':
+                params, _ = opt.curve_fit(self.bi_conv, xdat, ydat, p0=guess)
+                return params
+
+            case 'mono_conv_mh':
                 guess = np.array([1.0, 0.5])
-                # samples = self.gibbs_mh(self.times, self.data, self.mono_conv, guess)
-                # x = range(len(samples))
-                # fig, ax = plt.subplots()
-                # print(samples)
-                # ax.plot(x, [x[0:] for x in samples])
-                # plt.show()
-                # # return (np.mean(samples[int(3*len(samples)/5):,0]), np.mean(samples[int(3*len(samples)/5):,1]), 0 ,0)
-            case 'mh_bi':
+                samples = self.gibbs_mh(self.times, self.data, self.mono_conv, guess)
+                return samples[-1]
+
+            case 'bi_mh':
                 guess = [np.max(self.data), 0.1, np.max(self.data) / 2, 0.05]
-                # loc = np.argmax(self.data)
-                # samples = self.gibbs_mh(self.times[loc:], self.data[loc:], self.bi, guess)
-                # return samples[-1]
-            case 'nnls_bi':
+                loc = np.argmax(self.data)
+                samples = self.gibbs_mh(self.times[loc:], self.data[loc:], self.bi, guess)
+                return samples[-1]
+
+            case 'bi_nnls':
                 loc = min(np.argmax(self.data), len(self.data) - 4)
                 guess = [np.max(self.data), 0.25, np.max(self.data) / 2, 0.05]
                 xdat = self.times[loc:]
                 ydat = self.data[loc:]
 
-                params, _ = opt.curve_fit(self.func_wrap, xdat, ydat, p0=guess)
+                params, _ = opt.curve_fit(self.bi, xdat, ydat, p0=guess)
                 
                 A_d = np.vstack([np.exp(-params[1]*xdat), np.exp(-params[3]*xdat)]).T
                 weights, _ = opt.nnls(A_d, ydat)
 
                 return (weights[0], params[1], weights[1], params[3])
-            case 'nnls_bi_conv':
+
+            case 'bi_conv_nnls':
                 loc = min(np.argmax(self.data), len(self.data) - 4)
                 guess = [np.max(self.data), 0.25, np.max(self.data) / 2, 0.05]
                 xdat = self.times
                 ydat = self.data
 
-                params, _ = opt.curve_fit(self.func_wrap, xdat, ydat, p0=guess)
+                params, _ = opt.curve_fit(self.bi_conv, xdat, ydat, p0=guess)
                 
                 A1_matrix = np.exp((1/2) * params[1] * (2 * float(self.irf_mean) + params[1] * (self.irf_width ** 2) - 2 * xdat)) * erfc((float(self.irf_mean) + params[1] * (self.irf_width ** 2) - xdat) / (self.irf_width * np.sqrt(2)))
                 A2_matrix = np.exp((1/2) * params[3] * (2 * float(self.irf_mean) + params[3] * (self.irf_width ** 2) - 2 * xdat)) * erfc((float(self.irf_mean) + params[3] * (self.irf_width ** 2) - xdat) / (self.irf_width * np.sqrt(2)))
@@ -230,15 +226,46 @@ class Trace:
 
                 return (weights[0], params[1], weights[1], params[3])
 
+            case 'mono_rld':
+                D0, D1 = self.data
+                A = (D0**2) * (np.log(D0/D1)) / (self.step*(D0-D1))
+                tau = self.step / (np.log(D0/D1))
+                return (A, 1/tau, 0, 0)
+
+            case 'mono_rld_50ovp':
+                D0, D1 = self.data
+                A = 2 * (D0**3) * (np.log(D1/D0)) / (self.step*((D1**2)-(D0**2)))
+                tau = -self.step / (np.log((D1**2)/(D0**2)))
+                return (A, 1/tau, 0, 0)
+
+            case 'bi_rld': 
+                D0, D1, D2, D3 = self.data
+                dt = self.step
+                g = self.width
+
+                R = D1*D1 - D2*D0
+                P = D3*D0 - D2*D1
+                Q = D2*D2 - D3*D1
+
+                disc = P**2 - 4*R*Q
+                y = (-P + np.sqrt(disc))/(2*R)
+                x = (-P - np.sqrt(disc))/(2*R)
+
+                tau1 = -dt/np.log(y)
+                tau2 = -dt/np.log(x)
+
+                S = self.step * ((x**2)*D0 - (2*x*D1) + D2)
+                T = (1-((x*D1 - D2)/(x*D0 - D1))) ** (g/dt)
+
+                A1 = (-(x*D0 - D1)**2) * np.log(y) / (S * T) 
+                A2 = (-R * np.log(x)) / (S * ((x**(g/dt)) - 1))
+
+                print(f'tau1: {tau1}')
+                print(f'tau2: {tau2}')
+                return (A1, A2, 1/tau1, 1/tau2)
+
             case _:
-                raise Exception('Curve choice invalid in config.json, choose from mono, bi, mono_conv, and bi_conv.')
-
-        params, _ = opt.curve_fit(self.func_wrap, xdat, ydat, p0=guess)
-
-        if single:
-            return (params[0], params[1], 0, 0)
-
-        return params
+                raise Exception('Curve choice invalid in config.json, choose from mono, mono_conv, mono_conv_log, mono_conv_mh, bi, bi_nnls, bi_conv, bi_conv_nnls, mono_rld, mono_rld_50ovp, bi_rld')
 
     def fit_trace(self):
         if self.sum > self.thresh:
@@ -323,7 +350,7 @@ class Fitter:
 
                     self.full_trace += image[:, i, j]
                     self.track += 1
-                    # print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns\n')
+                    print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns\n')
 
         full_reshaped = self.full_trace.reshape(len(self.full_trace),1,1)
 

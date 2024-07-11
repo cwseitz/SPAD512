@@ -1,18 +1,18 @@
 {
     "freq": 10,
-    "numsteps": 0,
-    "integ": [5, 25, 50, 75, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 4000, 5000],
-    "width": 5,
-    "step": [18, 25, 50, 75, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 4000, 5000],
-    "offset": 18,
+    "numsteps": 2,
+    "integ": 2500,
+    "width": 5000,
+    "step": 5000,
+    "offset": 10000,
     "thresh": 0,
     "irf_mean": 10,
     "irf_width": 1.4, 
-    "fit": "nnls_bi",
-    "kernel_size": 0,
-    "lifetimes": [20, 10],
+    "fit": "mono_rld",
+    "kernel_size": 5,
+    "lifetimes": [1],
     "zeta": 0.05,
     "x": 25,
     "y": 25,
-    "filename": "240711/20_10_nnls_bi"
+    "filename": "C:\\Users\\ptrn422\\Documents\\uanguanguangagna"
 }

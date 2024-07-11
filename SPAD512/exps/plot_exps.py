@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from scipy.special import erfc, erfcx
 from scipy.ndimage import median_filter
+import seaborn as sns
 
 class Plotter:
     def __init__(self, config):
@@ -113,8 +114,131 @@ class Plotter:
             plt.savefig(filename + '_results.png')
 
             if show: plt.show()
-        
-        if (self.config['fit'] in ('bi', 'bi_conv', 'mh_bi', 'nnls_bi', 'nnls_bi_conv')):
+
+        if self.config['fit'] in ('mono_rld', 'mono_rld_50ovp'):
+            # fig, ax = plt.subplots(1, 3, figsize=(12, 4))
+            # # fig.suptitle(f'{self.config["integ"]} us integ, {int(self.config["step"])} ps step, {int(self.config["integ"]*self.config["numsteps"]*1e-3)} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
+            # fig.suptitle('Example 250 ms integration, gates from 10-30 and 20-40 ns (2 Hz framerate)')
+
+            # im1 = ax[0].imshow(A1, cmap='plasma')
+            # ax[0].set_title('Amplitudes')
+            # plt.colorbar(im1, ax=ax[0], label='cts', shrink=0.6)
+
+            # colors = [(1, 0, 0)] + [(i, i, i) for i in np.linspace(0, 1, 255)]
+            # custom = mcolors.LinearSegmentedColormap.from_list('custom_gray', colors, N=256)
+            # norm = mcolors.Normalize(vmin=0, vmax=np.max(intensity))
+            # im2 = ax[1].imshow(intensity, cmap=custom, norm=norm)
+            # ax[1].set_title('Intensity')
+            # plt.colorbar(im2, ax=ax[1], label='cts', shrink=0.6)
+
+
+            # colors = [(0, 0, 0)] + [plt.cm.seismic(i) for i in np.linspace(0, 1, 255)]
+            # custom2 = mcolors.LinearSegmentedColormap.from_list('custom_seismic', colors, N=256)
+            # lam = 1/full_params[1]
+
+            # ax[2].set_title('Lifetimes')
+            # im3 = ax[2].imshow(tau1, cmap=custom2)
+            # plt.colorbar(im3, ax=ax[2], label='ns', shrink=0.6)
+            # im3.set_clim(lam-0.2*lam, lam + 0.2*lam)
+            
+            # plt.tight_layout()
+            # plt.savefig(self.config['filename'] + '_results.png')
+
+            # if show: plt.show()
+
+            tau1 = tau1.flatten()
+            filename = 'simulation'
+            plt.style.use('seaborn-v0_8-dark-palette')
+            fig, ax = plt.subplots(figsize=(8, 6))
+            ax.boxplot(tau1, vert=False, patch_artist=True,
+                    boxprops=dict(facecolor='lightblue', color='blue'),
+                    whiskerprops=dict(color='blue'),
+                    capprops=dict(color='blue'),
+                    medianprops=dict(color='red'))
+            ax.set_xlim(8, 12)
+            ax.set_xlabel('Lifetimes (ns)', fontsize=14)
+            ax.set_title('10 ns lifetime on 1 ms integration (1000 fps)\nGates from 10-30 ns and 20-40 ns', fontsize=16, pad=20)
+            ax.tick_params(axis='both', which='major', labelsize=12)
+            ax.grid(True, linestyle='--', alpha=0.7)
+            fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+            plt.show()
+            fig.savefig(self.config['filename'] + '_results.png', dpi=300)
+
+
+        if (self.config['fit'] in ('bi', 'bi_conv', 'mh_bi', 'nnls_bi', 'nnls_bi_conv', 'bi_rld')):
+            for i in range(len(A1)):
+                for j in range(len(A1[0])):
+                    if tau2[i][j] < tau1[i][j]:
+                        temp = A1[i][j]
+                        A2[i][j] = A1[i][j]
+                        A1[i][j] = temp
+
+                        temp = tau1[i][j]
+                        tau2[i][j] = tau1[i][j]
+                        tau1[i][j] = temp
+
+            fig, ax = plt.subplots(2, 3, figsize=(11, 7))
+            fig.suptitle(f'{self.config["integ"]} us integ, {int(self.config["step"])} ps step, {int(self.config["integ"]*self.config["numsteps"]*1e-3)} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
+            # fig.suptitle('Simulated fit with IRF=N(15, 0.5), 1 ms integ/100 ps step')
+
+            # A1 = median_filter(A1, size = 3)
+            # A2 = median_filter(A2, size = 3)
+            # tau1 = median_filter(tau1, size = 3)
+            # tau2 = median_filter(tau2, size = 3)
+
+            colors = [(0, 0, 0)] + [plt.cm.plasma(i) for i in np.linspace(0, 1, 255)]
+            custom = mcolors.LinearSegmentedColormap.from_list('custom_plasma', colors, N=256)
+            im1 = ax[0, 0].imshow(A1, cmap=custom)
+            ax[0, 0].set_title('Smaller Amplitude')
+            plt.colorbar(im1, ax=ax[0, 0], label='cts')
+            im2 = ax[0, 1].imshow(A2, cmap=custom)
+            ax[0, 1].set_title('Larger Amplitude')
+            plt.colorbar(im2, ax=ax[0, 1], label='cts')
+
+            colors = [(0, 0, 0)] + [plt.cm.seismic(i) for i in np.linspace(0, 1, 255)]
+            custom = mcolors.LinearSegmentedColormap.from_list('custom_seismic', colors, N=256)
+            # colors2 =  [(0, 0, 0)] + [plt.cm.PiYG(i) for i in np.linspace(0, 1, 255)]
+            # custom2 = mcolors.LinearSegmentedColormap.from_list('custom_PiYG', colors2, N=256)
+            im3 = ax[1, 0].imshow(tau1, cmap=custom)
+            ax[1, 0].set_title('Smaller Lifetime')
+            plt.colorbar(im3, ax=ax[1, 0], label='ns')
+            im4 = ax[1, 1].imshow(tau2, cmap=custom)
+            ax[1, 1].set_title('Larger Lifetime')
+            plt.colorbar(im4, ax=ax[1, 1], label='cts')
+
+            colors = [(1, 0, 0)] + [(i, i, i) for i in np.linspace(0, 1, 255)]
+            custom = mcolors.LinearSegmentedColormap.from_list('custom_gray', colors, N=256)
+            norm = mcolors.Normalize(vmin=0, vmax=np.max(intensity))
+            im5 = ax[0, 2].imshow(intensity, cmap=custom, norm=norm)
+            ax[0, 2].set_title('Intensity')
+            plt.colorbar(im5, ax=ax[0, 2], label='cts')
+
+            ax[1, 2].set_title('Fully binned trace')
+            ax[1, 2].scatter(times, full_trace, s=5)
+            if self.config['fit'] in ('nnls_bi_conv', 'bi_conv'):
+                ax[1, 2].plot(times, self.bi_conv(times, full_params[0], 1/full_params[1], full_params[2], 1/full_params[3]), label='Fit: tau = {:.2f}, {:.2f}'.format(1/full_params[1], 1/full_params[3]), color='black')
+            else:
+                ax[1, 2].plot(times, self.decay_double(times, full_params[0], 1/full_params[1], full_params[2], 1/full_params[3]), label='Fit: tau = {:.2f}, {:.2f}'.format(1/full_params[1], 1/full_params[3]), color='black')
+
+            ax[1, 2].set_xlabel('Time, ns')
+            ax[1, 2].set_ylabel('Counts')
+            val = max(full_trace)
+            ax[1, 2].set_ylim(0, 1.3 * val)
+            ax[1, 2].tick_params(axis='x', which='both', bottom=True, top=True)
+            ax[1, 2].tick_params(axis='y', which='both', left=True, right=True)
+            ax[1, 2].legend()
+
+            for i, axi in enumerate(ax.ravel()):
+                if i != 5:
+                    axi.set_xticks([])
+                    axi.set_yticks([])
+
+            plt.tight_layout()
+            plt.savefig(filename + '_results.png')
+
+            if show: plt.show()
+
+        if (self.config['fit'] in ('bi_rld')):
             for i in range(len(A1)):
                 for j in range(len(A1[0])):
                     if tau2[i][j] < tau1[i][j]:

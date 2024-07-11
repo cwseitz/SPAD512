@@ -32,18 +32,17 @@ Simulation of SPAD time-gated FLIM. Make sure units in .json are consistent with
     "filename": str, name and path to save data with, leave empty for auto generation
 '''
 
-config_path = 'SPAD512/SPAD512/mains/run_simulation.json'
+config_path = 'C:\\Users\\ptrn422\\Documents\\SPAD512\\SPAD512\\mains\\run_simulation.json'
 show = True # show final plot
 
 class Simulator:
     def __init__(self, config_path):
         with open(config_path) as f:
             self.config = json.load(f)
-
-        self.orig_steps = self.config['step'].copy()
-        self.orig_integs = self.config['integ'].copy()
     
     def run_full(self): # array of vals for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
+        self.orig_steps = self.config['step'].copy()
+        self.orig_integs = self.config['integ'].copy()
         self.means = np.zeros((len(self.config['lifetimes']),len(self.orig_integs), len(self.orig_steps)))
         self.stdevs = np.zeros((len(self.config['lifetimes']),len(self.orig_integs), len(self.orig_steps)))
 
@@ -95,7 +94,7 @@ class Simulator:
         toc = time.time()
         print(f"Exponential fitting done in {(toc-tic):.1f} seconds: {self.config['filename']}_fit_results.npz")
         
-    def plot_single(self):
+    def plot_single(self,show=True):
         plot = Plotter(self.config)
         results = np.load(self.config['filename'] + '_fit_results.npz')
         plot.plot_all(results, self.config['filename'], show=show)
@@ -103,18 +102,5 @@ class Simulator:
 
 if __name__ == '__main__':
     obj = Simulator(config_path)
-
-    obj.config['filename'] = "240711/20_10_bi"
-    obj.config['fit'] = "bi"
-    obj.run_full()
-    obj.plot_sim(show=show)
-
-    obj.config['filename'] = "240711/20_10_bi_conv"
-    obj.config['fit'] = "bi_conv"
-    obj.run_full()
-    obj.plot_sim(show=show)
-
-    obj.config['filename'] = "240711/20_10_nnls_bi_conv"
-    obj.config['fit'] = "nnls_bi_conv"
-    obj.run_full()
-    obj.plot_sim(show=show)
+    obj.run_single()
+    obj.plot_single(show=show)

@@ -1,24 +1,23 @@
 import numpy as np
-import time
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from skimage.io import imsave, imread
-from datetime import datetime
 from scipy.signal import convolve, deconvolve
 from concurrent.futures import ProcessPoolExecutor, as_completed
+import random
 
 ''' 
 Simulation of exponential fitting of fluorescent lifetime imaging data acquired by a time-gated SPAD
 '''
 
 class Generator:
-    def __init__(self, config, integ=0, step=0, tau=0):
+    def __init__(self, config, integ=0, step=0, tau=0,setname=False):
         self.config = config
 
         self.freq = config['freq']
         self.offset = config['offset'] * 1e-3 # ps --> ns 
-        self.width = config['width']
+        self.width = config['width'] * 1e-3 # ps --> ns
         self.zeta = config['zeta']
         self.x = config['x'] 
         self.y = config['y']
@@ -32,9 +31,9 @@ class Generator:
 
         self.times = (np.arange(self.numsteps) * self.step) + self.offset # ns
 
-
-        date =  datetime.now().strftime('%y%m%d')
         self.filename = self.config['filename'] + f'_sim-{self.freq}MHz-1f-{self.numsteps}g-{int(self.integ)}us-{self.width}ns-{int((self.step)*1e3)}ps-{int((self.offset)*1e3)}ps'
+        if setname:
+            self.config['filename'] = self.filename
 
     def genTrace(self, convolve=True, weight=0.5):
         numgates = int(self.freq * self.integ)
@@ -49,7 +48,10 @@ class Generator:
                 prob[i,:] = self.convolveProb(prob[i,:])
 
         for i in range(self.numsteps):
-            comp =  np.random.choice(np.arange(len(self.tau)))
+            comp = 0
+            if (random.random() < weight and len(self.tau) > 1):
+                comp = 1
+
             draws = np.random.rand(numgates) < prob[comp,i]
             data[i] = np.sum(draws)
 
