@@ -32,7 +32,7 @@ Simulation of SPAD time-gated FLIM. Make sure units in .json are consistent with
     "filename": str, name and path to save data with, leave empty for auto generation
 '''
 
-config_path = 'mains\\run_simulation.json'
+config_path = 'SPAD512/SPAD512/mains/run_simulation.json'
 show = True # show final plot
 
 class Simulator:

@@ -8,11 +8,11 @@
     "thresh": 0,
     "irf_mean": 10,
     "irf_width": 1.4, 
-    "fit": "mono",
+    "fit": "nnls_bi",
     "kernel_size": 0,
-    "lifetimes": [10],
+    "lifetimes": [20, 5],
     "zeta": 0.05,
     "x": 25,
     "y": 25,
-    "filename": "C:\\Users\\ptrn482\\Documents\\10_mono"
+    "filename": "240711/20_5_nnls_bi"
 }

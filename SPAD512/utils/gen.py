@@ -32,12 +32,9 @@ class Generator:
 
         self.times = (np.arange(self.numsteps) * self.step) + self.offset # ns
 
-        if self.config['filename']:
-            self.filename = self.config['filename']
-        else: 
-            date =  datetime.now().strftime('%y%m%d')
-            self.filename = f'{date}_SPAD-QD-{self.freq}MHz-1f-{self.numsteps}g-{int(self.integ)}us-{self.width}ns-{int((self.step)*1e3)}ps-{int((self.offset)*1e3)}ps-simulated'
-            self.config['filename'] = self.filename
+
+        date =  datetime.now().strftime('%y%m%d')
+        self.filename = self.config['filename'] + f'_sim-{self.freq}MHz-1f-{self.numsteps}g-{int(self.integ)}us-{self.width}ns-{int((self.step)*1e3)}ps-{int((self.offset)*1e3)}ps'
 
     def genTrace(self, convolve=True, weight=0.5):
         numgates = int(self.freq * self.integ)
@@ -84,25 +81,19 @@ class Generator:
         plt.show()
 
     def helper(self, pixel):
-        try:
-            return self.genTrace(convolve=True)
-        except KeyboardInterrupt:
-            print("Worker interrupted.")
+        return self.genTrace(convolve=True)
 
     def genImage(self):
         self.image = np.zeros((self.numsteps, self.x, self.y), dtype=float)
 
         with ProcessPoolExecutor() as executor:
-            try:
-                futures = {executor.submit(self.helper, (i, j)): (i, j) for i in range(self.x) for j in range(self.y)}
-            except KeyboardInterrupt:
-                print("Process interrupted.")
+            futures = {executor.submit(self.helper, (i, j)): (i, j) for i in range(self.x) for j in range(self.y)}
 
             for future in as_completed(futures):
                 i, j = futures[future]
                 self.image[:, i, j] = future.result()
 
-        imsave(self.filename + '.tif', self.image)
+        # imsave(self.filename + '.tif', self.image)
 
     @staticmethod
     def plotLifetimes(mean_image, std_image, integs, steps, tau, savename, show=True):

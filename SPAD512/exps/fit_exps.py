@@ -237,8 +237,7 @@ class Trace:
 
         if single:
             return (params[0], params[1], 0, 0)
-        
-        print('\n\n\n\n\n\n\n\n\n\n\n\n\n\n')
+
         return params
 
     def fit_trace(self):
@@ -273,19 +272,16 @@ class Fitter:
 
     @staticmethod
     def helper(config, data, i, j):
-        try: 
-            length, x, y = np.shape(data)
-            
-            data_knl = np.zeros(length)
-            for a in range(x):
-                for b in range(y):
-                    data_knl += data[:, a, b]
+        length, x, y = np.shape(data)
+        
+        data_knl = np.zeros(length)
+        for a in range(x):
+            for b in range(y):
+                data_knl += data[:, a, b]
 
-            dt = Trace(config, data_knl, i, j)
-            dt.fit_trace()
-            return dt.params, dt.success, dt.sum, dt.i, dt.j
-        except KeyboardInterrupt:
-            print("Worker interrupted.")
+        dt = Trace(config, data_knl, i, j)
+        dt.fit_trace()
+        return dt.params, dt.success, dt.sum, dt.i, dt.j
 
 
 
@@ -314,10 +310,7 @@ class Fitter:
 
         ksize = self.config['kernel_size']
         with ProcessPoolExecutor() as executor:
-            try:
-                futures = [executor.submit(self.helper, self.config, image[:, (i-ksize):(i+ksize+1), (j-ksize):(j+ksize+1)], i, j) for i in range(ksize,x-ksize) for j in range(ksize, y-ksize)]
-            except KeyboardInterrupt:
-                print("Process interrupted.")
+            futures = [executor.submit(self.helper, self.config, image[:, (i-ksize):(i+ksize+1), (j-ksize):(j+ksize+1)], i, j) for i in range(ksize,x-ksize) for j in range(ksize, y-ksize)]
                         
             for future in as_completed(futures):
                 outputs, success, sum, i, j = future.result()
