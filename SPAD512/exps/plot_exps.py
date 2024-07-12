@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from scipy.special import erfc, erfcx
 from scipy.ndimage import median_filter
-import seaborn as sns
 
 class Plotter:
     def __init__(self, config):
@@ -18,8 +17,12 @@ class Plotter:
         term2 = lam * erfc((self.config['irf_mean'] + lam*(self.config['irf_width']**2) - x)/(self.config['irf_width']*np.sqrt(2)))
         return term1*term2
     
-    def decay_double(self, x, amp1, tau1, amp2, tau2):
-        return amp1 * np.exp(-x / tau1) + amp2 * np.exp(-x / tau2)
+    # def decay_double(self, x, amp1, tau1, amp2, tau2):
+    #     return amp1 * np.exp(-x / tau1) + amp2 * np.exp(-x / tau2)
+
+    def decay_double(self, x, *p):
+        A, lam1, B, lam2 = p
+        return A *(B * np.exp(-x * lam1) + (1-B) * np.exp(-x * lam2))
 
     def bi_conv(self, x, A1, lam1, A2, lam2):
         term1 = (A1*lam1/2) * np.exp((1/2) * lam1 * (2*float(self.config['irf_mean']) + lam1*(self.config['irf_width']**2) - 2*x))
@@ -67,7 +70,7 @@ class Plotter:
                 if A2[i][j] < 0:
                     A2[i][j] = 0
         
-        if self.config['fit'] in ('mono', 'mono_conv', 'log_mono_conv', 'mh_mono_conv'):
+        if self.config['fit'] in ('mono', 'mono_conv', 'mono_conv_log', 'mono_conv_mh'):
             fig, ax = plt.subplots(2, 2, figsize=(7, 7))
             fig.suptitle(f'{self.config["integ"]} us integ, {int(self.config["step"])} ps step, {int(self.config["integ"]*self.config["numsteps"]*1e-3)} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
             # fig.suptitle('Guessed IRF=N(10, 0.1), QD image; 1 ms integ/100 ps step')
@@ -165,7 +168,7 @@ class Plotter:
             fig.savefig(self.config['filename'] + '_results.png', dpi=300)
 
 
-        if (self.config['fit'] in ('bi', 'bi_conv', 'mh_bi', 'nnls_bi', 'nnls_bi_conv', 'bi_rld')):
+        if (self.config['fit'] in ('bi', 'bi_conv', 'bi_mh', 'bi_nnls', 'bi_nnls_conv', 'bi_rld')):
             for i in range(len(A1)):
                 for j in range(len(A1[0])):
                     if tau2[i][j] < tau1[i][j]:

@@ -32,7 +32,7 @@ Simulation of SPAD time-gated FLIM. Make sure units in .json are consistent with
     "filename": str, name and path to save data with, leave empty for auto generation
 '''
 
-config_path = 'C:\\Users\\ptrn422\\Documents\\SPAD512\\SPAD512\\mains\\run_simulation.json'
+config_path = 'C:\\Users\\ptrn136\\Documents\\SPAD512\\SPAD512\\mains\\run_simulation.json'
 show = True # show final plot
 
 class Simulator:
@@ -40,6 +40,8 @@ class Simulator:
         with open(config_path) as f:
             self.config = json.load(f)
     
+
+
     def run_full(self): # array of vals for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
         self.orig_steps = self.config['step'].copy()
         self.orig_integs = self.config['integ'].copy()
@@ -49,7 +51,8 @@ class Simulator:
         for i, integ in enumerate(self.orig_integs):
             for j, step in enumerate(self.orig_steps):
                 tic = time.time()
-                dt = Generator(self.config, integ=integ, step=step)
+                self.config['numsteps'] = 0 # double check to make sure previous sim doesn't mess up ongoing
+                dt = Generator(self.config, numsteps=self.config['numsteps'], integ=integ, step=step)
                 dt.genImage()
                 toc = time.time()
                 print(f'Data for {(integ * 1e-3):.3f} ms integ, {(step * 1e-3):.3f} ns step generated in {(toc-tic):.1f} seconds')
@@ -70,8 +73,6 @@ class Simulator:
                 toc = time.time()
                 print(f'Data analyzed in {(toc-tic):.1f} seconds. Mean lifetimes {(self.means[0,i,j]):.2f} ns, {(self.means[1,i,j]):.2f} ns \n')
         np.savez(self.config['filename'] + '_results.npz', means=self.means, stdevs=self.stdevs)
-         
-        
 
     def plot_sim(self,show=True):
         results = np.load(self.config['filename'] + '_results.npz')
@@ -80,9 +81,11 @@ class Simulator:
 
         Generator.plotLifetimes(self.means, self.stdevs, self.orig_integs, self.orig_steps, self.config['lifetimes'], self.config['filename'] + '_results', show=show)
 
+
+
     def run_single(self): # single vals (not in array) for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
         tic = time.time()
-        dt = Generator(self.config)
+        dt = Generator(self.config, numsteps=self.config['numsteps'])
         dt.genImage()
         toc = time.time()
         print(f'Data generated in {(toc-tic):.1f} seconds')

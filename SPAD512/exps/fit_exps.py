@@ -31,17 +31,17 @@ class Trace:
 
 
     '''Fitting functions'''
-    def mono(self, x, p):
+    def mono(self, x, *p):
         A, lam = p
         return A * np.exp(-lam * x)
 
-    def mono_conv(self, x, p):
+    def mono_conv(self, x, *p):
         A, lam = p
         term1 = (A*lam/2) * np.exp((1/2) * lam * (2*float(self.irf_mean) + lam*(self.irf_width**2) - 2*x))
         term2 = erfc((float(self.irf_mean) + lam*(self.irf_width**2) - x)/(self.irf_width*np.sqrt(2)))
         return term1*term2
 
-    def log_mono_conv(self, x, p):
+    def log_mono_conv(self, x, *p):
         A, lam = p
         if (A <= 0):
             A = 1e-10
@@ -52,11 +52,11 @@ class Trace:
         term2 = np.log(erfc((float(self.irf_mean) + lam*(self.irf_width**2) - x)/(self.irf_width*np.sqrt(2))))
         return term1 + term2
         
-    def bi(self, x, p):
-        A1, lam1, A2, lam2 = p
-        return A1 * np.exp(-x * lam1) + A2 * np.exp(-x * lam2)
+    def bi(self, x, *p):
+        A, lam1, B, lam2 = p
+        return A *(B * np.exp(-x * lam1) + (1-B) * np.exp(-x * lam2))
 
-    def bi_conv(self, x, p):
+    def bi_conv(self, x, *p):
         A1, lam1, A2, lam2 = p
 
         term1 = (A1*lam1/2) * np.exp((1/2) * lam1 * (2*float(self.irf_mean) + lam1*(self.irf_width**2) - 2*x))
@@ -77,6 +77,7 @@ class Trace:
 
     def prop_A(self, curr):
         return curr + np.random.normal(0, 5000)
+
     def gibbs_mh(self, x, y, func, guess_params, iter=10000):
         curr_params = guess_params
         samples = []
@@ -142,8 +143,7 @@ class Trace:
     def fit_decay(self):
         warnings.filterwarnings('ignore', category=RuntimeWarning)
         warnings.filterwarnings('ignore', category=opt.OptimizeWarning)
-        cases = []
-        
+
         match self.curve:
             case 'mono':
                 loc = min(np.argmax(self.data), len(self.data) - 2)
@@ -195,6 +195,7 @@ class Trace:
                 guess = [np.max(self.data), 0.1, np.max(self.data) / 2, 0.05]
                 loc = np.argmax(self.data)
                 samples = self.gibbs_mh(self.times[loc:], self.data[loc:], self.bi, guess)
+                print(samples)
                 return samples[-1]
 
             case 'bi_nnls':
@@ -246,23 +247,24 @@ class Trace:
                 R = D1*D1 - D2*D0
                 P = D3*D0 - D2*D1
                 Q = D2*D2 - D3*D1
-
                 disc = P**2 - 4*R*Q
                 y = (-P + np.sqrt(disc))/(2*R)
                 x = (-P - np.sqrt(disc))/(2*R)
-
-                tau1 = -dt/np.log(y)
-                tau2 = -dt/np.log(x)
-
                 S = self.step * ((x**2)*D0 - (2*x*D1) + D2)
                 T = (1-((x*D1 - D2)/(x*D0 - D1))) ** (g/dt)
 
+                tau1 = -dt/np.log(y)
+                tau2 = -dt/np.log(x)
                 A1 = (-(x*D0 - D1)**2) * np.log(y) / (S * T) 
                 A2 = (-R * np.log(x)) / (S * ((x**(g/dt)) - 1))
 
-                print(f'tau1: {tau1}')
-                print(f'tau2: {tau2}')
                 return (A1, A2, 1/tau1, 1/tau2)
+
+            case 'stref':
+                loc = min(np.argmax(self.data), len(self.data) - 4)
+                guess = [np.max(self.data), 0.25, np.max(self.data) / 2, 0.05]
+                xdat = self.times
+                ydat = self.data
 
             case _:
                 raise Exception('Curve choice invalid in config.json, choose from mono, mono_conv, mono_conv_log, mono_conv_mh, bi, bi_nnls, bi_conv, bi_conv_nnls, mono_rld, mono_rld_50ovp, bi_rld')
@@ -338,7 +340,7 @@ class Fitter:
         ksize = self.config['kernel_size']
         with ProcessPoolExecutor() as executor:
             futures = [executor.submit(self.helper, self.config, image[:, (i-ksize):(i+ksize+1), (j-ksize):(j+ksize+1)], i, j) for i in range(ksize,x-ksize) for j in range(ksize, y-ksize)]
-                        
+
             for future in as_completed(futures):
                 outputs, success, sum, i, j = future.result()
                 if success:

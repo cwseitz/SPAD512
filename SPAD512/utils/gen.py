@@ -12,7 +12,7 @@ Simulation of exponential fitting of fluorescent lifetime imaging data acquired 
 '''
 
 class Generator:
-    def __init__(self, config, integ=0, step=0, tau=0,setname=False):
+    def __init__(self, config, integ=0, step=0, tau=0, numsteps=0,setname=False):
         self.config = config
 
         self.freq = config['freq']
@@ -27,7 +27,11 @@ class Generator:
         self.step *= 1e-3 # ps --> ns
         self.tau = tau if tau else config['lifetimes']
 
-        self.numsteps = int(1e3 / (self.freq*self.step))
+        if numsteps:
+            self.numsteps=numsteps
+        else:    
+            self.numsteps = int(1e3 / (self.freq*self.step))
+        self.config['numsteps']=self.numsteps
 
         self.times = (np.arange(self.numsteps) * self.step) + self.offset # ns
 
@@ -35,7 +39,7 @@ class Generator:
         if setname:
             self.config['filename'] = self.filename
 
-    def genTrace(self, convolve=True, weight=0.5):
+    def genTrace(self, convolve=False, weight=0.1):
         numgates = int(self.freq * self.integ)
         data = np.zeros(self.numsteps, dtype=int)
         steps = np.arange(self.numsteps) * self.step
@@ -47,14 +51,12 @@ class Generator:
             if convolve:
                 prob[i,:] = self.convolveProb(prob[i,:])
 
-        for i in range(self.numsteps):
-            comp = 0
-            if (random.random() < weight and len(self.tau) > 1):
-                comp = 1
+        choices = (np.random.rand(numgates, self.numsteps) > weight).astype(int)
+        events = np.random.rand(numgates, self.numsteps)
+        data = np.sum(events < prob[choices, np.arange(self.numsteps)], axis=0)
 
-            draws = np.random.rand(numgates) < prob[comp,i]
-            data[i] = np.sum(draws)
-
+        plt.plot(self.times, data, 'o')
+        plt.show()
         return data
 
     def convolveProb(self, trace):
@@ -83,7 +85,7 @@ class Generator:
         plt.show()
 
     def helper(self, pixel):
-        return self.genTrace(convolve=True)
+        return self.genTrace()
 
     def genImage(self):
         self.image = np.zeros((self.numsteps, self.x, self.y), dtype=float)
