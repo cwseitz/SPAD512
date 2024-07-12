@@ -51,7 +51,7 @@ class Generator:
             if convolve:
                 prob[i,:] = self.convolveProb(prob[i,:])
 
-        choices = (np.random.rand(numgates, self.numsteps) > weight).astype(int)
+        choices = (np.random.rand(numgates, self.numsteps) > weight).astype(int) * (len(self.tau)-1)
         events = np.random.rand(numgates, self.numsteps)
         data = np.sum(events < prob[choices, np.arange(self.numsteps)], axis=0)
 
