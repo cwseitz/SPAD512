@@ -1,19 +1,19 @@
 {
    "freq": 10,
    "frames": 3,
-   "numsteps": 900,
-   "integ": 1000,
-   "width": 5,
-   "step": 100,
+   "numsteps": 5000,
+   "integ": 100,
+   "width": 5000,
+   "step": 18,
    "offset": 18,
    "power": 150,
    "bits": 8,
    "globstrs_1bit": [],
    "folder": [],
    "roi_dim": 256,
-   "thresh": 7600,
+   "thresh": 50,
    "irf_mean": 10,
    "irf_width": 1.5, 
-   "fit": "bi",
-   "kernel_size": 1
+   "fit": "mono",
+   "kernel_size": 0
 }

@@ -29,7 +29,7 @@ Script for exponential analyses of time-gated FLIM data. .json formatting info b
 '''
 
 read = False # read from folder (if read=False {default}, must specify a file below)
-file = '240613/240613_SPAD-QD-10MHz-3f-900g-1000us-5ns-100ps-18ps-150uW' # make sure to remove .tif suffix
+file = '240613/240613_SPAD-QD-10MHz-3f-5000g-100us-5ns-18ps-18ps-150uW' # make sure to remove .tif suffix
 config_path = 'SPAD512/SPAD512/mains/run_exponential.json' # no leading slash, keep .json suffix
 show = True # show final plot
 
@@ -60,5 +60,5 @@ class Analyzer:
 
 if __name__=='__main__':
     info = Analyzer(config_path, file=file)
-    info.fit()
+    # info.fit()
     info.plot(show=show)

@@ -21,8 +21,8 @@ class Plotter:
     #     return amp1 * np.exp(-x / tau1) + amp2 * np.exp(-x / tau2)
 
     def decay_double(self, x, *p):
-        A, lam1, B, lam2 = p
-        return A *(B * np.exp(-x * lam1) + (1-B) * np.exp(-x * lam2))
+        A, tau1, B, tau2 = p
+        return A *(B * np.exp(-x / tau1) + (1-B) * np.exp(-x / tau2))
 
     def bi_conv(self, x, A1, lam1, A2, lam2):
         term1 = (A1*lam1/2) * np.exp((1/2) * lam1 * (2*float(self.config['irf_mean']) + lam1*(self.config['irf_width']**2) - 2*x))
@@ -74,6 +74,9 @@ class Plotter:
             fig, ax = plt.subplots(2, 2, figsize=(7, 7))
             fig.suptitle(f'{self.config["integ"]} us integ, {int(self.config["step"])} ps step, {int(self.config["integ"]*self.config["numsteps"]*1e-3)} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
             # fig.suptitle('Guessed IRF=N(10, 0.1), QD image; 1 ms integ/100 ps step')
+
+            A1 = median_filter(A1, size = 3)
+            tau1 = median_filter(tau1, size = 3)
 
             im1 = ax[0, 0].imshow(A1, cmap='plasma')
             ax[0, 0].set_title('Amplitudes')
@@ -184,10 +187,10 @@ class Plotter:
             fig.suptitle(f'{self.config["integ"]} us integ, {int(self.config["step"])} ps step, {int(self.config["integ"]*self.config["numsteps"]*1e-3)} ms acq time, {self.config["thresh"]} thresh, {track} fits', fontsize=12)
             # fig.suptitle('Simulated fit with IRF=N(15, 0.5), 1 ms integ/100 ps step')
 
-            # A1 = median_filter(A1, size = 3)
-            # A2 = median_filter(A2, size = 3)
-            # tau1 = median_filter(tau1, size = 3)
-            # tau2 = median_filter(tau2, size = 3)
+            A1 = median_filter(A1, size = 3)
+            A2 = median_filter(A2, size = 3)
+            tau1 = median_filter(tau1, size = 3)
+            tau2 = median_filter(tau2, size = 3)
 
             colors = [(0, 0, 0)] + [plt.cm.plasma(i) for i in np.linspace(0, 1, 255)]
             custom = mcolors.LinearSegmentedColormap.from_list('custom_plasma', colors, N=256)
@@ -280,7 +283,7 @@ class Plotter:
             plt.colorbar(im3, ax=ax[1, 0], label='ns')
             im4 = ax[1, 1].imshow(tau2, cmap=custom)
             ax[1, 1].set_title('Larger Lifetime')
-            plt.colorbar(im4, ax=ax[1, 1], label='cts')
+            plt.colorbar(im4, ax=ax[1, 1], label='ns')
 
             colors = [(1, 0, 0)] + [(i, i, i) for i in np.linspace(0, 1, 255)]
             custom = mcolors.LinearSegmentedColormap.from_list('custom_gray', colors, N=256)

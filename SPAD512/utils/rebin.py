@@ -1,7 +1,7 @@
 import numpy as np
 from skimage.io import imread, imsave 
 
-def rebin(raw, out, ratio=5):
+def rebin(raw, out, ratio=1000):
   image = imread(raw)
   length, x, y = image.shape
   newlen = length // ratio

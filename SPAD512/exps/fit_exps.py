@@ -195,7 +195,6 @@ class Trace:
                 guess = [np.max(self.data), 0.1, np.max(self.data) / 2, 0.05]
                 loc = np.argmax(self.data)
                 samples = self.gibbs_mh(self.times[loc:], self.data[loc:], self.bi, guess)
-                print(samples)
                 return samples[-1]
 
             case 'bi_nnls':
@@ -352,7 +351,7 @@ class Fitter:
 
                     self.full_trace += image[:, i, j]
                     self.track += 1
-                    print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns\n')
+                    # print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns\n')
 
         full_reshaped = self.full_trace.reshape(len(self.full_trace),1,1)
 

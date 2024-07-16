@@ -55,8 +55,6 @@ class Generator:
         events = np.random.rand(numgates, self.numsteps)
         data = np.sum(events < prob[choices, np.arange(self.numsteps)], axis=0)
 
-        plt.plot(self.times, data, 'o')
-        plt.show()
         return data
 
     def convolveProb(self, trace):
@@ -102,6 +100,9 @@ class Generator:
     @staticmethod
     def plotLifetimes(mean_image, std_image, integs, steps, tau, savename, show=True):
         numtau, xlen, ylen = np.shape(mean_image)
+        
+        mean_image[np.isnan(mean_image)] = -1
+        std_image[np.isnan(std_image)] = -1
 
         # plot mean
         if (numtau == 1):
@@ -144,7 +145,7 @@ class Generator:
                 plt.show()
 
         if (numtau == 2):
-            fig, ax = plt.subplots(2,2,figsize=(10,10))
+            fig, ax = plt.subplots(2,2,figsize=(11,10))
 
             if (np.mean(mean_image[0]) < np.mean(mean_image[1])):
                 temp = mean_image[1].copy()
@@ -160,8 +161,8 @@ class Generator:
                     tau[1] = tau[0]
                     tau[0] = temp
 
-            lower = min(max(tau[0] - 5, int(np.min(mean_image[0]))), tau[0] - 1)
-            upper = max(min(tau[0] + 5, int(np.max(mean_image[0] + 1))), tau[0] + 1)
+            lower = min(max(tau[0] - 10, int(np.min(mean_image[0]))), tau[0] - 1)
+            upper = max(min(tau[0] + 10, int(np.max(mean_image[0] + 1))), tau[0] + 1)
             norm = mcolors.TwoSlopeNorm(vmin=lower, vcenter=tau[0], vmax=upper)
             cax1 = ax[0, 0].imshow(mean_image[0], cmap='seismic', norm=norm)
             cbar1 = fig.colorbar(cax1, ax=ax[0, 0], shrink = 0.6)
@@ -190,7 +191,7 @@ class Generator:
             ax[0, 1].set_xticklabels(steps)
             plt.setp(ax[0, 1].get_xticklabels(), rotation=45)
 
-            norm = mcolors.TwoSlopeNorm(vmin=-1, vcenter=0, vmax=5)
+            norm = mcolors.TwoSlopeNorm(vmin=-1, vcenter=0, vmax=10)
             cax3 = ax[1, 0].imshow(std_image[0], cmap='seismic', norm=norm)
             cbar3 = fig.colorbar(cax3, ax=ax[1, 0], shrink = 0.6)
             cbar3.set_label('St Devs, ns')
@@ -203,7 +204,7 @@ class Generator:
             ax[1, 0].set_xticklabels(steps)
             plt.setp(ax[1, 0].get_xticklabels(), rotation=45)
 
-            norm = mcolors.TwoSlopeNorm(vmin=-1, vcenter=0, vmax=5)
+            norm = mcolors.TwoSlopeNorm(vmin=-1, vcenter=0, vmax=10)
             cax3 = ax[1, 1].imshow(std_image[1], cmap='seismic', norm=norm)
             cbar3 = fig.colorbar(cax3, ax=ax[1, 1], shrink = 0.6)
             cbar3.set_label('St Devs, ns')

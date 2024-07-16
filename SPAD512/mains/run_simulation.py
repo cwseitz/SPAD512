@@ -32,27 +32,28 @@ Simulation of SPAD time-gated FLIM. Make sure units in .json are consistent with
     "filename": str, name and path to save data with, leave empty for auto generation
 '''
 
-config_path = 'C:\\Users\\ptrn136\\Documents\\SPAD512\\SPAD512\\mains\\run_simulation.json'
+config_path = 'SPAD512/SPAD512/mains/run_simulation.json'
 show = True # show final plot
 
 class Simulator:
     def __init__(self, config_path):
         with open(config_path) as f:
             self.config = json.load(f)
-    
-
-
-    def run_full(self): # array of vals for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
         self.orig_steps = self.config['step'].copy()
         self.orig_integs = self.config['integ'].copy()
+
+    def run_full(self): # array of vals for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
         self.means = np.zeros((len(self.config['lifetimes']),len(self.orig_integs), len(self.orig_steps)))
         self.stdevs = np.zeros((len(self.config['lifetimes']),len(self.orig_integs), len(self.orig_steps)))
 
         for i, integ in enumerate(self.orig_integs):
             for j, step in enumerate(self.orig_steps):
                 tic = time.time()
-                self.config['numsteps'] = 0 # double check to make sure previous sim doesn't mess up ongoing
+                self.config['numsteps'] = 2 # double check to make sure previous sim doesn't mess up ongoing
+                self.config['width'] = step
+                step /= 2
                 dt = Generator(self.config, numsteps=self.config['numsteps'], integ=integ, step=step)
+                step *= 2
                 dt.genImage()
                 toc = time.time()
                 print(f'Data for {(integ * 1e-3):.3f} ms integ, {(step * 1e-3):.3f} ns step generated in {(toc-tic):.1f} seconds')
@@ -71,7 +72,7 @@ class Simulator:
                     self.stdevs[1,i,j] += np.std(nonzero)
 
                 toc = time.time()
-                print(f'Data analyzed in {(toc-tic):.1f} seconds. Mean lifetimes {(self.means[0,i,j]):.2f} ns, {(self.means[1,i,j]):.2f} ns \n')
+                print(f'Data analyzed in {(toc-tic):.1f} seconds. Mean lifetimes {(self.means[0,i,j]):.2f} ns\n')
         np.savez(self.config['filename'] + '_results.npz', means=self.means, stdevs=self.stdevs)
 
     def plot_sim(self,show=True):
@@ -105,5 +106,5 @@ class Simulator:
 
 if __name__ == '__main__':
     obj = Simulator(config_path)
-    obj.run_single()
-    obj.plot_single(show=show)
+    obj.run_full()
+    obj.plot_sim(show=show)
