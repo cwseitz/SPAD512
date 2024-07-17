@@ -29,7 +29,7 @@ Script for exponential analyses of time-gated FLIM data. .json formatting info b
 '''
 
 read = False # read from folder (if read=False {default}, must specify a file below)
-file = '240613/240613_SPAD-QD-10MHz-3f-5000g-100us-5ns-18ps-18ps-150uW' # make sure to remove .tif suffix
+file = '240716/acq00006/240716_SPAD-10MHz-1f-2g-250000us-10000ns-10000ps-10000ps-150uW' # make sure to remove .tif suffix
 config_path = 'SPAD512/SPAD512/mains/run_exponential.json' # no leading slash, keep .json suffix
 show = True # show final plot
 
@@ -39,7 +39,8 @@ class Analyzer:
             self.config = json.load(f)
         if read:
             data = GatedReader(self.config)
-            self.filename = data.create_data()
+            self.filename = self.config['folder'] + '/' + data.name()
+            data.stack()
             print(f"Data created: {self.filename}")
         else:
             self.filename = file
@@ -53,12 +54,13 @@ class Analyzer:
         print(f"Exponential fitting done in {toc-tic} seconds: {self.filename}_fit_results.npz")
 
     def plot(self, show=True):
+        self.config['filename'] = self.filename
         plot = Plotter(self.config)
         results = np.load(self.filename + '_fit_results.npz')
         plot.plot_all(results, self.filename, show=show)
         print(f"Results plotted: {self.filename}_results.png")
 
 if __name__=='__main__':
-    info = Analyzer(config_path, file=file)
-    # info.fit()
+    info = Analyzer(config_path, read=read, file=file)
+    info.fit()
     info.plot(show=show)

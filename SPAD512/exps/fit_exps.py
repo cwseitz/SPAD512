@@ -233,6 +233,7 @@ class Trace:
                 return (A, 1/tau, 0, 0)
 
             case 'mono_rld_50ovp':
+                self.step /= 1000
                 D0, D1 = self.data
                 A = 2 * (D0**3) * (np.log(D1/D0)) / (self.step*((D1**2)-(D0**2)))
                 tau = -self.step / (np.log((D1**2)/(D0**2)))
@@ -351,7 +352,7 @@ class Fitter:
 
                     self.full_trace += image[:, i, j]
                     self.track += 1
-                    # print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns\n')
+                    print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns\n')
 
         full_reshaped = self.full_trace.reshape(len(self.full_trace),1,1)
 

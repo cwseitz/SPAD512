@@ -112,13 +112,12 @@ class GatedReader:
         self.power = config['power']
         self.bits = config['bits']
         self.folder = config['folder']
-        self.savepath = config['savepath']
         self.filename = self.name()
 
     def name(self):
         date = datetime.now().strftime('%y%m%d')
-        filename = f'{date}_SPAD-{self.freq}MHz-{self.frames}f-{self.gate_num}g-{int(self.gate_integ * 1e3)}us-{self.gate_width}ns-{int(self.gate_step * 1e3)}ps-{int(self.gate_offset * 1e3)}ps-{self.power}uW.tif'
-        return filename
+        self.filename = f'{date}_SPAD-{self.freq}MHz-{self.frames}f-{self.gate_num}g-{int(self.gate_integ)}us-{self.gate_width}ns-{int(self.gate_step)}ps-{int(self.gate_offset)}ps-{self.power}uW'
+        return self.filename
 
     def read_bin(self, globstr, nframes=1000):
         files = glob(globstr)
@@ -136,7 +135,7 @@ class GatedReader:
     def stack(self):
         files = sorted(glob(f'{self.folder}/*.png'))
         stack = np.array([imread(f) for f in files])
-        imsave(self.savepath + f'{self.filename}', stack)
+        imsave(self.folder + f'/{self.filename}' + '.tif', stack)
 
     def process(self):
         if self.bits == 1:
