@@ -11,6 +11,7 @@ Simulation of SPAD time-gated FLIM. Make sure units in .json are consistent with
 
     "freq": MHz, pulsed laser frequency
     "numsteps": counts, number of gate step increments
+        - Need to specify 2 or 4 for correct data generation, depending on RLD method
     "integ": us, exposure time for a single gate
         - Need to specify array of values in sim_integs if running simulation on multiple
     "width": ns, width of a single gate
@@ -52,7 +53,7 @@ class Simulator:
                 print(f'Data for {(integ * 1e-3):.3f} ms integ, {(step * 1e-3):.3f} ns step generated in {(toc-tic):.1f} seconds')
                 
                 tic = time.time()
-                fit = Fitter(self.config, numsteps=dt.numsteps, step=step)
+                fit = Fitter(self.config, numsteps=dt.numsteps, times=dt.times, step=step)
                 results = fit.fit_exps(image=dt.image)
                 
                 nonzero = results[2][results[2] != 0]
@@ -73,19 +74,19 @@ class Simulator:
         self.means = results['means'].astype(float)
         self.stdevs = results['stdevs'].astype(float)
 
-        plotLifetimes(self.means, self.stdevs, self.orig_integs, self.orig_steps, self.config['lifetimes'], self.config['filename'] + '_results', show=show)
+        plotLifetimes(self.means, self.stdevs, self.config['integ'], self.config['step'], self.config['lifetimes'], self.config['filename'] + '_results', show=show)
 
 
 
     def run_single(self): # single vals (not in array) for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
         tic = time.time()
-        dt = Generator(self.config, numsteps=self.config['numsteps'])
+        dt = Generator(self.config)
         dt.genImage()
         toc = time.time()
         print(f'Data generated in {(toc-tic):.1f} seconds')
 
         tic = time.time()
-        fit = Fitter(self.config, numsteps=self.config['numsteps'], step=self.config['step'])
+        fit = Fitter(self.config, numsteps=dt.numsteps)
         results = fit.fit_exps(image=dt.image)
         fit.save_results(self.config['filename'], results)
         toc = time.time()

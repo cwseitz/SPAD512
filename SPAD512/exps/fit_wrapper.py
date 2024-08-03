@@ -8,7 +8,7 @@ class Fitter:
     def __init__(self,config,**kwargs):
         defaults = {
             'step': 0,
-            'curve': "",
+            'fit': "",
             'irf_width': 0,
             'irf_mean': 0,
             'thresh': 0,
@@ -32,8 +32,8 @@ class Fitter:
         self.full_trace = None
         self.track = 0    
 
-    @staticmethod
-    def helper(config, data, i, j):
+    '''Parallelizing helper function'''
+    def helper(self, data, i, j):
         length, x, y = np.shape(data)
         
         data_knl = np.zeros(length)
@@ -41,13 +41,10 @@ class Fitter:
             for b in range(y):
                 data_knl += data[:, a, b]
 
-        dt = Trace(config, data_knl, i, j)
+        dt = Trace(data_knl, i, j, **self.__dict__)
         dt.fit_trace()
         return dt.params, dt.success, dt.sum, dt.i, dt.j
 
-
-
-    '''Parallelizing helper function'''
     def fit_exps(self, filename=None, image=None):
         tic = time.time()
         print('Reading image')

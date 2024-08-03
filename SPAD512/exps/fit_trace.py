@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import warnings
 
 class Trace:
-    def __init__(self,config,data,i,j,**kwargs):
+    def __init__(self,data,i,j,**kwargs):
         defaults = {
             'step': 0,
             'fit': "",
@@ -16,9 +16,10 @@ class Trace:
             'thresh': 0,
             'width': 0,
             'times': 0,
+            'offset': 0
         }
-        defaults.update(config)
-        defaults.update(kwargs)
+        filtered = {k: v for k, v in kwargs.items() if k in defaults}
+        defaults.update(filtered)
 
         for key, val in defaults.items():
             setattr(self,key,val)
@@ -148,7 +149,7 @@ class Trace:
         warnings.filterwarnings('ignore', category=RuntimeWarning)
         warnings.filterwarnings('ignore', category=opt.OptimizeWarning)
 
-        match self.curve:
+        match self.fit:
             case 'mono':
                 loc = min(np.argmax(self.data), len(self.data) - 2)
                 guess = [np.max(self.data), 0.1]
