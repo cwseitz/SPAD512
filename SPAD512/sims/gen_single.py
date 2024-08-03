@@ -12,35 +12,44 @@ Simulation of exponential fitting of fluorescent lifetime imaging data acquired 
 '''
 
 class Generator:
-    def __init__(self,config,integ=0,step=0,tau=0,numsteps=0,width=0,offset=0,freq=0,zeta=0,x=0,y=0,irf_mean=0,irf_width=0,filename=""):
-        self.freq = freq if freq else config['freq']
-        self.zeta = zeta if zeta else config['zeta']
-        self.x = x if x else config['x'] 
-        self.y = y if y else config['y']
-        self.integ = integ if integ else config['integ']
-        self.tau = tau if tau else config['lifetimes']
-        self.width = width if width else config['width']
-        self.offset = offset if offset else config['offset']
-        self.step = step if step else config['step']
-        self.irf_mean = irf_mean if irf_mean else config['irf_mean']
-        self.irf_width = irf_width if irf_width else config['irf_width']
+    def __init__(self,config,**kwargs):
+        defaults = {
+            'freq': 10,  
+            'zeta': 5, 
+            'x': 0,
+            'y': 0,
+            'integ': 1,  
+            'tau': 20,   
+            'width': 0,
+            'offset': 0,
+            'step': 0,
+            'irf_mean': 0,
+            'irf_width': 0,
+            'filename': "",
+            'numsteps': 0
+        }
+        defaults.update(config)
+        defaults.update(kwargs)
+
+        for key, val in defaults.items():
+            setattr(self,key,val)
 
         self.step *= 1e-3 # ps --> ns
         self.width *= 1e-3 
         self.offset *= 1e-3
 
-        if numsteps:
-            self.numsteps=numsteps
-        else:    
+        if not self.numsteps:
             self.numsteps = int(1e3 / (self.freq*self.step))
+            
+        if not self.filename:
+            self.filename = (
+                f"{config.get('filename', 'default_filename')}_sim-"
+                f"{self.freq}MHz-1f-{self.numsteps}g-"
+                f"{int(self.integ)}us-{self.width}ns-"
+                f"{int((self.step) * 1e3)}ps-{int((self.offset) * 1e3)}ps"
+            )
 
         self.times = (np.arange(self.numsteps) * self.step) + self.offset # ns
-
-        self.filename = filename if filename else (
-            self.config['filename'] + f'_sim-{self.freq}MHz-1f-{self.numsteps}g-'
-            f'{int(self.integ)}us-{self.width}ns-{int((self.step)*1e3)}ps-'
-            f'{int((self.offset)*1e3)}ps'
-        )
 
     def genTrace(self, convolve=False, weight=0.1):
         numgates = int(self.freq * self.integ)

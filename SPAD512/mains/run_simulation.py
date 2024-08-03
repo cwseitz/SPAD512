@@ -3,9 +3,8 @@ import matplotlib.pyplot as plt
 from skimage.io import imread, imsave
 import json
 import time
-
 from SPAD512.exps import Fitter, Plotter
-from SPAD512.sims import Generator, MultiSim, plotLifetimes
+from SPAD512.sims import Generator, plotLifetimes
 
 '''
 Simulation of SPAD time-gated FLIM. Make sure units in .json are consistent with below.
@@ -39,17 +38,15 @@ class Simulator:
     def __init__(self, config_path):
         with open(config_path) as f:
             self.config = json.load(f)
-        self.orig_steps = self.config['step'].copy()
-        self.orig_integs = self.config['integ'].copy()
 
     def run_full(self): # array of vals for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
-        self.means = np.zeros((len(self.config['lifetimes']),len(self.orig_integs), len(self.orig_steps)))
-        self.stdevs = np.zeros((len(self.config['lifetimes']),len(self.orig_integs), len(self.orig_steps)))
+        self.means = np.zeros((len(self.config['lifetimes']),len(self.config['integ']), len(self.config['step'])))
+        self.stdevs = np.zeros((len(self.config['lifetimes']),len(self.config['integ']), len(self.config['step'])))
 
-        for i, integ in enumerate(self.orig_integs):
-            for j, step in enumerate(self.orig_steps):
+        for i, integ in enumerate(self.config['integ']):
+            for j, step in enumerate(self.config['step']):
                 tic = time.time()
-                dt = Generator(self.config, numsteps=self.config['numsteps'], integ=integ, step=step)
+                dt = Generator(self.config, integ=integ, step=step)
                 dt.genImage()
                 toc = time.time()
                 print(f'Data for {(integ * 1e-3):.3f} ms integ, {(step * 1e-3):.3f} ns step generated in {(toc-tic):.1f} seconds')

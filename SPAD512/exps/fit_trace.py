@@ -1,25 +1,27 @@
 import numpy as np
 from scipy import optimize as opt
-import tifffile as tf
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from scipy.signal import convolve, deconvolve, butter, filtfilt
 from scipy.fft import fft, ifft, fftfreq
 from scipy.special import erfc
 import matplotlib.pyplot as plt
-import time
 import warnings
 
 class Trace:
-    def __init__(self, config, data, i, j):
-        self.config = config
-        self.step = config['step']
-        self.times = config['times']
-        self.curve = config['fit']  # Options for curve: 'mono', 'mono_conv', 'log_mono_conv', 'mh_mono_conv', 'bi'
-        self.irf_width = config['irf_width']
-        self.irf_mean = config['irf_mean']
-        self.thresh = config['thresh']
-        self.width = config['width'] * 1e-3
-        del self.config
+    def __init__(self,config,data,i,j,**kwargs):
+        defaults = {
+            'step': 0,
+            'fit': "",
+            'irf_width': 0,
+            'irf_mean': 0,
+            'thresh': 0,
+            'width': 0,
+            'times': 0,
+        }
+        defaults.update(config)
+        defaults.update(kwargs)
+
+        for key, val in defaults.items():
+            setattr(self,key,val)
 
         self.data = data
         self.i = i
@@ -66,6 +68,8 @@ class Trace:
 
         full = (term1*term2) + (term3*term4)
         return full
+
+
 
     '''Helper methods for Metropolis-Hastings'''
     def log_like(self, params, x, y, func):
@@ -277,101 +281,3 @@ class Trace:
             except RuntimeError:
                 self.params = [0, 0, 0, 0]
         else: self.params = [0, 0, 0, 0]
-    
-class Fitter:
-    def __init__(self, config, numsteps=0, step=0):
-        self.config = config
-
-        if numsteps:
-            self.config['times'] = ((np.arange(numsteps) * step) + config['offset']) * 1e-3 # need times in ns
-            self.config['numsteps'] = numsteps
-            self.config['step'] = step * 1e-3 # need step in ns
-        else:
-            self.config['times'] = ((np.arange(config['numsteps']) * config['step']) + config['offset']) * 1e-3
-            self.config['numsteps'] = config['numsteps']
-            self.config['step'] = config['step'] * 1e-3
-
-        self.A1 = None
-        self.tau1 = None
-        self.A2 = None
-        self.tau2 = None
-        self.intensity = None
-        self.full_trace = None
-        self.track = 0    
-
-    @staticmethod
-    def helper(config, data, i, j):
-        length, x, y = np.shape(data)
-        
-        data_knl = np.zeros(length)
-        for a in range(x):
-            for b in range(y):
-                data_knl += data[:, a, b]
-
-        dt = Trace(config, data_knl, i, j)
-        dt.fit_trace()
-        return dt.params, dt.success, dt.sum, dt.i, dt.j
-
-
-
-    '''Parallelizing helper function'''
-    def fit_exps(self, filename=None, image=None):
-        tic = time.time()
-        print('Reading image')
-        if filename:
-            with tf.TiffFile(filename + '.tif') as tif:
-                image = tif.asarray(key=range(self.config['numsteps']))  # Only read the first 5000 frames
-            length, x, y = np.shape(image)
-        elif image is not None:
-            image = image[:self.config['numsteps'],:,:]
-            length, x, y = np.shape(image)
-        else:
-            raise Exception('No filename or image provided to fit_exps, make sure to provide one or the other.')
-        toc = time.time()
-        print(f'Image read in {(toc-tic):.1f} seconds')
-
-        self.A1 = np.zeros((x, y), dtype=float)
-        self.A2 = np.zeros((x, y), dtype=float)
-        self.tau1 = np.zeros((x, y), dtype=float)
-        self.tau2 = np.zeros((x, y), dtype=float)
-        self.intensity = np.zeros((x, y), dtype=float)
-        self.full_trace = np.zeros((self.config['numsteps']), dtype=float)
-
-        ksize = self.config['kernel_size']
-        with ProcessPoolExecutor() as executor:
-            futures = [executor.submit(self.helper, self.config, image[:, (i-ksize):(i+ksize+1), (j-ksize):(j+ksize+1)], i, j) for i in range(ksize,x-ksize) for j in range(ksize, y-ksize)]
-
-            for future in as_completed(futures):
-                outputs, success, sum, i, j = future.result()
-                if success:
-                    self.A1[i][j] += outputs[0]
-                    self.tau1[i][j] += 1/(outputs[1]+1e-10)
-                    self.A2[i][j] += outputs[2]
-                    self.tau2[i][j] += 1/(outputs[3]+1e-10)
-                    self.intensity[i][j] += sum
-
-                    self.full_trace += image[:, i, j]
-                    self.track += 1
-                    print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns\n')
-
-        full_reshaped = self.full_trace.reshape(len(self.full_trace),1,1)
-
-        outputs, success, sum, i, j = self.helper(self.config, full_reshaped, 0, 0)
-
-        return self.A1, self.A2, self.tau1, self.tau2, self.intensity, self.full_trace, outputs, self.track, self.config['times']
-    
-    def save_results(self, filename, results):
-        np.savez(
-            filename + '_fit_results.npz', 
-            A1=results[0], 
-            A2=results[1], 
-            tau1=results[2], 
-            tau2=results[3], 
-            intensity=results[4], 
-            full_trace=results[5], 
-            full_params=results[6], 
-            track=results[7],
-            times=results[8]
-        )   
-
-        self.config['step'] = self.config['step'] * 1e3 # reverse change made in initializaiton
