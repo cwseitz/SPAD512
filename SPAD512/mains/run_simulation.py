@@ -5,7 +5,7 @@ import json
 import time
 
 from SPAD512.exps import Fitter, Plotter
-from SPAD512.utils import Generator
+from SPAD512.sims import Generator, MultiSim, plotLifetimes
 
 '''
 Simulation of SPAD time-gated FLIM. Make sure units in .json are consistent with below.
@@ -49,11 +49,7 @@ class Simulator:
         for i, integ in enumerate(self.orig_integs):
             for j, step in enumerate(self.orig_steps):
                 tic = time.time()
-                self.config['numsteps'] = 2 # double check to make sure previous sim doesn't mess up ongoing
-                self.config['width'] = step
-                step /= 2
                 dt = Generator(self.config, numsteps=self.config['numsteps'], integ=integ, step=step)
-                step *= 2
                 dt.genImage()
                 toc = time.time()
                 print(f'Data for {(integ * 1e-3):.3f} ms integ, {(step * 1e-3):.3f} ns step generated in {(toc-tic):.1f} seconds')
@@ -80,7 +76,7 @@ class Simulator:
         self.means = results['means'].astype(float)
         self.stdevs = results['stdevs'].astype(float)
 
-        Generator.plotLifetimes(self.means, self.stdevs, self.orig_integs, self.orig_steps, self.config['lifetimes'], self.config['filename'] + '_results', show=show)
+        plotLifetimes(self.means, self.stdevs, self.orig_integs, self.orig_steps, self.config['lifetimes'], self.config['filename'] + '_results', show=show)
 
 
 
