@@ -32,7 +32,7 @@ Simulation of SPAD time-gated FLIM. Make sure units in .json are consistent with
     "filename": str, name and path to save data with, leave empty for auto generation
 '''
 
-config_path = 'SPAD512/SPAD512/mains/run_simulation.json'
+config_path = 'C:\\Users\\shilp\\OneDrive\\Documents\\SPAD512\\SPAD512\\mains\\run_simulation.json'
 show = True # show final plot
 
 class Simulator:
@@ -86,7 +86,7 @@ class Simulator:
         print(f'Data generated in {(toc-tic):.1f} seconds')
 
         tic = time.time()
-        fit = Fitter(self.config, numsteps=dt.numsteps)
+        fit = Fitter(self.config, numsteps=dt.numsteps, times=dt.times)
         results = fit.fit_exps(image=dt.image)
         fit.save_results(self.config['filename'], results)
         toc = time.time()
@@ -100,5 +100,5 @@ class Simulator:
 
 if __name__ == '__main__':
     obj = Simulator(config_path)
-    obj.run_full()
-    obj.plot_sim(show=show)
+    obj.run_single()
+    obj.plot_single(show=show)

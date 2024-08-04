@@ -1,18 +1,18 @@
 {
     "freq": 10,
-    "numsteps": 2,
-    "integ": [1000, 2500, 5000, 7500, 10000, 12500, 15000, 17500, 20000, 25000, 30000, 35000, 40000, 45000, 50000],
+    "numsteps": 0,
+    "integ": 10000,
     "width": 5000,
-    "step": [5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,16000,17000,18000,19000,20000],
-    "offset": 15000,
+    "step": 100,
+    "offset": 18,
     "thresh": 0,
-    "irf_mean": 10,
+    "irf_mean": 0,
     "irf_width": 1.4, 
-    "fit": "mono_rld_50ovp",
+    "fit": "bi",
     "kernel_size": 0,
-    "lifetimes": [20],
+    "lifetimes": [20, 4],
     "zeta": 0.05,
-    "x": 25,
-    "y": 25,
-    "filename": "240711/20_mono_rld_50ovp"
+    "x": 1,
+    "y": 1,
+    "filename": "C:\\Users\\shilp\\OneDrive\\Documents\\test"
 }

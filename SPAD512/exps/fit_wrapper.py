@@ -68,7 +68,7 @@ class Fitter:
         self.full_trace = np.zeros((self.numsteps), dtype=float)
 
         with ProcessPoolExecutor() as executor:
-            futures = [executor.submit(self.helper, self.config, image[:, (i-self.kernel_size):(i+self.kernel_size+1), (j-self.kernel_size):(j+self.kernel_size+1)], i, j) for i in range(self.kernel_size,x-self.kernel_size) for j in range(self.kernel_size, y-self.kernel_size)]
+            futures = [executor.submit(self.helper, image[:, (i-self.kernel_size):(i+self.kernel_size+1), (j-self.kernel_size):(j+self.kernel_size+1)], i, j) for i in range(self.kernel_size,x-self.kernel_size) for j in range(self.kernel_size, y-self.kernel_size)]
 
             for future in as_completed(futures):
                 outputs, success, sum, i, j = future.result()
@@ -85,7 +85,7 @@ class Fitter:
 
         full_reshaped = self.full_trace.reshape(len(self.full_trace),1,1)
 
-        outputs, success, sum, i, j = self.helper(self.config, full_reshaped, 0, 0)
+        outputs, success, sum, i, j = self.helper(full_reshaped, 0, 0)
 
         return self.A1, self.A2, self.tau1, self.tau2, self.intensity, self.full_trace, outputs, self.track, self.times
     

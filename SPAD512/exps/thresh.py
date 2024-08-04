@@ -42,5 +42,3 @@ def display_intensity_image(filename, thresh):
 def run_intensity_images(filename, threshs):
     for thresh in threshs:
         display_intensity_image(filename, thresh)
-
-run_intensity_images(filenames, threshs)

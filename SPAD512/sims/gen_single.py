@@ -19,7 +19,7 @@ class Generator:
             'x': 0,
             'y': 0,
             'integ': 1,  
-            'tau': 20,   
+            'lifetimes': 10,   
             'width': 0,
             'offset': 0,
             'step': 0,
@@ -56,14 +56,14 @@ class Generator:
         data = np.zeros(self.numsteps, dtype=int)
         steps = np.arange(self.numsteps) * self.step
         
-        prob = np.zeros((len(self.tau), len(steps)))
-        for i, lt in enumerate(self.tau):
+        prob = np.zeros((len(self.lifetimes), len(steps)))
+        for i, lt in enumerate(self.lifetimes):
             lam = 1/lt
             prob[i,:] += self.zeta * (np.exp(-lam * (self.offset + steps)) - np.exp(-lam * (self.offset + steps + self.width)))
             if convolve:
                 prob[i,:] = self.convolveProb(prob[i,:])
 
-        choices = (np.random.rand(numgates, self.numsteps) > weight).astype(int) * (len(self.tau)-1)
+        choices = (np.random.rand(numgates, self.numsteps) > weight).astype(int) * (len(self.lifetimes)-1)
         events = np.random.rand(numgates, self.numsteps)
         data = np.sum(events < prob[choices, np.arange(self.numsteps)], axis=0)
 
@@ -89,7 +89,7 @@ class Generator:
         plt.xlabel('Time, ns')
         plt.ylabel('Counts')
         plt.legend()
-        plt.title(f'Simulated Decay for {self.integ*1e-3} ms integration, {1e-3*self.step} ns step, {self.tau} ns lifetime')
+        plt.title(f'Simulated Decay for {self.integ*1e-3} ms integration, {1e-3*self.step} ns step, {self.lifetimes} ns lifetime')
         plt.show()
 
     def helper(self, pixel):
