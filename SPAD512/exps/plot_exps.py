@@ -103,14 +103,12 @@ class Plotter:
         ax.set_title(title)
         plt.colorbar(im, ax=ax, label=cbar_label)
 
-    def _plot_trace(self, ax, times, full_trace, full_params, fit_type):
+    def _plot_trace(self, ax, times, full_trace, full_params):
         ax.set_title('Fully binned trace')
         ax.scatter(times, full_trace, s=5)
-        if fit_type in ('mono'):
+        if self.fit in ('mono', 'mono_conv', 'mono_conv_log', 'mono_conv_mh'):
             ax.plot(times, self.decay(times, full_params[0], full_params[1]), label=f'Fit: tau = {1/full_params[1]:.2f}', color='black')
-        elif fit_type in ('mono_conv', 'log_mono_conv', 'mh_mono_conv'):
-            ax.plot(times, self.decay(times, full_params[0], full_params[1]), label=f'Fit: tau = {1/full_params[1]:.2f}', color='black')
-        elif fit_type in ('bi_conv'):
+        elif self.fit in ('bi', 'bi_conv', 'bi_mh', 'bi_nnls', 'bi_nnls_conv', 'bi_rld'):
             ax.plot(times, self.decay_double(times, full_params[0], 1/full_params[1], full_params[2], 1/full_params[3]), label=f'Fit: tau = {1/full_params[1]:.2f}, {1/full_params[3]:.2f}', color='black')
         else:
             ax.plot(times, self.decay_double(times, full_params[0], 1/full_params[1], full_params[2], 1/full_params[3]), label=f'Fit: tau = {1/full_params[1]:.2f}, {1/full_params[3]:.2f}', color='black')
