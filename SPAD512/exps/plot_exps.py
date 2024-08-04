@@ -65,7 +65,7 @@ class Plotter:
         self._plot_image(ax[0, 1], intensity, 'Intensity', 'cts', self._custom_gray_colormap(), mcolors.Normalize(vmin=0, vmax=np.max(intensity)))
         self._plot_image(ax[1, 0], tau1, 'Lifetimes', 'ns', self._custom_seismic_colormap())
 
-        self._plot_trace(ax[1, 1], times, full_trace, full_params, self.fit)
+        self._plot_trace(ax[1, 1], times, full_trace, full_params)
 
         self._finplot(fig, ax, filename, show)
 
@@ -86,7 +86,7 @@ class Plotter:
         self._plot_image(ax[1, 1], tau2, 'Larger Lifetime', 'ns', self._custom_seismic_colormap())
         self._plot_image(ax[0, 2], intensity, 'Intensity', 'cts', self._custom_gray_colormap(), mcolors.Normalize(vmin=0, vmax=np.max(intensity)))
 
-        self._plot_trace(ax[1, 2], times, full_trace, full_params, self.fit)
+        self._plot_trace(ax[1, 2], times, full_trace, full_params)
 
         self._finplot(fig, ax, filename, show)
 
@@ -122,7 +122,7 @@ class Plotter:
 
     def _finplot(self, fig, ax, filename, show):
         for i, axi in enumerate(ax.ravel()):
-            if i != 3:
+            if i != 3: # change to 5 somehow maybe without if logic but idk so many if statements here this is dumb
                 axi.set_xticks([])
                 axi.set_yticks([])
         plt.tight_layout()

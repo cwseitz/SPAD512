@@ -12,7 +12,7 @@
     "kernel_size": 0,
     "lifetimes": [20, 4],
     "zeta": 0.05,
-    "x": 1,
-    "y": 1,
+    "x": 5,
+    "y": 5,
     "filename": "C:\\Users\\shilp\\OneDrive\\Documents\\test"
 }
