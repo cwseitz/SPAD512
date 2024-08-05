@@ -9,7 +9,7 @@ data = [102, 47, 23, 12]
 dt = 10
 g = 10
 
-def bi_rld_pymc3(D0, D1, D2, D3, dt, g):
+def bi_rld(D0, D1, D2, D3, dt, g):
     R = D1 * D1 - D2 * D0
     P = D3 * D0 - D2 * D1
     Q = D2 * D2 - D3 * D1
@@ -24,30 +24,26 @@ def bi_rld_pymc3(D0, D1, D2, D3, dt, g):
     A2 = (-R * at.log(x)) / (S * ((x ** (g / dt)) - 1))
     return A1, tau1, A2, tau2
 
-def bayesian_inference(data, dt, g):
+def bayes(data, dt, g):
     D0, D1, D2, D3 = data
 
     with pm.Model() as model:
-        # Priors for the observed data points
         D0_obs = pm.Normal('D0', mu=D0, sigma=0.1)
         D1_obs = pm.Normal('D1', mu=D1, sigma=0.1)
         D2_obs = pm.Normal('D2', mu=D2, sigma=0.1)
         D3_obs = pm.Normal('D3', mu=D3, sigma=0.1)
         
-        # Calculate A1, tau1, A2, tau2 using the provided formula
-        A1, tau1, A2, tau2 = bi_rld_pymc3(D0_obs, D1_obs, D2_obs, D3_obs, dt, g)
+        A1, tau1, A2, tau2 = bi_rld(D0_obs, D1_obs, D2_obs, D3_obs, dt, g)
 
-        # Define likelihood
         sigma = pm.HalfNormal('sigma', sigma=1)
         observed = pm.Normal('observed', mu=[A1, tau1, A2, tau2], sigma=sigma, observed=[A1, tau1, A2, tau2])
 
-        # Inference
         trace = pm.sample(2000, return_inferencedata=True)
 
     return trace
 
 # Perform Bayesian inference
-trace = bayesian_inference(data, dt, g)
+trace = bayes(data, dt, g)
 
 # Plot the results
 pm.plot_trace(trace)
