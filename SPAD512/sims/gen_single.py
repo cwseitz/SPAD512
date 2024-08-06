@@ -26,7 +26,8 @@ class Generator:
             'irf_mean': 0,
             'irf_width': 0,
             'filename': "",
-            'numsteps': 0
+            'numsteps': 0,
+            'max_pileups': 5
         }
         defaults.update(config)
         defaults.update(kwargs)
@@ -59,7 +60,8 @@ class Generator:
         prob = np.zeros((len(self.lifetimes), len(steps)))
         for i, lt in enumerate(self.lifetimes):
             lam = 1/lt
-            prob[i,:] += self.zeta * (np.exp(-lam * (self.offset + steps)) - np.exp(-lam * (self.offset + steps + self.width)))
+            for j in range(self.max_pileups): # pileup logic is wrong here, if detected in n = 2 pulse, need to not detect in n = 1
+                prob[i,:] += self.zeta * (np.exp(-lam * (self.offset + steps + j*(1e3/self.freq))) - np.exp(-lam * (self.offset + steps + j*(1e3/self.freq) + self.width)))
             if convolve:
                 prob[i,:] = self.convolveProb(prob[i,:])
 
