@@ -60,14 +60,47 @@ class Generator:
         prob = np.zeros((len(self.lifetimes), len(steps)))
         for i, lt in enumerate(self.lifetimes):
             lam = 1/lt
-            for j in range(self.max_pileups): # pileup logic is wrong here, if detected in n = 2 pulse, need to not detect in n = 1
-                prob[i,:] += self.zeta * (np.exp(-lam * (self.offset + steps + j*(1e3/self.freq))) - np.exp(-lam * (self.offset + steps + j*(1e3/self.freq) + self.width)))
+            prob[i,:] += self.zeta * (np.exp(-lam * (self.offset + steps)) - np.exp(-lam * (self.offset + steps + self.width)))
             if convolve:
                 prob[i,:] = self.convolveProb(prob[i,:])
 
         choices = (np.random.rand(numgates, self.numsteps) > weight).astype(int) * (len(self.lifetimes)-1)
         events = np.random.rand(numgates, self.numsteps)
         data = np.sum(events < prob[choices, np.arange(self.numsteps)], axis=0)
+
+        return data
+    
+    def genTrace_piled(self, convolve=False, weight=0.1):
+        numgates = int(self.freq * self.integ)
+        data = np.zeros(self.numsteps, dtype=int)
+        steps = np.arange(self.numsteps) * self.step
+        
+        prob = np.zeros((len(self.lifetimes), len(steps), self.max_pileups))
+        for i, lt in enumerate(self.lifetimes):
+            lam = 1 / lt
+            for j in range(self.max_pileups):
+                prob[i, :, j] = self.zeta * (
+                    np.exp(-lam * (self.offset + steps + j * (1e3 / self.freq)))
+                    - np.exp(-lam * (self.offset + steps + j * (1e3 / self.freq) + self.width))
+                )
+            if convolve:
+                for j in range(self.max_pileups):
+                    prob[i, :, j] = self.convolveProb(prob[i, :, j])
+
+        choices = (np.random.rand(numgates, self.numsteps) > weight).astype(int) * (len(self.lifetimes) - 1)
+        events = np.random.rand(numgates, self.numsteps)
+        
+        for i in range(self.numsteps): # this is still sus to me i think i vectorized wrong but whatever
+            pileup_count = 0
+            for k in range(numgates):
+                lt_choice = choices[k, i]
+                for j in range(self.max_pileups):
+                    if events[k, i] < prob[lt_choice, i, j]:
+                        data[i] += 1
+                        pileup_count += 1
+                        break
+                if pileup_count >= self.max_pileups:
+                    break
 
         return data
 

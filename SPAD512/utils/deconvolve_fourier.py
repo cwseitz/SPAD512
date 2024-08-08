@@ -10,19 +10,19 @@ def gaussian(x, mu, sigma):
     kernel /= np.sum(kernel)
     return kernel
 
-# def butter_lpf(self, data, cutoff, fs, order):
-#     T = 1 # sample period
-#     fs = 1/(max(self.times)/len(self.times)) # sampling frequency
-#     cutoff = 2
+def butter_lpf(self, data, cutoff, fs, order):
+    T = 1 # sample period
+    fs = 1/(max(self.times)/len(self.times)) # sampling frequency
+    cutoff = 2
 
-#     nyq = 0.5*fs
-#     order = 2
-#     n = int(T*fs)   
-#     cutoff_norm = cutoff/nyq
+    nyq = 0.5*fs
+    order = 2
+    n = int(T*fs)   
+    cutoff_norm = cutoff/nyq
 
-#     b, a = butter(order, cutoff_norm, btype='low', analog=False)
-#     y = filtfilt(b, a, data)
-#     return y
+    b, a = butter(order, cutoff_norm, btype='low', analog=False)
+    y = filtfilt(b, a, data)
+    return y
 
 # def deconvolve_fourier(self, alpha=1):
 #     data_filt = self.butter_lpf(self.data)

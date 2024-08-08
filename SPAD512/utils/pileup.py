@@ -1,27 +1,27 @@
 import numpy as np
-import matplotlib.pyplot as plt
+import random
 
-# test with contiguous RLD
-interpulse = 100 # interpulse time in NS
-tau = 20 # ground truth monoexponential lifetime
-zeta = 0.05 # probability of photon detection
-step = 10 # gate step size (and width for contiguous case)
-start = 0 # first gate opening time
+lifetimes = [10]
+zeta = 0.05       
+offset = 0.018     
+step = 1             
+width = 5        
+freq = 10      
+max_pileups = 3 
+numgates = 10000           
 
-def perturb(interpulse, tau, step, start):
-    return 0
+for i in range(numgates):
+    lam = 1 / lifetimes[0]
+    prob = []
+    for j in range(max_pileups):
+        prob_value = zeta * (
+            np.exp(-lam * (offset + step + j * (1e3 / freq))) -
+            np.exp(-lam * (offset + step + width + j * (1e3 / freq)))
+        )
+        prob.append(prob_value)
 
-def gen(tau, zeta, step, start):
-    lam = 1/tau
-    D0 = zeta * (np.exp(-lam * (start)) - np.exp(-lam * (start + step)))
-    D1 = zeta * (np.exp(-lam * (start + step)) - np.exp(-lam * (start + 2*step)))
-    return D0, D1
+    prob.append(1 - sum(prob))
 
-def rld(D0, D1, step):
-    A = (D0**2) * (np.log(D0/D1)) / (step*(D0-D1)) 
-    tau = step / (np.log(D0/D1))
-    return A, tau
-
-
-
-
+    det_pulse = random.choices(range(len(prob)), weights=prob)[0]
+    
+    print(f"Gate {i+1}: Probabilities = {prob}, Selected index = {det_pulse}")
