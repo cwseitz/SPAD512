@@ -24,6 +24,12 @@ class Fitter:
         for key, val in defaults.items():
             setattr(self,key,val)
 
+        self.step *= 1e-3 # ps --> ns
+        self.width *= 1e-3 
+        self.offset *= 1e-3
+
+        print(self.__dict__)
+
         self.A1 = None
         self.tau1 = None
         self.A2 = None
