@@ -260,6 +260,7 @@ class Trace:
 
                 tau1 = -dt/np.log(y)
                 tau2 = -dt/np.log(x)
+
                 A1 = (-(x*D0 - D1)**2) * np.log(y) / (S * T) 
                 A2 = (-R * np.log(x)) / (S * ((x**(g/dt)) - 1))
 
