@@ -264,7 +264,7 @@ class Trace:
                 A1 = (-(x*D0 - D1)**2) * np.log(y) / (S * T) 
                 A2 = (-R * np.log(x)) / (S * ((x**(g/dt)) - 1))
 
-                return (A1, A2, 1/tau1, 1/tau2)
+                return (A1, 1/tau1, A2, 1/tau2)
 
             case 'stref':
                 loc = min(np.argmax(self.data), len(self.data) - 4)

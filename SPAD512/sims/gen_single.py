@@ -53,7 +53,7 @@ class Generator:
         self.times = (np.arange(self.numsteps) * self.step) + self.offset # ns
 
     def genTrace(self, convolve=True, weight=0.1):
-        numgates = int(self.freq * self.integ)
+        numgates = int(self.freq * self.integ) # frequency is only included here i should probably add some more frequency logic
         data = np.zeros(self.numsteps, dtype=int)
         steps = np.arange(self.numsteps) * self.step
         

@@ -62,27 +62,26 @@ class Plotter:
         fig, ax = plt.subplots(2, 2, figsize=(7, 7))
         fig.suptitle(f'{self.integ} us integ, {int(self.step)} ps step, {int(self.integ*self.numsteps*1e-3)} ms acq time, {self.thresh} thresh, {track} fits', fontsize=12)
 
-        A1 = median_filter(A1, size=3)
-        tau1 = median_filter(tau1, size=3)
-
         self._plot_image(ax[0, 0], A1, 'Amplitudes', 'cts', 'plasma')
         self._plot_image(ax[0, 1], intensity, 'Intensity', 'cts', self._custom_gray_colormap(), mcolors.Normalize(vmin=0, vmax=np.max(intensity)))
         self._plot_image(ax[1, 0], tau1, 'Lifetimes', 'ns', self._custom_seismic_colormap())
 
         self._plot_trace(ax[1, 1], times, full_trace, full_params)
 
-        self._finplot(fig, ax, filename, show)
+        for i, axi in enumerate(ax.ravel()):
+            if i != 3: # change to 5 somehow maybe without if logic but idk so many if statements here this is dumb
+                axi.set_xticks([])
+                axi.set_yticks([])
+        plt.tight_layout()
+        plt.savefig(filename + '_results.png')
+        if show:
+            plt.show()
 
     def plot_bi(self, A1, A2, tau1, tau2, intensity, full_trace, full_params, times, track, filename, show):
         A1, A2, tau1, tau2 = self._swap_tau(A1, A2, tau1, tau2)
 
         fig, ax = plt.subplots(2, 3, figsize=(11, 7))
         fig.suptitle(f'{self.integ} us integ, {int(self.step)} ps step, {int(self.integ*self.numsteps*1e-3)} ms acq time, {self.thresh} thresh, {track} fits', fontsize=12)
-
-        A1 = median_filter(A1, size=3)
-        A2 = median_filter(A2, size=3)
-        tau1 = median_filter(tau1, size=3)
-        tau2 = median_filter(tau2, size=3)
 
         self._plot_image(ax[0, 0], A1, 'Smaller Amplitude', 'cts', self._custom_plasma_colormap())
         self._plot_image(ax[0, 1], A2, 'Larger Amplitude', 'cts', self._custom_plasma_colormap())
@@ -92,7 +91,14 @@ class Plotter:
 
         self._plot_trace(ax[1, 2], times, full_trace, full_params)
 
-        self._finplot(fig, ax, filename, show)
+        for i, axi in enumerate(ax.ravel()):
+            if i != 5: # change to 5 somehow maybe without if logic but idk so many if statements here this is dumb
+                axi.set_xticks([])
+                axi.set_yticks([])
+        plt.tight_layout()
+        plt.savefig(filename + '_results.png')
+        if show:
+            plt.show()
 
     def _swap_tau(self, A1, A2, tau1, tau2):
         for i in range(len(A1)):
@@ -124,15 +130,7 @@ class Plotter:
         ax.tick_params(axis='y', which='both', left=True, right=True)
         ax.legend()
 
-    def _finplot(self, fig, ax, filename, show):
-        for i, axi in enumerate(ax.ravel()):
-            if i != 3: # change to 5 somehow maybe without if logic but idk so many if statements here this is dumb
-                axi.set_xticks([])
-                axi.set_yticks([])
-        plt.tight_layout()
-        plt.savefig(filename + '_results.png')
-        if show:
-            plt.show()
+    
 
     def _custom_gray_colormap(self):
         colors = [(1, 0, 0)] + [(i, i, i) for i in np.linspace(0, 1, 255)]

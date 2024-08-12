@@ -28,8 +28,6 @@ class Fitter:
         self.width *= 1e-3 
         self.offset *= 1e-3
 
-        print(self.__dict__)
-
         self.A1 = None
         self.tau1 = None
         self.A2 = None
@@ -87,7 +85,7 @@ class Fitter:
 
                     self.full_trace += image[:, i, j]
                     self.track += 1
-                    print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns\n')
+                    print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns, {1/(outputs[3]+1e-10)} ns\n')
 
         full_reshaped = self.full_trace.reshape(len(self.full_trace),1,1)
 
