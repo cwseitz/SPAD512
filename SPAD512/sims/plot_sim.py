@@ -8,11 +8,14 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import random
 
 
-def plotLifetimes(mean_image, std_image, integs, steps, tau, savename, show=True):
+def plotLifetimes(mean_image, std_image, widths, steps, tau, savename, show=True):
     numtau, xlen, ylen = np.shape(mean_image)
     
     mean_image[np.isnan(mean_image)] = -1
     std_image[np.isnan(std_image)] = -1
+
+    steps = np.asarray(steps) * 1e-3
+    widths = np.asarray(widths) * 1e-3
 
     # plot mean
     if (numtau == 1):
@@ -26,9 +29,9 @@ def plotLifetimes(mean_image, std_image, integs, steps, tau, savename, show=True
         cbar1.set_label('Means, ns')
         ax[0].set_title('Mean Lifetimes')
         ax[0].set_xlabel('Step size (ns)')
-        ax[0].set_ylabel('Integration time (ms)')
+        ax[0].set_ylabel('Widths (ns)')
         ax[0].set_yticks(np.linspace(0, xlen, num=xlen, endpoint=False))
-        ax[0].set_yticklabels(integs)
+        ax[0].set_yticklabels(widths)
         ax[0].set_xticks(np.linspace(0, ylen, num=ylen, endpoint=False))
         ax[0].set_xticklabels(steps)
         plt.setp(ax[0].get_xticklabels(), rotation=45)
@@ -40,9 +43,9 @@ def plotLifetimes(mean_image, std_image, integs, steps, tau, savename, show=True
         cbar2.set_label('St Devs, ns')
         ax[1].set_title('Standard Deviation of Lifetimes')
         ax[1].set_xlabel('Step size (ns)')
-        ax[1].set_ylabel('Integration time (ms)')
+        ax[1].set_ylabel('Widths (ns)')
         ax[1].set_yticks(np.linspace(0, xlen, num=xlen, endpoint=False))
-        ax[1].set_yticklabels(integs)
+        ax[1].set_yticklabels(widths)
         ax[1].set_xticks(np.linspace(0, ylen, num=ylen, endpoint=False))
         ax[1].set_xticklabels(steps)
         plt.setp(ax[1].get_xticklabels(), rotation=45)
@@ -79,9 +82,9 @@ def plotLifetimes(mean_image, std_image, integs, steps, tau, savename, show=True
         cbar1.set_label('Means, ns')
         ax[0, 0].set_title('Larger Lifetimes')
         ax[0, 0].set_xlabel('Step size (ns)')
-        ax[0, 0].set_ylabel('Integration time (ms)')
+        ax[0, 0].set_ylabel('Width (ns)')
         ax[0, 0].set_yticks(np.linspace(0, xlen, num=xlen, endpoint=False))
-        ax[0, 0].set_yticklabels(integs)
+        ax[0, 0].set_yticklabels(widths)
         ax[0, 0].set_xticks(np.linspace(0, ylen, num=ylen, endpoint=False))
         ax[0, 0].set_xticklabels(steps)
         plt.setp(ax[0, 0].get_xticklabels(), rotation=45)
@@ -94,9 +97,9 @@ def plotLifetimes(mean_image, std_image, integs, steps, tau, savename, show=True
         cbar2.set_label('Means, ns')
         ax[0, 1].set_title('Smaller Lifetimes')
         ax[0, 1].set_xlabel('Step size (ns)')
-        ax[0, 1].set_ylabel('Integration time (ms)')
+        ax[0, 1].set_ylabel('Width (ns)')
         ax[0, 1].set_yticks(np.linspace(0, xlen, num=xlen, endpoint=False))
-        ax[0, 1].set_yticklabels(integs)
+        ax[0, 1].set_yticklabels(widths)
         ax[0, 1].set_xticks(np.linspace(0, ylen, num=ylen, endpoint=False))
         ax[0, 1].set_xticklabels(steps)
         plt.setp(ax[0, 1].get_xticklabels(), rotation=45)
@@ -107,9 +110,9 @@ def plotLifetimes(mean_image, std_image, integs, steps, tau, savename, show=True
         cbar3.set_label('St Devs, ns')
         ax[1, 0].set_title('Standard Deviation of Lifetimes')
         ax[1, 0].set_xlabel('Step size (ns)')
-        ax[1, 0].set_ylabel('Integration time (ms)')
+        ax[1, 0].set_ylabel('Width (ns)')
         ax[1, 0].set_yticks(np.linspace(0, xlen, num=xlen, endpoint=False))
-        ax[1, 0].set_yticklabels(integs)
+        ax[1, 0].set_yticklabels(widths)
         ax[1, 0].set_xticks(np.linspace(0, ylen, num=ylen, endpoint=False))
         ax[1, 0].set_xticklabels(steps)
         plt.setp(ax[1, 0].get_xticklabels(), rotation=45)
@@ -120,9 +123,9 @@ def plotLifetimes(mean_image, std_image, integs, steps, tau, savename, show=True
         cbar3.set_label('St Devs, ns')
         ax[1, 1].set_title('Standard Deviation of Lifetimes')
         ax[1, 1].set_xlabel('Step size (ns)')
-        ax[1, 1].set_ylabel('Integration time (ms)')
+        ax[1, 1].set_ylabel('Width (ns)')
         ax[1, 1].set_yticks(np.linspace(0, xlen, num=xlen, endpoint=False))
-        ax[1, 1].set_yticklabels(integs)
+        ax[1, 1].set_yticklabels(widths)
         ax[1, 1].set_xticks(np.linspace(0, ylen, num=ylen, endpoint=False))
         ax[1, 1].set_xticklabels(steps)
         plt.setp(ax[1, 1].get_xticklabels(), rotation=45)
