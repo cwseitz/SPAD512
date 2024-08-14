@@ -111,6 +111,7 @@ ax.set_xticks(np.linspace(0, len(s_sims), num=len(s_sims), endpoint=False))
 ax.set_xticklabels(s_sims)
 fig.colorbar(cax)
 plt.show()
+plt.savefig("C://Users//ishaa//Documents//FLIM//240813//sigmas_sim.png")
 
 # fig, ax = plt.subplots()
 # cax = ax.imshow(avg)
