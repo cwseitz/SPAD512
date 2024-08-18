@@ -70,7 +70,7 @@ class Simulator:
 
         np.savez(self.config['filename'] + '_results.npz', means=self.means, stdevs=self.stdevs)
 
-    def plot_sim(self,show=True):
+    def plot_full(self,show=True):
         results = np.load(self.config['filename'] + '_results.npz')
         self.means = results['means'].astype(float)
         self.stdevs = results['stdevs'].astype(float)
@@ -96,9 +96,10 @@ class Simulator:
     def plot_single(self,show=True):
         plot = Plotter(self.config)
         results = np.load(self.config['filename'] + '_fit_results.npz')
-        plot.plot_all(results, self.config['filename'], show=show)
+        plot.plot_all(results, self.config['filename'], show=show) 
         print(f"Results plotted: {self.config['filename']}_results.png")
 
 if __name__ == '__main__':
     obj = Simulator(config_path)
-    obj.plot_sim()
+    obj.run_full()
+    obj.plot_full()
