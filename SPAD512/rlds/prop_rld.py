@@ -21,7 +21,7 @@ def bi_rld(data, g, s):
 
     return (A1, tau1, A2, tau2)
 
-def gen(reg, params, numgates=1000000, iter=10000, zeta=0.01):
+def gen(reg, params, numgates=1000000, iter=10000, zeta=0.01, kernel=25):
     start, stop = reg
     A1, tau1, A2, tau2 = params
 
@@ -32,12 +32,15 @@ def gen(reg, params, numgates=1000000, iter=10000, zeta=0.01):
     prob = zeta * (-A*np.exp(-stop*lam1) -(1-A)*np.exp(-stop*lam2)
                    + A*np.exp(-start*lam1) + (1-A)*np.exp(-start*lam2))
 
-    return np.random.binomial(numgates, prob, size=iter)
+    counts = 0
+    for i in range(kernel):
+        counts += np.random.binomial(numgates, prob, size=iter)
+    return counts
 
 def hist_single(off, g, s, params):
     off = 0
     g = 5
-    s = 24
+    s = 2.5
     params = [1, 5, 2, 20]
     gates = [(off + i * s, off + g + i * s) for i in range(4)]
     data = []
@@ -47,6 +50,7 @@ def hist_single(off, g, s, params):
     n_A1, n_tau1, n_A2, n_tau2 = bi_rld(data, g, s)
 
     plt.hist(n_tau1, bins=50,  density=True)
+    print(n_tau1)
     plt.title(f'Distribution of end values for {g} ns gate length and {s} ns step size')
     plt.xlabel('Tau 1')
     plt.xlim(0, 100)
@@ -89,17 +93,10 @@ def cmap_all(off, g_sims, s_sims, params, thresh=0.2):
 
     plt.show()
 
-    plt.hist(n_tau1, bins=50,  density=True)
-    plt.title(f'Distribution of end values for {g} ns gate length and {s} ns step size')
-    plt.xlabel('Tau 1')
-    plt.xlim(0, 100)
-    plt.ylabel('PDF')
-    plt.show()
-
 off = 0
 g_sims = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 s_sims = [15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
 params = [1, 5, 2, 20]
 thresh = 0.2
 
-cmap_all(off, g_sims, s_sims, params, thresh=0.2)
+hist_single(off, g_sims, s_sims, params)
