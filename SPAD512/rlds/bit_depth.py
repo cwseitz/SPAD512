@@ -58,45 +58,43 @@ bits = 8 # bit-depth, for bit-depth simulating
 freq = 10 # frequency in MHz, for bit-depth simulating
 bin_gates = int(1e3*freq*(integ/(2**bits))) # number of gate repetitions for a single binary image within a single gate step
 
-'''Generate Data'''
-data = []
+'''OLD CODE FROM EMAIL'''
+'''Test bi-exponential RLD'''
+probs = []
 for reg in regs:
-    prob = get_prob(reg, params)
-    data.append(gen_step(prob))
+    probs.append(get_prob(reg, params)) # can also add a scaling factor here, doesn't change the math
+A1, tau1, A2, tau2 = np.round(bi_rld(probs, g, s), 5)
+print(f'Results of bi-exponential RLD with no bit-depth simulating: {tau1, tau2}') 
+print(f'Lifetime error: {params[1] - tau1, params[3] - tau2}\n')
 
-'''Correct via derived formula'''
-n_data = []
-for dt in data:
-    temp = 1-dt/(2**bits)
-    n_data.append(1-(temp**(1/bin_gates)))
-A1, tau1, A2, tau2 = np.round(bi_rld(n_data, g, s), 5)
+'''Test same method but with bit-depth saturated data'''
+bin_gates = int(1e3*freq*(integ/(2**bits))) # number of gate repetitions for a single binary image within a single gate step
+bit_probs = []
+for prob in probs:
+    temp = 1-((1-prob)**bin_gates)
+    bit_probs.append((2**bits) * temp) # (1-prob)^bin_gates gives probability of no counts for the whole binary image, so take complement again
+A1, tau1, A2, tau2 = np.round(bi_rld(bit_probs, g, s), 5)
+print(f'With bit-depth simulating: {tau1, tau2}') 
+print(f'Lifetime error: {params[1] - tau1, params[3] - tau2}\n')
+
+'''Recover initial lifetimes by reversing complementary data generation'''
+re_probs = []
+for bit_prob in bit_probs:
+    temp = 1-bit_prob/(2**bits)
+    re_probs.append(1-(temp**(1/bin_gates)))
+A1, tau1, A2, tau2 = np.round(bi_rld(re_probs, g, s), 5)
 print(f'Recovered {tau1, tau2}') 
 print(f'Lifetime error: {params[1] - tau1, params[3] - tau2}\n')
 
-# '''OLD CODE FROM EMAIL'''
-# '''Test bi-exponential RLD'''
-# probs = []
+# data = []
 # for reg in regs:
-#     probs.append(get_prob(reg, params)) # can also add a scaling factor here, doesn't change the math
-# A1, tau1, A2, tau2 = np.round(bi_rld(probs, g, s), 5)
-# print(f'Results of bi-exponential RLD with no bit-depth simulating: {tau1, tau2}') 
-# print(f'Lifetime error: {params[1] - tau1, params[3] - tau2}\n')
+#     prob = get_prob(reg, params)
+#     data.append(gen_step(prob))
 
-# '''Test same method but with bit-depth saturated data'''
-# bin_gates = int(1e3*freq*(integ/(2**bits))) # number of gate repetitions for a single binary image within a single gate step
-# bit_probs = []
-# for prob in probs:
-#     temp = 1-((1-prob)**bin_gates)
-#     bit_probs.append((2**bits) * temp) # (1-prob)^bin_gates gives probability of no counts for the whole binary image, so take complement again
-# A1, tau1, A2, tau2 = np.round(bi_rld(bit_probs, g, s), 5)
-# print(f'With bit-depth simulating: {tau1, tau2}') 
-# print(f'Lifetime error: {params[1] - tau1, params[3] - tau2}\n')
-
-# '''Recover initial lifetimes by reversing complementary data generation'''
-# re_probs = []
-# for bit_prob in bit_probs:
-#     temp = 1-bit_prob/(2**bits)
-#     re_probs.append(1-(temp**(1/bin_gates)))
-# A1, tau1, A2, tau2 = np.round(bi_rld(re_probs, g, s), 5)
+# n_data = []
+# for dt in data:
+#     temp = 1-dt/(2**bits)
+#     n_data.append(1-(temp**(1/bin_gates)))
+# A1, tau1, A2, tau2 = np.round(bi_rld(n_data, g, s), 5)
 # print(f'Recovered {tau1, tau2}') 
 # print(f'Lifetime error: {params[1] - tau1, params[3] - tau2}\n')
