@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+'''Bi-exponential Rapid Lifetime Determination formula'''
 def bi_rld(data, g, s):
     D0, D1, D2, D3 = data
 
@@ -21,7 +22,7 @@ def bi_rld(data, g, s):
 
     return (A1, tau1, A2, tau2)
 
-
+'''Data "generation" by directly calculating probabilities'''
 def get_prob(reg, params, zeta=0.01):
     start, stop = reg
     A1, tau1, A2, tau2 = params
@@ -34,15 +35,28 @@ def get_prob(reg, params, zeta=0.01):
                    + A*np.exp(-start*lam1) + (1-A)*np.exp(-start*lam2))
     return prob
 
-params = [1, 5, 2, 20]
-regs = [[3, 8], [5, 10], [7, 12], [9, 14]]
+'''Set Parameters'''
+params = [1, 10, 2, 20] # [amp1, tau1, amp2, tau2]
+regs = [[3, 8], [5, 10], [7, 12], [9, 14]] # gate regions manually specified for simplicity; gate width is 5 here, and gate step is 2
+g = regs[0][1] - regs[0][0] # gate width is length of each gate region
+s = regs[1][0] - regs[0][0] # gate step is the difference between gate opening times
+integ = 10 # integration time in ms, for bit-depth simulating
+bits = 8 # bit-depth, for bit-depth simulating
+freq = 10 # frequency in MHz, for bit-depth simulating
 
+'''Test bi-exponential RLD'''
 probs = []
 for reg in regs:
-    probs.append(get_prob(reg, params))
+    probs.append(get_prob(reg, params)) # can also add a scaling factor here, doesn't change the math
+A1, tau1, A2, tau2 = np.round(bi_rld(probs, g, s), 5)
+print(f'Results of bi-exponential RLD with no bit-depth simulating: {tau1, tau2}') 
+print(f'Lifetime error: {params[1] - tau1, params[3] - tau2}\n')
 
-bit_success = []
+'''Test same method but with bit-depth saturated data'''
+bin_gates = int(1e3*freq*(integ/(2**bits))) # number of gate repetitions for a single binary image within a single gate step
+bit_probs = []
 for prob in probs:
-    bit_success.append(1-((1-prob)**97))
-
-print(bi_rld(bit_success,5,2))
+    bit_probs.append(1-((1-prob)**bin_gates)) # (1-prob)^bin_gates gives probability of no counts for the whole binary image, so take complement again
+A1, tau1, A2, tau2 = np.round(bi_rld(bit_probs, g, s), 5)
+print(f'With bit-depth simulating: {tau1, tau2}') 
+print(f'Lifetime error: {params[1] - tau1, params[3] - tau2}\n')
