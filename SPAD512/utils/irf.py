@@ -16,7 +16,8 @@ interval = 0.018
 for i, file in enumerate(files):
     stack = imread(file)
     times = np.arange(0, stack.shape[0] * interval, interval)[:stack.shape[0]] 
-    counts = np.mean(stack, axis=(1,2))
+    # counts = np.mean(stack, axis=(1,2))
+    counts = stack[:, 289, 258]
     width = re.search(r'(\d+)ns', file).group(1)
 
     # rising edge plotting 
@@ -24,7 +25,8 @@ for i, file in enumerate(files):
     start = max(0, peak - int(1 / interval))  
     end = peak + int(1 / interval)  
 
-    ax.plot(times[start:end] - times[peak], counts[start:end], label=f'{width} ns')
+    # ax.plot(times[start:end] - times[peak], counts[start:end], label=f'{width} ns')
+    ax.plot(times, counts, label=f'{width} ns')
 
 ax.set_xlabel('Time, ns')
 ax.set_ylabel('Counts')
