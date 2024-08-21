@@ -41,19 +41,19 @@ class Simulator:
             self.config = json.load(f)
 
     def run_full(self): # array of vals for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
-        self.means = np.zeros((len(self.config['lifetimes']),len(self.config['width']), len(self.config['step'])))
-        self.stdevs = np.zeros((len(self.config['lifetimes']),len(self.config['width']), len(self.config['step'])))
+        self.means = np.zeros((len(self.config['lifetimes']),len(self.config['integ']), len(self.config['step'])))
+        self.stdevs = np.zeros((len(self.config['lifetimes']),len(self.config['integ']), len(self.config['step'])))
 
-        for i, width in enumerate(self.config['width']):
+        for i, integ in enumerate(self.config['integ']):
             for j, step in enumerate(self.config['step']):
                 tic = time.time()
-                dt = Generator(self.config, width=width, step=step)
+                dt = Generator(self.config, integ=integ, step=step)
                 dt.genImage()
                 toc = time.time()
-                print(f'Data for {(width * 1e-3):.3f} ns width, {(step * 1e-3):.3f} ns step generated in {(toc-tic):.1f} seconds')
+                print(f'Data for {(integ * 1e-3):.3f} ms integration, {(step * 1e-3):.3f} ns step generated in {(toc-tic):.1f} seconds')
                 
                 tic = time.time()
-                fit = Fitter(self.config, numsteps=dt.numsteps, times=dt.times, step=step, width=width)
+                fit = Fitter(self.config, numsteps=dt.numsteps, times=dt.times, step=step, integ=integ)
                 results = fit.fit_exps(image=dt.image)
                 
                 nonzero = results[2][(results[2] != 0) & (~np.isnan(results[2]))]
@@ -66,7 +66,7 @@ class Simulator:
                     self.stdevs[1, i, j] += np.std(nonzero)
 
                 toc = time.time()
-                print(f'Data analyzed in {(toc-tic):.1f} seconds. Mean lifetimes {(self.means[0,i,j]):.2f}, {(self.means[1,i,j]):.2f} ns \n')
+                print(f'Data analyzed in {(toc-tic):.1f} seconds. StD short lifetime {(self.stdevs[0,i,j]):.2f}, mean {(self.means[0,i,j]):.2f} ns \n')
 
         np.savez(self.config['filename'] + '_results.npz', means=self.means, stdevs=self.stdevs)
 
@@ -75,9 +75,7 @@ class Simulator:
         self.means = results['means'].astype(float)
         self.stdevs = results['stdevs'].astype(float)
 
-        plotLifetimes(self.means, self.stdevs, self.config['width'], self.config['step'], self.config['lifetimes'], self.config['filename'] + '_results', show=show)
-
-
+        plotLifetimes(self.means, self.stdevs, self.config['integ'], self.config['step'], self.config['lifetimes'], self.config['filename'] + '_results', show=show)
 
     def run_single(self): # single vals (not in array) for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
         tic = time.time()
@@ -101,5 +99,5 @@ class Simulator:
 
 if __name__ == '__main__':
     obj = Simulator(config_path)
-    obj.run_full()
+    # obj.run_full()
     obj.plot_full()

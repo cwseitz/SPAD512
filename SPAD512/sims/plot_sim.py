@@ -54,11 +54,10 @@ def plotLifetimes(mean_image, std_image, widths, steps, tau, savename, show=True
         print('Figure saved as ' + savename)
 
         if show:
-            plt.tight_layout()
             plt.show()
 
     if (numtau == 2):
-        fig, ax = plt.subplots(2,2,figsize=(9,8))
+        fig, ax = plt.subplots(2,2,figsize=(12,12))
 
         if (np.mean(mean_image[0]) < np.mean(mean_image[1])):
             temp = mean_image[1].copy()
@@ -69,10 +68,9 @@ def plotLifetimes(mean_image, std_image, widths, steps, tau, savename, show=True
             std_image[1] = std_image[0]
             std_image[0] = temp
 
-            
-        temp = tau[1]
-        tau[1] = tau[0]
-        tau[0] = temp
+        # temp = tau[1]
+        # tau[1] = tau[0]
+        # tau[0] = temp
 
         lower = min(max(tau[0] - 10, int(np.min(mean_image[0]))), tau[0] - 1)
         upper = max(min(tau[0] + 10, int(np.max(mean_image[0] + 1))), tau[0] + 1)
@@ -82,7 +80,7 @@ def plotLifetimes(mean_image, std_image, widths, steps, tau, savename, show=True
         cbar1.set_label('Means, ns')
         ax[0, 0].set_title('Larger Lifetimes')
         ax[0, 0].set_xlabel('Step size (ns)')
-        ax[0, 0].set_ylabel('Width (ns)')
+        ax[0, 0].set_ylabel('Integration (ms)')
         ax[0, 0].set_yticks(np.linspace(0, xlen, num=xlen, endpoint=False))
         ax[0, 0].set_yticklabels(np.round(widths, 2))
         ax[0, 0].set_xticks(np.linspace(0, ylen, num=ylen, endpoint=False))
@@ -97,7 +95,7 @@ def plotLifetimes(mean_image, std_image, widths, steps, tau, savename, show=True
         cbar2.set_label('Means, ns')
         ax[0, 1].set_title('Smaller Lifetimes')
         ax[0, 1].set_xlabel('Step size (ns)')
-        ax[0, 1].set_ylabel('Width (ns)')
+        ax[0, 1].set_ylabel('Integration (ms)')
         ax[0, 1].set_yticks(np.linspace(0, xlen, num=xlen, endpoint=False))
         ax[0, 1].set_yticklabels(np.round(widths, 2))
         ax[0, 1].set_xticks(np.linspace(0, ylen, num=ylen, endpoint=False))
@@ -110,7 +108,7 @@ def plotLifetimes(mean_image, std_image, widths, steps, tau, savename, show=True
         cbar3.set_label('St Devs, ns')
         ax[1, 0].set_title('Standard Deviation of Lifetimes')
         ax[1, 0].set_xlabel('Step size (ns)')
-        ax[1, 0].set_ylabel('Width (ns)')
+        ax[1, 0].set_ylabel('Integration (ms)')
         ax[1, 0].set_yticks(np.linspace(0, xlen, num=xlen, endpoint=False))
         ax[1, 0].set_yticklabels(np.round(widths, 2))
         ax[1, 0].set_xticks(np.linspace(0, ylen, num=ylen, endpoint=False))
@@ -123,7 +121,7 @@ def plotLifetimes(mean_image, std_image, widths, steps, tau, savename, show=True
         cbar3.set_label('St Devs, ns')
         ax[1, 1].set_title('Standard Deviation of Lifetimes')
         ax[1, 1].set_xlabel('Step size (ns)')
-        ax[1, 1].set_ylabel('Width (ns)')
+        ax[1, 1].set_ylabel('Integration (ms)')
         ax[1, 1].set_yticks(np.linspace(0, xlen, num=xlen, endpoint=False))
         ax[1, 1].set_yticklabels(np.round(widths, 2))
         ax[1, 1].set_xticks(np.linspace(0, ylen, num=ylen, endpoint=False))
@@ -134,5 +132,4 @@ def plotLifetimes(mean_image, std_image, widths, steps, tau, savename, show=True
         print('Figure saved as ' + savename)
 
         if show:
-            plt.tight_layout()
             plt.show()
