@@ -77,11 +77,11 @@ class Fitter:
             for future in as_completed(futures):
                 outputs, success, sum, i, j = future.result()
                 if success:
-                    self.A1[i][j] += outputs[0]
-                    self.tau1[i][j] += 1/(outputs[1]+1e-10)
-                    self.A2[i][j] += outputs[2]
-                    self.tau2[i][j] += 1/(outputs[3]+1e-10)
-                    self.intensity[i][j] += sum
+                    self.A1[i,j] += outputs[0]
+                    self.tau1[i,j] += 1/(outputs[1]+1e-10)
+                    self.A2[i,j] += outputs[2]
+                    self.tau2[i,j] += 1/(outputs[3]+1e-10)
+                    self.intensity[i,j] += sum
 
                     self.full_trace += image[:, i, j]
                     self.track += 1

@@ -7,7 +7,7 @@ from scipy.signal import convolve, deconvolve
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import random
 
-
+@staticmethod
 def plotLifetimes(mean_image, std_image, widths, steps, tau, savename, show=True):
     numtau, xlen, ylen = np.shape(mean_image)
     
