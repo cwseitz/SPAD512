@@ -1,18 +1,18 @@
 {
     "freq": 40,
     "numsteps": 4,
-    "integ": [100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000],
-    "width": 10,
-    "step": [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000],
-    "offset": 2500,
+    "integ": [500, 1000, 1500, 2000, 2500, 5000, 10000, 25000, 50000, 100000],
+    "width": 10000,
+    "step": [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000],
+    "offset": 5000,
     "thresh": 0,
     "irf_mean": 0,
     "irf_width": 1.4, 
     "fit": "bi_rld",
     "kernel_size": 3,
-    "lifetimes": [0.5, 2.5],
+    "lifetimes": [20, 5],
     "zeta": 0.05,
     "x": 25,
     "y": 25,
-    "filename": "C:\\Users\\ishaa\\Documents\\FLIM\\240820\\2p5_p5_width10_integs_part2"
+    "filename": "C:\\Users\\ishaa\\Documents\\FLIM\\240818\\20_5_integs"
 }

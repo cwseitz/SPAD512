@@ -60,7 +60,6 @@ class Simulator:
                 nonzero = results[2][(results[2] != 0) & (~np.isnan(results[2]))]
                 self.means[0, i, j] += np.mean(nonzero)
                 self.stdevs[0, i, j] += np.std(nonzero)
-                self.counts[i,j] += np.mean(results[4])
 
                 if len(self.config['lifetimes']) > 1:
                     nonzero = results[3][(results[3] != 0) & (~np.isnan(results[3]))]
@@ -68,8 +67,7 @@ class Simulator:
                     self.stdevs[1, i, j] += np.std(nonzero)
 
                 toc = time.time()
-                # print(f'Data analyzed in {(toc-tic):.1f} seconds. StD short lifetime {(self.stdevs[0,i,j]):.2f}, mean {(self.means[0,i,j]):.2f} ns \n')
-                print(f'Counts: {int(self.counts[i,j])}')
+                print(f'Data analyzed in {(toc-tic):.1f} seconds. StD short lifetime {(self.stdevs[1,i,j]):.2f}, mean {(self.means[1,i,j]):.2f} ns \n')
 
         np.savez(self.config['filename'] + '_results.npz', means=self.means, stdevs=self.stdevs, counts=self.counts)
         
@@ -78,17 +76,17 @@ class Simulator:
         results = np.load(self.config['filename'] + '_results.npz')
         self.means = results['means'].astype(float)
         self.stdevs = results['stdevs'].astype(float)
-        self.counts = results['counts'].astype(int)
+        
+        # self.counts = results['counts'].astype(int)
+        # fig, ax = plt.subplots()
+        # cax = plt.imshow(self.counts)
+        # cbar = fig.colorbar(cax)
+        # cbar.set_label('Counts')
+        # plt.title('Counts for RLD Recovery')
+        # if show:
+        #     plt.show()
 
-        fig, ax = plt.subplots()
-        cax = plt.imshow(self.counts)
-        cbar = fig.colorbar(cax)
-        cbar.set_label('Counts')
-        plt.title('Counts for RLD Recovery')
-        if show:
-            plt.show()
-
-        # plotLifetimes(self.means, self.stdevs, self.config['integ'], self.config['step'], self.config['lifetimes'], self.config['filename'] + '_results', show=show)
+        plotLifetimes(self.means, self.stdevs, self.config['integ'], self.config['step'], self.config['lifetimes'], self.config['filename'] + '_results', show=show)
 
     def run_single(self): # single vals (not in array) for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
         tic = time.time()
