@@ -135,7 +135,7 @@ class GatedReader:
     def stack(self):
         files = sorted(glob(f'{self.folder}/*.png'))
         stack = np.array([imread(f) for f in files])
-        imsave(self.folder + f'/{self.filename}' + '.tif', stack)
+        return stack
 
     def process(self):
         if self.bits == 1:

@@ -1,4 +1,7 @@
 {
+    "frames": 1,
+    "bits": 8,
+    "power": 300, 
     "freq": 40,
     "numsteps": 4,
     "integ": [500, 1000, 1500, 2000, 2500, 5000, 10000, 25000, 50000, 100000],
@@ -14,5 +17,6 @@
     "zeta": 0.05,
     "x": 25,
     "y": 25,
-    "filename": "C:\\Users\\ishaa\\Documents\\FLIM\\240818\\20_5_counts"
+    "filename": "C:\\Users\\ishaa\\Documents\\FLIM\\240818\\20_5_counts",
+    "folder": "C:\\Users\\ishaa\\Documents\\FLIM\\240825\\data\\gated_images\\acq00003"
 }

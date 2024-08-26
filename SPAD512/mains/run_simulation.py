@@ -114,5 +114,5 @@ class Simulator:
 
 if __name__ == '__main__':
     obj = Simulator(config_path)
-    # obj.run_full()
-    obj.plot_full()
+    obj.run_full()
+    # obj.plot_full()

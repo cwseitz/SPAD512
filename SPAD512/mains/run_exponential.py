@@ -29,8 +29,8 @@ Script for exponential analyses of time-gated FLIM data. .json formatting info b
 '''
 
 read = False # read from folder (if read=False {default}, must specify a file below)
-file = 'C://Users//shilp//OneDrive//Documents//240613_SPAD-QD-10MHz-3f-900g-10000us-5ns-100ps-18ps-150uW' # make sure to remove .tif suffix
-config_path = 'SPAD512/SPAD512/mains/run_exponential.json' # no leading slash, keep .json suffix
+file = 'C:\\Users\\ishaa\\Documents\\FLIM\\240825\\240825_SPAD-QD-10MHz-1f-4g-50000us-15000ps-15000ps-18ps-150uW' # make sure to remove .tif suffix
+config_path = "C:\\Users\\ishaa\\Documents\\FLIM\\SPAD512\\SPAD512\\mains\\run_exponential.json" # no leading slash, keep .json suffix
 show = True # show final plot
 
 class Analyzer:
@@ -40,7 +40,8 @@ class Analyzer:
         if read:
             data = GatedReader(self.config)
             self.filename = self.config['folder'] + '/' + data.name()
-            data.stack()
+            stack = data.stack()
+            imsave(f'{self.filename}' + '.tif', stack)
             print(f"Data created: {self.filename}")
         else:
             self.filename = file

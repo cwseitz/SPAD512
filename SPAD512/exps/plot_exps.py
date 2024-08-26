@@ -16,7 +16,7 @@ class Plotter:
             'irf_width': 0,
             'irf_mean': 0,
             'width': 0,
-            'filename': 0,
+            'filename': "",
         }
         defaults.update(config)
         defaults.update(kwargs)
@@ -24,8 +24,8 @@ class Plotter:
         for key, val in defaults.items():
             setattr(self, key, val)
 
-        self.step *= 1e-3 # ps --> ns
-        self.width *= 1e-3 
+        self.step *= 1e-3  # ps --> ns
+        self.width *= 1e-3
         self.offset *= 1e-3
 
     def decay(self, x, amp, lam):
@@ -65,13 +65,11 @@ class Plotter:
         self._plot_image(ax[0, 0], A1, 'Amplitudes', 'cts', 'plasma')
         self._plot_image(ax[0, 1], intensity, 'Intensity', 'cts', self._custom_gray_colormap(), mcolors.Normalize(vmin=0, vmax=np.max(intensity)))
         self._plot_image(ax[1, 0], tau1, 'Lifetimes', 'ns', self._custom_seismic_colormap())
+        self._plot_trace(ax[1, 1], times, full_trace, full_params, 'mono')
 
-        self._plot_trace(ax[1, 1], times, full_trace, full_params)
-
-        for i, axi in enumerate(ax.ravel()):
-            if i != 3: # change to 5 somehow maybe without if logic but idk so many if statements here this is dumb
-                axi.set_xticks([])
-                axi.set_yticks([])
+        for axi in ax.ravel():
+            axi.set_xticks([])
+            axi.set_yticks([])
         plt.tight_layout()
         plt.savefig(filename + '_results.png')
         if show:
@@ -89,12 +87,11 @@ class Plotter:
         self._plot_image(ax[1, 1], tau2, 'Larger Lifetime', 'ns', self._custom_seismic_colormap())
         self._plot_image(ax[0, 2], intensity, 'Intensity', 'cts', self._custom_gray_colormap(), mcolors.Normalize(vmin=0, vmax=np.max(intensity)))
 
-        self._plot_trace(ax[1, 2], times, full_trace, full_params)
+        self._plot_trace(ax[1, 2], times, full_trace, full_params, 'bi')
 
-        for i, axi in enumerate(ax.ravel()):
-            if i != 5: # change to 5 somehow maybe without if logic but idk so many if statements here this is dumb
-                axi.set_xticks([])
-                axi.set_yticks([])
+        for axi in ax.ravel():
+            axi.set_xticks([])
+            axi.set_yticks([])
         plt.tight_layout()
         plt.savefig(filename + '_results.png')
         if show:
@@ -113,14 +110,12 @@ class Plotter:
         ax.set_title(title)
         plt.colorbar(im, ax=ax, label=cbar_label)
 
-    def _plot_trace(self, ax, times, full_trace, full_params):
+    def _plot_trace(self, ax, times, full_trace, full_params, fit_type):
         ax.set_title('Fully binned trace')
         ax.scatter(times, full_trace, s=5)
-        if self.fit in ('mono', 'mono_conv', 'mono_conv_log', 'mono_conv_mh', 'mono_rld', 'mono_rld_50ovp'):
+        if fit_type == 'mono':
             ax.plot(times, self.decay(times, full_params[0], full_params[1]), label=f'Fit: tau = {1/full_params[1]:.2f}', color='black')
-        elif self.fit in ('bi', 'bi_conv', 'bi_mh', 'bi_nnls', 'bi_nnls_conv', 'bi_rld'):
-            ax.plot(times, self.decay_double(times, full_params[0], 1/full_params[1], full_params[2], 1/full_params[3]), label=f'Fit: tau = {1/full_params[1]:.2f}, {1/full_params[3]:.2f}', color='black')
-        else:
+        elif fit_type == 'bi':
             ax.plot(times, self.decay_double(times, full_params[0], 1/full_params[1], full_params[2], 1/full_params[3]), label=f'Fit: tau = {1/full_params[1]:.2f}, {1/full_params[3]:.2f}', color='black')
 
         ax.set_xlabel('Time, ns')
@@ -129,8 +124,6 @@ class Plotter:
         ax.tick_params(axis='x', which='both', bottom=True, top=True)
         ax.tick_params(axis='y', which='both', left=True, right=True)
         ax.legend()
-
-    
 
     def _custom_gray_colormap(self):
         colors = [(1, 0, 0)] + [(i, i, i) for i in np.linspace(0, 1, 255)]
