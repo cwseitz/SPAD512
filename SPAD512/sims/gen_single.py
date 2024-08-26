@@ -26,6 +26,7 @@ class Generator:
             'irf_mean': 0,
             'irf_width': 0,
             'filename': "",
+            'weight': 0.5,
             'numsteps': 0,
             'max_pileups': 5
         }
@@ -52,7 +53,7 @@ class Generator:
 
         self.times = (np.arange(self.numsteps) * self.step) + self.offset # ns
 
-    def genTrace(self, convolve=True, weight=0.1, vectorize=True):
+    def genTrace(self, convolve=True, vectorize=True, bit=True):
         numgates = int(self.freq * self.integ) # frequency is only included here i should probably add some more frequency logic
         data = np.zeros(self.numsteps, dtype=int)
         steps = np.arange(self.numsteps) * self.step
@@ -64,13 +65,25 @@ class Generator:
             if convolve:
                 prob[i,:] = self.convolveProb(prob[i,:])
 
+        if bit:
+            bin_gates = int(numgates/((2**self.bits)-1))
+            counts = 0
+            for i in range(len(data)):
+                for j in range(2**self.bits - 1):
+                    gate_count = 0
+                    while((gate_count) < bin_gates) and (data[i] == 0):
+                        choice = np.random.choice([0, len(self.lifetimes) - 1], p=[self.weight, 1 - self.weight])
+                        data[i] += np.random.Generator.binomial(1, prob[choice, i])
+
+
+
         if vectorize:
-            choices = (np.random.rand(numgates, self.numsteps) > weight).astype(np.uint8) * (len(self.lifetimes)-1)
+            choices = (np.random.rand(numgates, self.numsteps) > self.weight).astype(np.uint8) * (len(self.lifetimes)-1)
             events = np.random.rand(numgates, self.numsteps).astype(np.float32)
             data = np.sum(events < prob[choices, np.arange(self.numsteps)], axis=0)
         else:
             for _ in range(numgates):
-                choice = (np.random.rand(self.numsteps) > weight).astype(np.int8) * (len(self.lifetimes) - 1)
+                choice = (np.random.rand(self.numsteps) > self.weight).astype(np.int8) * (len(self.lifetimes) - 1)
                 event = np.random.rand(self.numsteps).astype(np.float32)
                 data += event < prob[choice, np.arange(self.numsteps)]            
 
