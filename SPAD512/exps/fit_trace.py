@@ -16,7 +16,10 @@ class Trace:
             'thresh': 0,
             'width': 0,
             'times': 0,
-            'offset': 0
+            'offset': 0,
+            'bits': 5,
+            'integ': 10000,
+            'freq': 10
         }
         filtered = {k: v for k, v in kwargs.items() if k in defaults}
         defaults.update(filtered)
@@ -133,15 +136,18 @@ class Trace:
         deconvolved = np.abs(ifft(F_dc))
         deconvolved /= np.sum(deconvolved)
 
-        # plt.plot(self.times, self.data/np.sum(self.data), label='Original')
-        # plt.plot(self.times, data_filt, label='Filtered')
-        # plt.plot(self.times, deconvolved, label='Deconvolved')
-        # plt.plot(self.times, irf, label='irf')
-        # plt.legend()
-        # plt.show()
-
         return deconvolved
     
+
+
+    '''RLD bit-depth helper method'''
+    def correct_RLD(self):
+        bin_time = self.integ/(2**self.bits - 1)
+        bin_gates = int(self.freq * bin_time)
+        probs = self.data/(2**self.bits - 1)
+        probs = 1 - (1 - probs)**(1/(bin_gates))
+        return 1000*probs
+
 
 
     '''Fitting main function'''
@@ -245,7 +251,9 @@ class Trace:
                 return (A, 1/tau, 0, 0)
 
             case 'bi_rld': 
-                D0, D1, D2, D3 = self.data
+                D0, D1, D2, D3 = self.correct_RLD()
+                # D0, D1, D2, D3 = self.data
+
                 dt = self.step
                 g = self.width
 
