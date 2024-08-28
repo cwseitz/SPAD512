@@ -25,7 +25,7 @@ count_6bit = comb_px * bit_rates[0]
 count_8bit = comb_px * bit_rates[1]
 count_12bit = comb_px * bit_rates[2]
 
-fig, axs = plt.subplots(2, 2, figsize=(3, 4))
+fig, axs = plt.subplots(2, 2, figsize=(9, 10))
 
 cmap = 'copper'
 

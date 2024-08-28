@@ -3,22 +3,23 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from skimage.io import imread
 
-filenames = '240613/240613_SPAD-QD-10MHz-3f-5000g-1000us-5ns-18ps-18ps-150uW'
-threshs = [100]  # thresholds to test
+filenames = 'C:\\Users\\ishaa\\Documents\\FLIM\\240813\\240813_SPAD-10MHz-1f-500g-10000us-5ns-100ps-18ps-1500uW'
+threshs = [500]  # thresholds to test
 
-def lentrace(filename):
-    base_filename = filename.split('/')[-1]
-    base_filename = base_filename.split('.')[0]
-    parts = base_filename.split('-')
+# def lentrace(filename):
+#     base_filename = filename.split('/')[-1]
+#     base_filename = base_filename.split('.')[0]
+#     parts = base_filename.split('-')
 
-    gate_num = int(parts[4].replace('g', ''))
+#     gate_num = int(parts[4].replace('g', ''))
 
-    return gate_num
+#     return gate_num
 
 def display_intensity_image(filename, thresh):
     image = imread(filename + '.tif')
     length, x, y = np.shape(image)
-    length = lentrace(filename + '.tif')
+    # length = lentrace(filename + '.tif')
+    length = 500
     image = image[:length, :, :]
 
     intensity = np.zeros((x, y))
@@ -42,3 +43,5 @@ def display_intensity_image(filename, thresh):
 def run_intensity_images(filename, threshs):
     for thresh in threshs:
         display_intensity_image(filename, thresh)
+
+run_intensity_images(filenames, threshs)
