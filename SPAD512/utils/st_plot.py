@@ -20,27 +20,54 @@ for i, t_bin in enumerate(t_bins):
         t_res_loss[i, j] = t_bin * t_res  
         total_loss[i, j] = s_res[i, j] * t_res_loss[i, j]  
 
-fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+bit_rates = [2**6 * 2, 2**8 * 2, 2**12 * 2]
+count_6bit = comb_px * bit_rates[0]
+count_8bit = comb_px * bit_rates[1]
+count_12bit = comb_px * bit_rates[2]
 
-im1 = axs[0].imshow(comb_px, cmap='viridis', origin='lower', aspect='auto')
-axs[0].set_xticks(np.arange(len(s_bins)))
-axs[0].set_xticklabels([f'{2*s+1}x{2*s+1}' for s in s_bins])
-axs[0].set_yticks(np.arange(len(t_bins)))
-axs[0].set_yticklabels([f'{t}' for t in t_bins])
-axs[0].set_xlabel('Spatial Binning (Kernel Size)')
-axs[0].set_ylabel('Temporal Binning (Number of Frames)')
-axs[0].set_title('Number of Combined Pixels')
-fig.colorbar(im1, ax=axs[0], label='Number of Combined Pixels')
+fig, axs = plt.subplots(2, 2, figsize=(14, 10))
 
-im2 = axs[1].imshow(total_loss, cmap='magma', origin='lower', aspect='auto')
-axs[1].set_xticks(np.arange(len(s_bins)))
-axs[1].set_xticklabels([f'{2*s+1}x{2*s+1}' for s in s_bins])
-axs[1].set_yticks(np.arange(len(t_bins)))
-axs[1].set_yticklabels([f'{t}' for t in t_bins])
-axs[1].set_xlabel('Spatial Binning (Kernel Size)')
-axs[1].set_ylabel('Temporal Binning (Number of Frames)')
-axs[1].set_title('Total Resolution Loss (nm*ms)')
-fig.colorbar(im2, ax=axs[1], label='Total Loss (nm*ms)')
+cmap = 'viridis'
+
+im1 = axs[0, 0].imshow(count_6bit, cmap=cmap, origin='lower', aspect='auto')
+axs[0, 0].set_xticks(np.arange(len(s_bins)))
+axs[0, 0].set_xticklabels([f'{2*s+1}x{2*s+1}' for s in s_bins])
+axs[0, 0].set_yticks(np.arange(len(t_bins)))
+axs[0, 0].set_yticklabels([f'{t}' for t in t_bins])
+axs[0, 0].set_xlabel('Spatial Binning (Kernel Size)')
+axs[0, 0].set_ylabel('Temporal Binning (Number of Frames)')
+axs[0, 0].set_title('Counts (6-bit)')
+fig.colorbar(im1, ax=axs[0, 0], label='Counts (6-bit)')
+
+im2 = axs[0, 1].imshow(count_8bit, cmap=cmap, origin='lower', aspect='auto')
+axs[0, 1].set_xticks(np.arange(len(s_bins)))
+axs[0, 1].set_xticklabels([f'{2*s+1}x{2*s+1}' for s in s_bins])
+axs[0, 1].set_yticks(np.arange(len(t_bins)))
+axs[0, 1].set_yticklabels([f'{t}' for t in t_bins])
+axs[0, 1].set_xlabel('Spatial Binning (Kernel Size)')
+axs[0, 1].set_ylabel('Temporal Binning (Number of Frames)')
+axs[0, 1].set_title('Counts (8-bit)')
+fig.colorbar(im2, ax=axs[0, 1], label='Counts (8-bit)')
+
+im3 = axs[1, 0].imshow(count_12bit, cmap=cmap, origin='lower', aspect='auto')
+axs[1, 0].set_xticks(np.arange(len(s_bins)))
+axs[1, 0].set_xticklabels([f'{2*s+1}x{2*s+1}' for s in s_bins])
+axs[1, 0].set_yticks(np.arange(len(t_bins)))
+axs[1, 0].set_yticklabels([f'{t}' for t in t_bins])
+axs[1, 0].set_xlabel('Spatial Binning (Kernel Size)')
+axs[1, 0].set_ylabel('Temporal Binning (Number of Frames)')
+axs[1, 0].set_title('Counts (12-bit)')
+fig.colorbar(im3, ax=axs[1, 0], label='Counts (12-bit)')
+
+im4 = axs[1, 1].imshow(total_loss, cmap='Reds', origin='lower', aspect='auto')
+axs[1, 1].set_xticks(np.arange(len(s_bins)))
+axs[1, 1].set_xticklabels([f'{2*s+1}x{2*s+1}' for s in s_bins])
+axs[1, 1].set_yticks(np.arange(len(t_bins)))
+axs[1, 1].set_yticklabels([f'{t}' for t in t_bins])
+axs[1, 1].set_xlabel('Spatial Binning (Kernel Size)')
+axs[1, 1].set_ylabel('Temporal Binning (Number of Frames)')
+axs[1, 1].set_title('Total Resolution Loss (nm*ms)')
+fig.colorbar(im4, ax=axs[1, 1], label='Total Loss (nm*ms)')
 
 plt.tight_layout()
 plt.show()
