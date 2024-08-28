@@ -97,6 +97,25 @@ class Plotter:
         if show:
             plt.show()
 
+    def plot_bi_rld(self, A1, A2, tau1, tau2, intensity, full_trace, full_params, times, track, filename, show):
+        A1, A2, tau1, tau2 = self._swap_tau(A1, A2, tau1, tau2)
+
+        fig, ax = plt.subplots(2, 3, figsize=(11, 7))
+        fig.suptitle(f'{self.integ * 1e-3} ms integ, {int(self.step)} ns step, {int(self.integ*self.numsteps*1e-3)} ms acq time, {self.bits} bits, {(2 * self.kernel_size + 1)**2} pixels binned', fontsize=12)
+        self._plot_image(ax[0, 0], A1, 'Smaller Amplitude', 'cts', self._custom_plasma_colormap())
+        self._plot_image(ax[0, 1], A2, 'Larger Amplitude', 'cts', self._custom_plasma_colormap())
+        self._plot_image(ax[1, 0], tau1, 'Smaller Lifetime', 'ns', self._custom_seismic_colormap(center=5, range_val=5))
+        self._plot_image(ax[1, 1], tau2, 'Larger Lifetime', 'ns', self._custom_seismic_colormap(center=20, range_val=5))
+
+        self._plot_image(ax[0, 2], intensity, 'Intensity', 'cts', self._custom_gray_colormap(), mcolors.Normalize(vmin=0, vmax=np.max(intensity)))
+
+        self._plot_rld(ax[1,2], times, full_trace, full_params, 'bi_rld')
+
+        plt.tight_layout()
+        plt.savefig(filename + '_results.png')
+        if show:
+            plt.show()
+
     def _swap_tau(self, A1, A2, tau1, tau2):
         for i in range(len(A1)):
             for j in range(len(A1[0])):
@@ -106,6 +125,8 @@ class Plotter:
         return A1, A2, tau1, tau2
 
     def _plot_image(self, ax, data, title, cbar_label, cmap, norm=None):
+        if isinstance(cmap, tuple):  # Check if cmap is a tuple containing (cmap, norm)
+            cmap, norm = cmap
         im = ax.imshow(data, cmap=cmap, norm=norm)
         ax.set_title(title)
         plt.colorbar(im, ax=ax, label=cbar_label)
@@ -125,21 +146,55 @@ class Plotter:
         ax.tick_params(axis='y', which='both', left=True, right=True)
         ax.legend()
 
+    def _plot_rld(self, ax, times, full_trace, full_params, fit_type):
+        ax.set_title('RLD Visualization')
+        times = np.linspace(0, 100, 1000)
+        counts = 0.5*np.exp(-times/20) + 0.5*np.exp(-times/5)
+
+        regs = []
+        for i in range(4):
+            regs.append((self.offset + i*self.step, self.offset + i*self.step + self.width))
+        cols = ['red', 'yellow', 'green', 'blue']
+    
+        ax.plot(times, counts)
+        for (start, end), col in zip(regs, cols):
+            mask = (times >= start) & (times <= end)
+            ax.fill_between(times[mask], counts[mask], color=col, alpha=0.3)
+
+        ax.set_xlabel('Time, ns')
+        ax.set_ylabel('Counts')
+        ax.tick_params(axis='x', which='both', bottom=True, top=True)
+        ax.tick_params(axis='y', which='both', left=True, right=True)
+
     def _custom_gray_colormap(self):
         colors = [(1, 0, 0)] + [(i, i, i) for i in np.linspace(0, 1, 255)]
         return mcolors.LinearSegmentedColormap.from_list('custom_gray', colors, N=256)
 
-    def _custom_seismic_colormap(self):
+    def _custom_seismic_colormap(self, center=None, range_val=2.5):
         colors = [(0, 0, 0)] + [plt.cm.seismic(i) for i in np.linspace(0, 1, 255)]
-        return mcolors.LinearSegmentedColormap.from_list('custom_seismic', colors, N=256)
-
-    def _custom_plasma_colormap(self):
+        cmap = mcolors.LinearSegmentedColormap.from_list('custom_seismic', colors, N=256)
+        if center is not None:
+            vmin = center - range_val
+            vmax = center + range_val
+            norm = mcolors.TwoSlopeNorm(vmin=vmin, vcenter=center, vmax=vmax)
+            return cmap, norm
+        return cmap
+    
+    def _custom_plasma_colormap(self, center=None, range_val=2.5):
         colors = [(0, 0, 0)] + [plt.cm.plasma(i) for i in np.linspace(0, 1, 255)]
-        return mcolors.LinearSegmentedColormap.from_list('custom_plasma', colors, N=256)
+        cmap = mcolors.LinearSegmentedColormap.from_list('custom_plasma', colors, N=256)
+        if center is not None:
+            vmin = center - range_val
+            vmax = center + range_val
+            norm = mcolors.TwoSlopeNorm(vmin=vmin, vcenter=center, vmax=vmax)
+            return cmap, norm
+        return cmap
 
     def plot_all(self, results, filename, show=False):
         A1, A2, tau1, tau2, intensity, full_trace, full_params, track, times = self.preprocess_results(results)
         if self.fit in ('mono', 'mono_conv', 'mono_conv_log', 'mono_conv_mh', 'mono_rld', 'mono_rld_50ovp'):
             self.plot_mono(A1, tau1, intensity, full_trace, full_params, times, track, filename, show)
-        elif self.fit in ('bi', 'bi_conv', 'bi_mh', 'bi_nnls', 'bi_nnls_conv', 'bi_rld'):
+        elif self.fit in ('bi', 'bi_conv', 'bi_mh', 'bi_nnls', 'bi_nnls_conv'):
             self.plot_bi(A1, A2, tau1, tau2, intensity, full_trace, full_params, times, track, filename, show)
+        elif self.fit in ('bi_rld'):
+            self.plot_bi_rld(A1, A2, tau1, tau2, intensity, full_trace, full_params, times, track, filename, show)

@@ -47,8 +47,6 @@ class Generator:
         self.width *= 1e-3 
         self.offset *= 1e-3
 
-        self.rng = np.random.default_rng()
-
         if not self.numsteps:
             self.numsteps = int(1e3 / (self.freq*self.step))
             
@@ -66,6 +64,8 @@ class Generator:
         numgates = int(self.freq * self.integ) # frequency is only included here i should probably add some more frequency logic
         data = np.zeros(self.numsteps, dtype=int)
         steps = np.arange(self.numsteps) * self.step
+
+        rng = np.random.default_rng()
         
         prob = np.zeros((len(self.lifetimes), len(steps)))
         for i, lt in enumerate(self.lifetimes):
@@ -75,8 +75,8 @@ class Generator:
                 prob[i,:] = self.convolveProb(prob[i,:])
 
         bin_gates = int(numgates / ((2 ** self.bits) - 1))
-        choices = self.rng.choice([0, len(self.lifetimes) - 1], size=(2**self.bits - 1, len(data), bin_gates), p=[self.weight, 1 - self.weight])
-        binoms = self.rng.binomial(1, prob[choices, np.arange(len(data))[None, :, None]])
+        choices = rng.choice([0, len(self.lifetimes) - 1], size=(2**self.bits - 1, len(data), bin_gates), p=[self.weight, 1 - self.weight])
+        binoms = rng.binomial(1, prob[choices, np.arange(len(data))[None, :, None]])
         successes = np.any(binoms, axis=2)
         data += np.sum(successes, axis=0)
 
@@ -110,14 +110,15 @@ class Generator:
         return self.genTrace()
 
     def genImage(self):
-        self.image = np.zeros((self.numsteps, self.x, self.y), dtype=float)
+        self.image = np.zeros((self.numsteps, self.x, self.y), dtype=int)
 
-        with ProcessPoolExecutor(max_workers=10) as executor:
+        with ProcessPoolExecutor(max_workers=25) as executor:
             futures = {executor.submit(self.helper, (i, j)): (i, j) for i in range(self.x) for j in range(self.y)}
 
             for future in as_completed(futures):
                 i, j = futures[future]
                 self.image[:, i, j] = future.result()
+                print(f'Results for pixel {i}, {j}: {future.result()}')
 
         # imsave(self.filename + '.tif', self.image)
 

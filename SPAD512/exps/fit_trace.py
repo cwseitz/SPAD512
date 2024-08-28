@@ -19,7 +19,8 @@ class Trace:
             'offset': 0,
             'bits': 5,
             'integ': 10000,
-            'freq': 10
+            'freq': 10,
+            'kernel_size': 3
         }
         filtered = {k: v for k, v in kwargs.items() if k in defaults}
         defaults.update(filtered)
@@ -144,7 +145,8 @@ class Trace:
     def correct_RLD(self):
         bin_time = self.integ/(2**self.bits - 1)
         bin_gates = int(self.freq * bin_time)
-        probs = self.data/(2**self.bits - 1)
+        max_counts = ((1 + self.kernel_size*2)**2) * (2**self.bits - 1)
+        probs = self.data/max_counts
         probs = 1 - (1 - probs)**(1/(bin_gates))
         return 1000*probs
 
@@ -251,8 +253,9 @@ class Trace:
                 return (A, 1/tau, 0, 0)
 
             case 'bi_rld': 
-                D0, D1, D2, D3 = self.correct_RLD()
-                # D0, D1, D2, D3 = self.data
+                self.data = self.correct_RLD()
+                D0, D1, D2, D3 = self.data
+                print(self.data)
 
                 dt = self.step
                 g = self.width
