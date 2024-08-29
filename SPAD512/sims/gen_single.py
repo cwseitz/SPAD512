@@ -7,13 +7,10 @@ from scipy.signal import convolve, deconvolve
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import random
 
-''' 
-Simulation of exponential fitting of fluorescent lifetime imaging data acquired by a time-gated SPAD
-'''
-
 class Generator:
     def __init__(self,config,**kwargs):
-        defaults = {
+        # default values for parameters when config and keyword args not supplied
+        defaults = { 
             "frames": 1,
             "bits": 8,
             "power": 150, 
@@ -33,23 +30,26 @@ class Generator:
             "zeta": 0.05,
             "x": 25,
             "y": 25,
-            "filename": "C:\\Users\\ishaa\\Documents\\AAA",
-            "folder": "C:\\Users\\ishaa\\Documents"
+            "filename": "",
+            "folder": ""
         }
 
-        defaults.update(config)
+        # update the parameter values based on config then kwargs to prioritize kwargs
+        defaults.update(config) 
         defaults.update(kwargs)
-
         for key, val in defaults.items():
             setattr(self,key,val)
 
+        # update units, ps used in jsons to avoid filename decimals but nanoseconds are numerically easier
         self.step *= 1e-3 # ps --> ns
         self.width *= 1e-3 
         self.offset *= 1e-3
 
+        # auto calculate numsteps if needed based on step size (to fill interpulse period)
         if not self.numsteps:
             self.numsteps = int(1e3 / (self.freq*self.step))
             
+        # auto generate filename with standard convention, note unit conversions
         if not self.filename:
             self.filename = (
                 f"{config.get('filename', 'default_filename')}_sim-"
@@ -58,41 +58,44 @@ class Generator:
                 f"{int((self.step) * 1e3)}ps-{int((self.offset) * 1e3)}ps"
             )
 
+        # create an object for gate opening times to be used in generation and in fitting/plotting
         self.times = (np.arange(self.numsteps) * self.step) + self.offset # ns
 
+    '''Generation of a single fluorescent lifetime trace given the ground truth/SPAD parameters (in self), and convolution requirements'''
     def genTrace(self, convolve=True):
-        numgates = int(self.freq * self.integ) # frequency is only included here i should probably add some more frequency logic
-        data = np.zeros(self.numsteps, dtype=int)
-        steps = np.arange(self.numsteps) * self.step
-
-        rng = np.random.default_rng()
+        numgates = int(self.freq * self.integ) # number of repetitions for a single step
+        bin_gates = int(numgates / ((2 ** self.bits) - 1)) # number of repetitions per binary image
+        data = np.zeros(self.numsteps, dtype=int) # object to store data
+        rng = np.random.default_rng() # randomization object
         
-        prob = np.zeros((len(self.lifetimes), len(steps)))
+        # set up 2d probability array, 1 row for smaller lifetime and another row for the other 
+        prob = np.zeros((len(self.lifetimes), len(self.times)))
         for i, lt in enumerate(self.lifetimes):
             lam = 1/lt
-            prob[i,:] += self.zeta * (np.exp(-lam * (self.offset + steps)) - np.exp(-lam * (self.offset + steps + self.width)))
+            prob[i,:] += self.zeta * (np.exp(-lam * (self.times)) - np.exp(-lam * (self.times + self.width))) # based on exponential PDF 
             if convolve:
-                prob[i,:] = self.convolveProb(prob[i,:])
+                prob[i,:] = self.convolveProb(prob[i,:]) 
 
-        bin_gates = int(numgates / ((2 ** self.bits) - 1))
+        # vectorized generation of binomial data
         choices = rng.choice([0, len(self.lifetimes) - 1], size=(2**self.bits - 1, len(data), bin_gates), p=[self.weight, 1 - self.weight])
         binoms = rng.binomial(1, prob[choices, np.arange(len(data))[None, :, None]])
         successes = np.any(binoms, axis=2)
-        data += np.sum(successes, axis=0)
+        data += np.sum(successes, axis=0) # recorded counts are just number of binary frames that recorded a success
 
         return data
 
-
+    '''Convolution of a probability trace with a Gaussian'''
     def convolveProb(self, trace):
+        # set up gaussian IRF
         irf = np.exp(-((self.times - self.irf_mean)**2) / (2 * self.irf_width**2))
-        irf /= (self.irf_width * np.sqrt(2*np.pi))
-
-        irf /= np.sum(irf) # discrete normalization
+        irf /= (self.irf_width * np.sqrt(2*np.pi)) 
+        irf /= np.sum(irf) # make sure normalized, this is unnecessary i think it's already normalized
 
         detected = convolve(trace, irf, mode='full')   
 
         return detected[:len(trace)] 
 
+    '''Function to help make sure refactoring data generation isn't changing the product'''
     def plotTrace(self):
         data = self.genTrace()
 
@@ -106,19 +109,20 @@ class Generator:
         plt.title(f'Simulated Decay for {self.integ*1e-3} ms integration, {1e-3*self.step} ns step, {self.lifetimes} ns lifetime')
         plt.show()
 
+    '''Helper method for parallelizaiton'''
     def helper(self, pixel):
         return self.genTrace()
 
+    '''Parallelization coordinator'''
     def genImage(self):
-        self.image = np.zeros((self.numsteps, self.x, self.y), dtype=int)
+        self.image = np.zeros((self.numsteps, self.x, self.y), dtype=int) # array to store image data
 
-        with ProcessPoolExecutor(max_workers=25) as executor:
+        with ProcessPoolExecutor(max_workers=25) as executor: # max value for max_workers allowed on windows is 60
             futures = {executor.submit(self.helper, (i, j)): (i, j) for i in range(self.x) for j in range(self.y)}
 
             for future in as_completed(futures):
                 i, j = futures[future]
-                self.image[:, i, j] = future.result()
-                print(f'Results for pixel {i}, {j}: {future.result()}')
+                self.image[:, i, j] = future.result() # store fluorescent trace for the pixel
 
         # imsave(self.filename + '.tif', self.image)
 
