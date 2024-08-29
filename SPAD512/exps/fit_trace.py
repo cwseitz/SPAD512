@@ -8,6 +8,7 @@ import warnings
 
 class Trace:
     def __init__(self,data,i,j,**kwargs):
+        # see sims/gen_single.py for explanation of this class setup logic
         defaults = {
             'step': 0,
             'fit': "",
@@ -30,25 +31,23 @@ class Trace:
 
         self.data = data
         self.i = i
-        self.j = j
+        self.j = j # assign pixel values as parameters so that helper method can return them
         
-        self.success = False
+        self.success = False 
         self.sum = np.sum(self.data)
     
-
-
     '''Fitting functions'''
-    def mono(self, x, *p):
+    def mono(self, x, *p): # mono exponential
         A, lam = p
         return A * np.exp(-lam * x)
 
-    def mono_conv(self, x, *p):
+    def mono_conv(self, x, *p): # mono gaussian-convolved-exponential
         A, lam = p
         term1 = (A*lam/2) * np.exp((1/2) * lam * (2*float(self.irf_mean) + lam*(self.irf_width**2) - 2*x))
         term2 = erfc((float(self.irf_mean) + lam*(self.irf_width**2) - x)/(self.irf_width*np.sqrt(2)))
         return term1*term2
 
-    def log_mono_conv(self, x, *p):
+    def log_mono_conv(self, x, *p): # natural log scale mono_conv
         A, lam = p
         if (A <= 0):
             A = 1e-10
@@ -59,11 +58,11 @@ class Trace:
         term2 = np.log(erfc((float(self.irf_mean) + lam*(self.irf_width**2) - x)/(self.irf_width*np.sqrt(2))))
         return term1 + term2
         
-    def bi(self, x, *p):
+    def bi(self, x, *p): # bi-exponential
         A, lam1, B, lam2 = p
         return A *(B * np.exp(-x * lam1) + (1-B) * np.exp(-x * lam2))
 
-    def bi_conv(self, x, *p):
+    def bi_conv(self, x, *p): # gaussian convolved bi-exponential
         A1, lam1, A2, lam2 = p
 
         term1 = (A1*lam1/2) * np.exp((1/2) * lam1 * (2*float(self.irf_mean) + lam1*(self.irf_width**2) - 2*x))
@@ -77,17 +76,17 @@ class Trace:
 
 
     '''Helper methods for Metropolis-Hastings'''
-    def log_like(self, params, x, y, func):
+    def log_like(self, params, x, y, func): # get log likelihood of model match
         ym = func(x, params)
         return -0.5 * np.sum((y - ym)**2)
 
-    def prop_lam(self, curr):
+    def prop_lam(self, curr): # propose a lifetime
         return curr + np.random.normal(0, 5)
 
-    def prop_A(self, curr):
+    def prop_A(self, curr): # propose an amplitude
         return curr + np.random.normal(0, 5000)
 
-    def gibbs_mh(self, x, y, func, guess_params, iter=10000):
+    def gibbs_mh(self, x, y, func, guess_params, iter=10000): #gibbs sampling scheme to coordinate metropolis hastings "fitting"
         curr_params = guess_params
         samples = []
 
@@ -111,12 +110,12 @@ class Trace:
 
 
     '''Deconvolution helper methods'''
-    def gaussian(self, x, mu, sigma):
+    def gaussian(self, x, mu, sigma): # define an IRF 
         kernel = np.exp(-(x-mu)**2/(2*sigma**2))
         kernel /= np.sum(kernel)
         return kernel
 
-    def butter_lpf(self, data, cutoff=.1, order=2):
+    def butter_lpf(self, data, cutoff=.1, order=2): # pass filter to make the function buttery smooth for fourier deconvolution
         fs = 1/(max(self.times)/len(self.times)) # sampling frequency
         nyq = 0.5*fs   
         cutoff_norm = cutoff/nyq
@@ -125,7 +124,7 @@ class Trace:
         y = filtfilt(b, a, data)
         return y
     
-    def deconvolve_fourier(self, alpha=1):
+    def deconvolve_fourier(self, alpha=1): # fourier deconvolution, doesn't really work
         data_filt = self.butter_lpf(self.data)
         data_filt /= np.sum(data_filt)
         F_data = fft(data_filt)
@@ -142,19 +141,19 @@ class Trace:
 
 
     '''RLD bit-depth helper method'''
-    def correct_RLD(self):
+    def correct_RLD(self): # interpolate counts into the raw detection probability
         bin_time = self.integ/(2**self.bits - 1)
         bin_gates = int(self.freq * bin_time)
         max_counts = ((1 + self.kernel_size*2)**2) * (2**self.bits - 1)
         probs = self.data/max_counts
         probs = 1 - (1 - probs)**(1/(bin_gates))
-        return 1000*probs
+        return 1000*probs # return scaled version for numerical convenience
 
 
 
     '''Fitting main function'''
-    def fit_decay(self):
-        warnings.filterwarnings('ignore', category=RuntimeWarning)
+    def fit_decay(self): # organize fitting logic based on what fit was chosen in config
+        warnings.filterwarnings('ignore', category=RuntimeWarning) # ignore warnings when doing NN-NL-LS
         warnings.filterwarnings('ignore', category=opt.OptimizeWarning)
 
         match self.fit:
@@ -277,7 +276,7 @@ class Trace:
 
                 return (A1, 1/tau1, A2, 1/tau2)
 
-            case 'stref':
+            case 'stref': # untested
                 loc = min(np.argmax(self.data), len(self.data) - 4)
                 guess = [np.max(self.data), 0.25, np.max(self.data) / 2, 0.05]
                 xdat = self.times
@@ -286,7 +285,7 @@ class Trace:
             case _:
                 raise Exception('Curve choice invalid in config.json, choose from mono, mono_conv, mono_conv_log, mono_conv_mh, bi, bi_nnls, bi_conv, bi_conv_nnls, mono_rld, mono_rld_50ovp, bi_rld')
 
-    def fit_trace(self):
+    def fit_trace(self): # dont fit pixels that dont meet the specified count threshold
         if self.sum > self.thresh:
             try:
                 self.params = self.fit_decay()
