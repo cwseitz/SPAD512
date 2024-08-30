@@ -5,7 +5,8 @@ import matplotlib.colors as mcolors
 from skimage.io import imsave, imread
 from scipy.signal import convolve, deconvolve
 from concurrent.futures import ProcessPoolExecutor, as_completed
-import random
+from numba import njit
+import time
 
 class Generator:
     def __init__(self,config,**kwargs):
@@ -63,27 +64,23 @@ class Generator:
 
     '''Generation of a single fluorescent lifetime trace given the ground truth/SPAD parameters (in self), and convolution requirements'''
     def genTrace(self, convolve=True):
-        numgates = int(self.freq * self.integ) # number of repetitions for a single step
-        bin_gates = int(numgates / ((2 ** self.bits) - 1)) # number of repetitions per binary image
-        data = np.zeros(self.numsteps, dtype=int) # object to store data
-        rng = np.random.default_rng() # randomization object
+        numgates = int(self.freq * self.integ)  # number of repetitions for a single step
+        bin_gates = int(numgates / ((2 ** self.bits) - 1))  # number of repetitions per binary image
+        data = np.zeros(self.numsteps, dtype=int)  # object to store data
         
-        # set up 2d probability array, 1 row for smaller lifetime and another row for the other 
+        # set up 2D probability array, 1 row for each lifetime
         prob = np.zeros((len(self.lifetimes), len(self.times)))
         for i, lt in enumerate(self.lifetimes):
-            lam = 1/lt
-            prob[i,:] += self.zeta * (np.exp(-lam * (self.times)) - np.exp(-lam * (self.times + self.width))) # based on exponential PDF 
+            lam = 1 / lt
+            prob[i, :] += self.zeta * (np.exp(-lam * (self.times)) - np.exp(-lam * (self.times + self.width)))  # based on exponential PDF 
             if convolve:
-                prob[i,:] = self.convolveProb(prob[i,:]) 
+                prob[i, :] = self.convolveProb(prob[i, :]) 
 
-        # vectorized generation of binomial data
-        choices = rng.choice([0, len(self.lifetimes) - 1], size=(2**self.bits - 1, len(data), bin_gates), p=[self.weight, 1 - self.weight])
-        binoms = rng.binomial(1, prob[choices, np.arange(len(data))[None, :, None]])
-        successes = np.any(binoms, axis=2)
-        data += np.sum(successes, axis=0) # recorded counts are just number of binary frames that recorded a success
+        # optimized binomial drawing for long data using numba
+        data += binom_sim(self.bits, len(self.lifetimes), len(data), bin_gates, self.weight, prob) # binom_sim is JIT compiled by numba
 
         return data
-
+    
     '''Convolution of a probability trace with a Gaussian'''
     def convolveProb(self, trace):
         # set up gaussian IRF
@@ -126,4 +123,20 @@ class Generator:
 
         # imsave(self.filename + '.tif', self.image)
 
+@njit
+def binom_sim(bits, lt_len, data_len, bin_gates, weight, prob): # does not work for monoexp but later issue i think
+    holder = np.zeros(data_len, dtype=np.int16)
     
+    for _ in range(2**bits - 1):
+        random_vals = np.random.random((data_len, bin_gates))
+        choices = random_vals >= weight
+        
+        for i in range(data_len):
+            for j in range(bin_gates):
+                choice_index = int(choices[i, j])  # need int for numba
+                prob_value = prob[choice_index, i]  
+                if np.random.random() < prob_value:  # avoid np.random.binomial(1, prob_value) for numba
+                    holder[i] += 1
+                    break  # exit inner on first success
+    
+    return holder

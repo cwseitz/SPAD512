@@ -220,7 +220,10 @@ class Trace:
                 A_d = np.vstack([np.exp(-params[1]*xdat), np.exp(-params[3]*xdat)]).T
                 weights, _ = opt.nnls(A_d, ydat)
 
-                return (weights[0], params[1], weights[1], params[3])
+                params[0] = weights[0] + weights[1]
+                params[2] = weights[0]/params[0]
+
+                return params
 
             case 'bi_conv_nnls':
                 loc = min(np.argmax(self.data), len(self.data) - 4)

@@ -17,6 +17,7 @@ class Plotter:
             'irf_mean': 0,
             'width': 0,
             'filename': "",
+            'kernel_size': 0
         }
         defaults.update(config)
         defaults.update(kwargs)
@@ -35,8 +36,11 @@ class Plotter:
         return A * (B * np.exp(-x / tau1) + (1 - B) * np.exp(-x / tau2))
 
     def preprocess_results(self, results):
-        A1 = results['A1'].astype(float)
-        A2 = results['A2'].astype(float)
+        temp1 = results['A1'].astype(float)
+        temp2 = results['A2'].astype(float)
+        A1 = temp1*temp2
+        A2 = temp1 - temp1*temp2
+
         tau1 = results['tau1'].astype(float)
         tau2 = results['tau2'].astype(float)
         intensity = results['intensity'].astype(float)
@@ -44,6 +48,14 @@ class Plotter:
         full_params = results['full_params'].astype(float)
         track = results['track'].astype(int)
         times = results['times'].astype(float)
+
+        k = self.kernel_size
+        if k > 0:
+            A1 = A1[k:-k, k:-k]
+            A2 = A2[k:-k, k:-k]
+            tau1 = tau1[k:-k, k:-k]
+            tau2 = tau2[k:-k, k:-k]
+            intensity = intensity[k:-k, k:-k]
 
         tau1, A1 = self._clamp_values(tau1, A1, 0, 100)
         tau2, A2 = self._clamp_values(tau2, A2, 0, 100)
@@ -77,7 +89,6 @@ class Plotter:
 
     def plot_bi(self, A1, A2, tau1, tau2, intensity, full_trace, full_params, times, track, filename, show):
         A1, A2, tau1, tau2 = self._swap_tau(A1, A2, tau1, tau2)
-
         fig, ax = plt.subplots(2, 3, figsize=(11, 7))
         fig.suptitle(f'{self.integ} us integ, {int(self.step)} ps step, {int(self.integ*self.numsteps*1e-3)} ms acq time, {self.thresh} thresh, {track} fits', fontsize=12)
 
@@ -138,6 +149,7 @@ class Plotter:
             ax.plot(times, self.decay(times, full_params[0], full_params[1]), label=f'Fit: tau = {1/full_params[1]:.2f}', color='black')
         elif fit_type == 'bi':
             ax.plot(times, self.decay_double(times, full_params[0], 1/full_params[1], full_params[2], 1/full_params[3]), label=f'Fit: tau = {1/full_params[1]:.2f}, {1/full_params[3]:.2f}', color='black')
+            # ax.plot(times, self.decay_double(times, full_params[0]*full_params[2], 1/full_params[1], full_params[0]*(1-full_params[2]), 1/full_params[3]), label=f'Fit: tau = {1/full_params[1]:.2f}, {1/full_params[3]:.2f}', color='black')
 
         ax.set_xlabel('Time, ns')
         ax.set_ylabel('Counts')

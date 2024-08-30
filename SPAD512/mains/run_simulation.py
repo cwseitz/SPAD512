@@ -94,11 +94,12 @@ class Simulator:
         plotLifetimes(self.means, self.stdevs, self.config['integ'], self.config['step'], self.config['lifetimes'], self.config['filename'] + '_results', show=show)
 
     def run_single(self): # single vals (not in array) for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
+        print('Generating data')
         tic = time.time()
         dt = Generator(self.config)
         dt.genImage()
         toc = time.time()
-        print(f'Data generated in {(toc-tic):.1f} seconds')
+        print(f'Done in {(toc-tic):.1f} seconds. Analyzing')
 
         tic = time.time()
         fit = Fitter(self.config, numsteps=dt.numsteps, times=dt.times)
@@ -115,5 +116,5 @@ class Simulator:
 
 if __name__ == '__main__':
     obj = Simulator(config_path)
-    obj.run_full()
-    obj.plot_full()
+    obj.run_single()
+    obj.plot_single()
