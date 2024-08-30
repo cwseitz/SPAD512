@@ -47,12 +47,13 @@ class Simulator:
 
         for i, integ in enumerate(self.config['integ']):
             for j, step in enumerate(self.config['step']):
+                print(f'Generating data for {(integ * 1e-3):.3f} ms integration, {(step * 1e-3):.3f} ns step')
                 tic = time.time()
                 dt = Generator(self.config, integ=integ, step=step)
                 dt.genImage()
                 toc = time.time()
-                print(f'Data for {(integ * 1e-3):.3f} ms integration, {(step * 1e-3):.3f} ns step generated in {(toc-tic):.1f} seconds')
-                
+                print(f'Done in {(toc-tic):.1f} seconds, now analyzing.')
+
                 tic = time.time()
                 fit = Fitter(self.config, numsteps=dt.numsteps, times=dt.times, step=step, integ=integ)
                 results = fit.fit_exps(image=dt.image)
@@ -68,8 +69,8 @@ class Simulator:
                     self.stdevs[1, i, j] += np.std(nonzero)
 
                 toc = time.time()
-                # print(f'Data analyzed in {(toc-tic):.1f} seconds. StD short lifetime {(self.stdevs[1,i,j]):.2f}, mean {(self.means[1,i,j]):.2f} ns \n')
-                print(f'Counts: {self.counts[i,j]} \n')
+                print(f'Data analyzed in {(toc-tic):.1f} seconds. StD short lifetime {(self.stdevs[1,i,j]):.2f}, mean {(self.means[1,i,j]):.2f} ns \n')
+                # print(f'Counts: {self.counts[i,j]} \n')
 
         np.savez(self.config['filename'] + '_results.npz', means=self.means, stdevs=self.stdevs, counts=self.counts)
         
@@ -80,17 +81,17 @@ class Simulator:
         self.stdevs = results['stdevs'].astype(float)
         self.counts = results['counts'].astype(int)
         
-        self.counts = results['counts'].astype(int)
-        self.counts = np.log10(self.counts)
-        fig, ax = plt.subplots()
-        cax = plt.imshow(self.counts)
-        cbar = fig.colorbar(cax)
-        cbar.set_label('Counts, log-10 scale')
-        plt.title('Counts for RLD Recovery')
-        if show:
-            plt.show()
+        # self.counts = results['counts'].astype(int)
+        # self.counts = np.log10(self.counts)
+        # fig, ax = plt.subplots()
+        # cax = plt.imshow(self.counts)
+        # cbar = fig.colorbar(cax)
+        # cbar.set_label('Counts, log-10 scale')
+        # plt.title('Counts for RLD Recovery')
+        # if show:
+        #     plt.show()
 
-        # plotLifetimes(self.means, self.stdevs, self.config['integ'], self.config['step'], self.config['lifetimes'], self.config['filename'] + '_results', show=show)
+        plotLifetimes(self.means, self.stdevs, self.config['integ'], self.config['step'], self.config['lifetimes'], self.config['filename'] + '_results', show=show)
 
     def run_single(self): # single vals (not in array) for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
         tic = time.time()
@@ -114,5 +115,5 @@ class Simulator:
 
 if __name__ == '__main__':
     obj = Simulator(config_path)
-    obj.run_single()
-    obj.plot_single()
+    obj.run_full()
+    obj.plot_full()

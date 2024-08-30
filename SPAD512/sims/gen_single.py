@@ -11,27 +11,27 @@ class Generator:
     def __init__(self,config,**kwargs):
         # default values for parameters when config and keyword args not supplied
         defaults = { 
-            "frames": 1,
-            "bits": 8,
-            "power": 150, 
-            "freq": 10,
-            "numsteps": 900,
-            "integ": 10000,
-            "width": 5000,
-            "step": 100,
-            "offset": 18,
+            "frames": 0,
+            "bits": 0,
+            "power": 0, 
+            "freq": 0,
+            "numsteps": 0,
+            "integ": 0,
+            "width": 0,
+            "step": 0,
+            "offset": 0,
             "thresh": 0,
             "irf_mean": 0,
-            "irf_width": 1.4, 
-            "fit": "bi_rld",
-            "kernel_size": 3,
-            "lifetimes": [20, 5],
-            "weight": 0.5,
-            "zeta": 0.05,
-            "x": 25,
-            "y": 25,
-            "filename": "",
-            "folder": ""
+            "irf_width": 0, 
+            "fit": 0,
+            "kernel_size": 0,
+            "lifetimes": 0,
+            "weight": 0,
+            "zeta": 0,
+            "x": 0,
+            "y": 0,
+            "filename": 0,
+            "folder": 0
         }
 
         # update the parameter values based on config then kwargs to prioritize kwargs
@@ -117,7 +117,7 @@ class Generator:
     def genImage(self):
         self.image = np.zeros((self.numsteps, self.x, self.y), dtype=int) # array to store image data
 
-        with ProcessPoolExecutor(max_workers=25) as executor: # max value for max_workers allowed on windows is 60
+        with ProcessPoolExecutor(max_workers=10) as executor: # max value for max_workers allowed on windows is 60
             futures = {executor.submit(self.helper, (i, j)): (i, j) for i in range(self.x) for j in range(self.y)}
 
             for future in as_completed(futures):
