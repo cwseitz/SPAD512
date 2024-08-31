@@ -257,7 +257,6 @@ class Trace:
             case 'bi_rld': 
                 self.data = self.correct_RLD()
                 D0, D1, D2, D3 = self.data
-                print(self.data)
 
                 dt = self.step
                 g = self.width

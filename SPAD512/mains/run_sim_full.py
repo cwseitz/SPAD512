@@ -72,6 +72,9 @@ class Simulator:
                 print(f'Data analyzed in {(toc-tic):.1f} seconds. StD short lifetime {(self.stdevs[1,i,j]):.2f}, mean {(self.means[1,i,j]):.2f} ns \n')
                 # print(f'Counts: {self.counts[i,j]} \n')
 
+        self.means[np.isnan(self.means)] = 0 
+        self.stdevs[np.isnan(self.stdevs)] = 100
+
         np.savez(self.config['filename'] + '_results.npz', means=self.means, stdevs=self.stdevs, counts=self.counts)
         
 
@@ -93,28 +96,7 @@ class Simulator:
 
         plotLifetimes(self.means, self.stdevs, self.config['integ'], self.config['step'], self.config['lifetimes'], self.config['filename'] + '_results', show=show)
 
-    def run_single(self): # single vals (not in array) for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
-        print('Generating data')
-        tic = time.time()
-        dt = Generator(self.config)
-        dt.genImage()
-        toc = time.time()
-        print(f'Done in {(toc-tic):.1f} seconds. Analyzing')
-
-        tic = time.time()
-        fit = Fitter(self.config, numsteps=dt.numsteps, times=dt.times)
-        results = fit.fit_exps(image=dt.image)
-        fit.save_results(self.config['filename'], results)
-        toc = time.time()
-        print(f"Exponential fitting done in {(toc-tic):.1f} seconds: {self.config['filename']}_fit_results.npz")
-        
-    def plot_single(self,show=True):
-        plot = Plotter(self.config)
-        results = np.load(self.config['filename'] + '_fit_results.npz')
-        plot.plot_all(results, self.config['filename'], show=show) 
-        print(f"Results plotted: {self.config['filename']}_results.png")
-
 if __name__ == '__main__':
     obj = Simulator(config_path)
-    obj.run_single()
+    # obj.run_single()
     obj.plot_single()

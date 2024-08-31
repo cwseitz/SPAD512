@@ -77,7 +77,9 @@ class Generator:
                 prob[i, :] = self.convolveProb(prob[i, :]) 
 
         # optimized binomial drawing for long data using numba
-        data += binom_sim(self.bits, len(self.lifetimes), len(data), bin_gates, self.weight, prob) # binom_sim is JIT compiled by numba
+        data += binom_sim(self.bits, len(data), bin_gates, self.weight, prob) # binom_sim is JIT compiled by numba
+
+        print(data)
 
         return data
     
@@ -108,6 +110,8 @@ class Generator:
 
     '''Helper method for parallelizaiton'''
     def helper(self, pixel):
+        if np.sum(pixel)%self.x == 0:
+            print(f'Generating {pixel}')
         return self.genTrace()
 
     '''Parallelization coordinator'''
@@ -124,7 +128,7 @@ class Generator:
         # imsave(self.filename + '.tif', self.image)
 
 @njit
-def binom_sim(bits, lt_len, data_len, bin_gates, weight, prob): # does not work for monoexp but later issue i think
+def binom_sim(bits, data_len, bin_gates, weight, prob): # does not work for monoexp but later issue i think
     holder = np.zeros(data_len, dtype=np.int16)
     
     for _ in range(2**bits - 1):
