@@ -37,7 +37,7 @@ class Fitter:
         self.track = 0    
 
     '''Parallelizing helper function'''
-    def helper(self, data, i, j):
+    def helper(self, data, i, j, full=False):
         length, x, y = np.shape(data)
         
         data_knl = np.zeros(length)
@@ -46,7 +46,7 @@ class Fitter:
                 data_knl += data[:, a, b]
 
         dt = Trace(data_knl, i, j, **self.__dict__)
-        dt.fit_trace()
+        dt.fit_trace(full=full)
         return dt.params, dt.success, dt.sum, dt.i, dt.j
 
     def fit_exps(self, filename=None, image=None):
@@ -88,9 +88,7 @@ class Fitter:
                     if ((i+j) % self.x) == 0: # print every so often just so that progress can be seen
                         print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns, {1/(outputs[3]+1e-10)} ns\n')
 
-        full_reshaped = self.full_trace.reshape(len(self.full_trace),1,1)
-
-        outputs, success, sum, i, j = self.helper(full_reshaped, 0, 0)
+        outputs, success, sum, i, j = self.helper(self.full_trace.reshape(len(self.full_trace),1,1), 0, 0, full=True)
 
         return self.A1, self.A2, self.tau1, self.tau2, self.intensity, self.full_trace, outputs, self.track, self.times
     

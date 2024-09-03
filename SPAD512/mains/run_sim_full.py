@@ -74,7 +74,7 @@ class Simulator:
                 self.f_vals[i,j] *= np.sqrt(self.counts[i,j])
 
                 toc = time.time()
-                print(f'Data analyzed in {(toc-tic):.1f} seconds. StD short lifetime {(self.stdevs[1,i,j]):.2f}, mean {(self.means[1,i,j]):.2f} ns \n')
+                print(f'Data analyzed in {(toc-tic):.1f} seconds. F-value {self.f_vals[i,j]:.3f} \n')
                 # print(f'Counts: {self.counts[i,j]} \n')
 
         self.means[np.isnan(self.means)] = 0 

@@ -21,7 +21,8 @@ class Trace:
             'bits': 5,
             'integ': 10000,
             'freq': 10,
-            'kernel_size': 3
+            'kernel_size': 3,
+            'track': 0
         }
         filtered = {k: v for k, v in kwargs.items() if k in defaults}
         defaults.update(filtered)
@@ -141,13 +142,17 @@ class Trace:
 
 
     '''RLD bit-depth helper method'''
-    def correct_RLD(self): # interpolate counts into the raw detection probability
+    def correct(self, full=False): # interpolate counts into the raw detection probability
         bin_time = self.integ/(2**self.bits - 1)
         bin_gates = int(self.freq * bin_time)
+
         max_counts = ((1 + self.kernel_size*2)**2) * (2**self.bits - 1)
+        if full: 
+            max_counts *= self.track
+
         probs = self.data/max_counts
         probs = 1 - (1 - probs)**(1/(bin_gates))
-        return 1000*probs # return scaled version for numerical convenience
+        self.data = 1000*probs # return scaled version for numerical convenience
 
 
 
@@ -255,7 +260,6 @@ class Trace:
                 return (A, 1/tau, 0, 0)
 
             case 'bi_rld': 
-                self.data = self.correct_RLD()
                 D0, D1, D2, D3 = self.data
 
                 dt = self.step
@@ -287,9 +291,10 @@ class Trace:
             case _:
                 raise Exception('Curve choice invalid in config.json, choose from mono, mono_conv, mono_conv_log, mono_conv_mh, bi, bi_nnls, bi_conv, bi_conv_nnls, mono_rld, mono_rld_50ovp, bi_rld')
 
-    def fit_trace(self): # dont fit pixels that dont meet the specified count threshold
+    def fit_trace(self, full=False): # dont fit pixels that dont meet the specified count threshold
         if self.sum > self.thresh:
             try:
+                self.correct(full=full)
                 self.params = self.fit_decay()
                 self.success = True
             except RuntimeError:

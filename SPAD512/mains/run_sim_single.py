@@ -58,11 +58,11 @@ class Simulator:
         print(f"{self.config['fit']} fitting done in {(toc-tic):.1f} seconds: {self.config['filename'] + '_nnls'}_fit_results.npz")
         return results
         
-    def plot(self, subname='',show=True):
-        results = np.load(self.config['filename'] + subname + '_fit_results.npz')
+    def plot(self, results=True, subname='',show=True):
+        if not results:
+            results = np.load(self.config['filename'] + subname + '_fit_results.npz')
 
         plot = Plotter(self.config)
-        plot.fit = 'bi_nnls'
         plot.plot_all(results, self.config['filename'] + subname, show=show) 
 
         # print(f"Results plotted: {self.config['filename']}_results.png")
@@ -70,21 +70,7 @@ class Simulator:
 if __name__ == '__main__':
     obj = Simulator(config_path)
     dt = obj.gen()
-
-    # nnls
-    obj.config['fit'] = 'bi_nnls'
-    nnls_results = obj.run(dt,subname='_nnls')
-    obj.plot(subname='_nnls')
-    
-    # rld
-    dt.times = dt.times[:4]
-    dt.image = dt.image[:4,:,:]
-    dt.numsteps = 4
-    obj.config['fit'] = 'bi_rld'
-    rld_results = obj.run(dt,subname='_rld')
-    obj.plot(subname='_rld')
-
-    # add composite plotting here
-
+    results = obj.run(dt, subname='_thing')
+    obj.plot(results=False, subname='_thing')
     
 
