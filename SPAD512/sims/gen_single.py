@@ -78,9 +78,7 @@ class Generator:
 
         # optimized binomial drawing for long data using numba
         data += binom_sim(self.bits, len(data), bin_gates, self.weight, prob) # binom_sim is JIT compiled by numba
-
-        print(data)
-
+        
         return data
     
     '''Convolution of a probability trace with a Gaussian'''

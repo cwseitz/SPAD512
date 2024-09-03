@@ -49,21 +49,21 @@ class Simulator:
         print(f'Done in {(toc-tic):.1f} seconds. Analyzing')
         return dt
 
-    def run(self, dt): # single vals (not in array) for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
+    def run(self, dt, subname=''): # single vals (not in array) for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
         tic = time.time()
         fit = Fitter(self.config, numsteps=dt.numsteps, times=dt.times)
         results = fit.fit_exps(image=dt.image)
-        fit.save_results(self.config['filename'] + '_nnls', results)
+        fit.save_results(self.config['filename'] + subname, results)
         toc = time.time()
-        print(f"NNLS fitting done in {(toc-tic):.1f} seconds: {self.config['filename'] + '_nnls'}_fit_results.npz")
+        print(f"{self.config['fit']} fitting done in {(toc-tic):.1f} seconds: {self.config['filename'] + '_nnls'}_fit_results.npz")
         return results
         
-    def plot(self,name='',show=True):
-        results = np.load(self.config['filename'] + name)
+    def plot(self, subname='',show=True):
+        results = np.load(self.config['filename'] + subname + '_fit_results.npz')
 
         plot = Plotter(self.config)
         plot.fit = 'bi_nnls'
-        plot.plot_all(results, self.config['filename'] + name, show=show) 
+        plot.plot_all(results, self.config['filename'] + subname, show=show) 
 
         # print(f"Results plotted: {self.config['filename']}_results.png")
 
@@ -73,14 +73,16 @@ if __name__ == '__main__':
 
     # nnls
     obj.config['fit'] = 'bi_nnls'
-    nnls_results = obj.run(dt)
+    nnls_results = obj.run(dt,subname='_nnls')
+    obj.plot(subname='_nnls')
     
     # rld
     dt.times = dt.times[:4]
     dt.image = dt.image[:4,:,:]
     dt.numsteps = 4
     obj.config['fit'] = 'bi_rld'
-    rld_results = obj.run(dt)
+    rld_results = obj.run(dt,subname='_rld')
+    obj.plot(subname='_rld')
 
     # add composite plotting here
 
