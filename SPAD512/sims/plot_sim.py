@@ -1,135 +1,39 @@
 import numpy as np
-import scipy.optimize as opt
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-from skimage.io import imsave, imread
-from scipy.signal import convolve, deconvolve
-from concurrent.futures import ProcessPoolExecutor, as_completed
-import random
 
 @staticmethod
-def plotLifetimes(mean_image, std_image, widths, steps, tau, savename, show=True):
-    numtau, xlen, ylen = np.shape(mean_image)
-    
-    mean_image[np.isnan(mean_image)] = -1
-    std_image[np.isnan(std_image)] = -1
+def plot_lifetimes(mean_img, std_img, param1s, param2s, taus, filename, show=True):
+    ntau, nx, ny = mean_img.shape
 
-    steps = np.asarray(steps) * 1e-3
-    widths = np.asarray(widths) * 1e-3
+    def plot_panel(ax, img, title, cbar_label, yticks, xticks, norm):
+        cax = ax.imshow(img, cmap='seismic', norm=norm)
+        cbar = plt.colorbar(cax, ax=ax, shrink=0.6)
+        cbar.set_label(cbar_label)
+        ax.set_title(title)
+        ax.set_xlabel('Step size (ns)')
+        ax.set_ylabel('Widths (ns)')
+        ax.set_yticks(np.linspace(0, nx, num=nx, endpoint=False))
+        ax.set_yticklabels(np.round(yticks, 2))
+        ax.set_xticks(np.linspace(0, ny, num=ny, endpoint=False))
+        ax.set_xticklabels(np.round(xticks, 2))
+        plt.setp(ax.get_xticklabels(), rotation=45)
 
-    # plot mean
-    if (numtau == 1):
-        fig, ax = plt.subplots(1,2,figsize=(12,6))
+    fig, ax = plt.subplots(ntau, 2, figsize=(12, 6 if ntau == 1 else 12))
+    ax = ax.reshape(-1, 2)
 
-        lower = min(max(tau[0] - 5, int(np.min(mean_image[0]))), tau[0] - 1)
-        upper = max(min(tau[0] + 5, int(np.max(mean_image[0] + 1))), tau[0] + 1)
-        norm = mcolors.TwoSlopeNorm(vmin=lower, vcenter=tau[0], vmax=upper)
-        cax1 = ax[0].imshow(mean_image[0], cmap='seismic', norm=norm)
-        cbar1 = fig.colorbar(cax1, ax=ax[0], shrink = 0.6)
-        cbar1.set_label('Means, ns')
-        ax[0].set_title('Mean Lifetimes')
-        ax[0].set_xlabel('Step size (ns)')
-        ax[0].set_ylabel('Widths (ns)')
-        ax[0].set_yticks(np.linspace(0, xlen, num=xlen, endpoint=False))
-        ax[0].set_yticklabels(widths)
-        ax[0].set_xticks(np.linspace(0, ylen, num=ylen, endpoint=False))
-        ax[0].set_xticklabels(steps)
-        plt.setp(ax[0].get_xticklabels(), rotation=45)
+    for i in range(ntau):
+        mean_lower = min(max(taus[i] - 5 * (i+1), int(np.min(mean_img[i]))), taus[i] - 1)
+        mean_upper = max(min(taus[i] + 5 * (i+1), int(np.max(mean_img[i]) + 1)), taus[i] + 1)
+        mean_norm = mcolors.TwoSlopeNorm(vmin=mean_lower, vcenter=taus[i], vmax=mean_upper)
+        std_norm = mcolors.TwoSlopeNorm(vmin=-1, vcenter=0, vmax=10)
+        
+        plot_panel(ax[i, 0], mean_img[i], f'Lifetimes (tau {i+1})', 'Means, ns', param1s, param2s, mean_norm)
+        plot_panel(ax[i, 1], std_img[i], f'Std Devs (tau {i+1})', 'St Devs, ns', param1s, param2s, std_norm)
 
-        # plot stdevs
-        norm = mcolors.TwoSlopeNorm(vmin=-1, vcenter=0, vmax=2)
-        cax2 = ax[1].imshow(std_image[0], cmap='seismic', norm=norm)
-        cbar2 = fig.colorbar(cax2, ax=ax[1], shrink = 0.6)
-        cbar2.set_label('St Devs, ns')
-        ax[1].set_title('Standard Deviation of Lifetimes')
-        ax[1].set_xlabel('Step size (ns)')
-        ax[1].set_ylabel('Widths (ns)')
-        ax[1].set_yticks(np.linspace(0, xlen, num=xlen, endpoint=False))
-        ax[1].set_yticklabels(widths)
-        ax[1].set_xticks(np.linspace(0, ylen, num=ylen, endpoint=False))
-        ax[1].set_xticklabels(steps)
-        plt.setp(ax[1].get_xticklabels(), rotation=45)
+    plt.tight_layout()
+    plt.savefig(filename + '_fit_results', bbox_inches='tight')
+    print(f'Figure saved as {filename + '_fit_results'}')
 
-        plt.savefig(savename, bbox_inches='tight')
-        print('Figure saved as ' + savename)
-
-        if show:
-            plt.show()
-
-    if (numtau == 2):
-        fig, ax = plt.subplots(2,2,figsize=(12,12))
-
-        if (np.mean(mean_image[0]) < np.mean(mean_image[1])):
-            temp = mean_image[1].copy()
-            mean_image[1] = mean_image[0]
-            mean_image[0] = temp
-
-            temp = std_image[1].copy()
-            std_image[1] = std_image[0]
-            std_image[0] = temp
-
-        # temp = tau[1]
-        # tau[1] = tau[0]
-        # tau[0] = temp
-
-        lower = min(max(tau[0] - 10, int(np.min(mean_image[0]))), tau[0] - 1)
-        upper = max(min(tau[0] + 10, int(np.max(mean_image[0] + 1))), tau[0] + 1)
-        norm = mcolors.TwoSlopeNorm(vmin=lower, vcenter=tau[0], vmax=upper)
-        cax1 = ax[0, 0].imshow(mean_image[0], cmap='seismic', norm=norm)
-        cbar1 = fig.colorbar(cax1, ax=ax[0, 0], shrink = 0.6)
-        cbar1.set_label('Means, ns')
-        ax[0, 0].set_title('Larger Lifetimes')
-        ax[0, 0].set_xlabel('Step size (ns)')
-        ax[0, 0].set_ylabel('Integration (ms)')
-        ax[0, 0].set_yticks(np.linspace(0, xlen, num=xlen, endpoint=False))
-        ax[0, 0].set_yticklabels(np.round(widths, 2))
-        ax[0, 0].set_xticks(np.linspace(0, ylen, num=ylen, endpoint=False))
-        ax[0, 0].set_xticklabels(np.round(steps,2))
-        plt.setp(ax[0, 0].get_xticklabels(), rotation=45)
-
-        lower = min(max(tau[1] - 5, int(np.min(mean_image[1]))), tau[1] - 1)
-        upper = max(min(tau[1] + 5, int(np.max(mean_image[1] + 1))), tau[1] + 1)
-        norm = mcolors.TwoSlopeNorm(vmin=lower, vcenter=tau[1], vmax=upper)
-        cax2 = ax[0, 1].imshow(mean_image[1], cmap='seismic', norm=norm)
-        cbar2 = fig.colorbar(cax2, ax=ax[0, 1], shrink = 0.6)
-        cbar2.set_label('Means, ns')
-        ax[0, 1].set_title('Smaller Lifetimes')
-        ax[0, 1].set_xlabel('Step size (ns)')
-        ax[0, 1].set_ylabel('Integration (ms)')
-        ax[0, 1].set_yticks(np.linspace(0, xlen, num=xlen, endpoint=False))
-        ax[0, 1].set_yticklabels(np.round(widths, 2))
-        ax[0, 1].set_xticks(np.linspace(0, ylen, num=ylen, endpoint=False))
-        ax[0, 1].set_xticklabels(np.round(steps,2))
-        plt.setp(ax[0, 1].get_xticklabels(), rotation=45)
-
-        norm = mcolors.TwoSlopeNorm(vmin=-1, vcenter=0, vmax=10)
-        cax3 = ax[1, 0].imshow(std_image[0], cmap='seismic', norm=norm)
-        cbar3 = fig.colorbar(cax3, ax=ax[1, 0], shrink = 0.6)
-        cbar3.set_label('St Devs, ns')
-        ax[1, 0].set_title('Standard Deviation of Lifetimes')
-        ax[1, 0].set_xlabel('Step size (ns)')
-        ax[1, 0].set_ylabel('Integration (ms)')
-        ax[1, 0].set_yticks(np.linspace(0, xlen, num=xlen, endpoint=False))
-        ax[1, 0].set_yticklabels(np.round(widths, 2))
-        ax[1, 0].set_xticks(np.linspace(0, ylen, num=ylen, endpoint=False))
-        ax[1, 0].set_xticklabels(np.round(steps,2))
-        plt.setp(ax[1, 0].get_xticklabels(), rotation=45)
-
-        norm = mcolors.TwoSlopeNorm(vmin=-1, vcenter=0, vmax=10)
-        cax3 = ax[1, 1].imshow(std_image[1], cmap='seismic', norm=norm)
-        cbar3 = fig.colorbar(cax3, ax=ax[1, 1], shrink = 0.6)
-        cbar3.set_label('St Devs, ns')
-        ax[1, 1].set_title('Standard Deviation of Lifetimes')
-        ax[1, 1].set_xlabel('Step size (ns)')
-        ax[1, 1].set_ylabel('Integration (ms)')
-        ax[1, 1].set_yticks(np.linspace(0, xlen, num=xlen, endpoint=False))
-        ax[1, 1].set_yticklabels(np.round(widths, 2))
-        ax[1, 1].set_xticks(np.linspace(0, ylen, num=ylen, endpoint=False))
-        ax[1, 1].set_xticklabels(np.round(steps,2))
-        plt.setp(ax[1, 1].get_xticklabels(), rotation=45)
-
-        plt.savefig(savename, bbox_inches='tight')
-        print('Figure saved as ' + savename)
-
-        if show:
-            plt.show()
+    if show:
+        plt.show()
