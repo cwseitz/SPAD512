@@ -51,18 +51,21 @@ class Simulator:
         nonzero = results[2][(results[2] != 0) & (~np.isnan(results[2]))]
         self.means[0, i, j] += np.mean(nonzero)
         self.stdevs[0, i, j] += np.std(nonzero)
+        self.counts[i,j] += np.mean(results[4])
+        precs = self.stdevs[0,i,j]/self.means[0,i,j]
+        accs = np.sqrt((self.means[0,i,j] - self.config['lifetimes'][0])**2)
 
         if len(self.config['lifetimes']) > 1:
             nonzero = results[3][(results[3] != 0) & (~np.isnan(results[3]))]
             self.means[1, i, j] += np.mean(nonzero)
             self.stdevs[1, i, j] += np.std(nonzero)
-            
+            precs += self.stdevs[1,i,j]/self.means[1,i,j]
+
             if self.means[0,i,j] < self.means[1,i,j]:
-                temp = self.means[1,i,j].copy()
+                temp = self.means[1,i,j]
                 self.means[1,i,j] = self.means[0,i,j]
                 self.means[0,i,j] = temp
-
-                temp = self.stdevs[1,i,j].copy()
+                temp = self.stdevs[1,i,j]
                 self.stdevs[1,i,j] = self.stdevs[0,i,j]
                 self.stdevs[0,i,j] = temp
 
@@ -71,10 +74,8 @@ class Simulator:
                 self.config['lifetimes'][1] = self.config['lifetimes'][0] 
                 self.config['lifetimes'][0] = temp
 
-        self.counts[i,j] += np.mean(results[4])
-        self.f_vals[i,j] += self.means[1,i,j]/self.stdevs[1,i,j]
-        self.f_vals[i,j] += self.means[0, i, j]/self.stdevs[0, i, j]
-        self.f_vals[i,j] *= np.sqrt(self.counts[i,j])
+            accs = np.sqrt((self.means[0,i,j] - self.config['lifetimes'][0])**2 + (self.means[1,i,j] - self.config['lifetimes'][1])**2)
+        self.f_vals[i,j] = np.sqrt(self.counts[i,j]) * accs * precs
 
         self.means[np.isnan(self.means)] = 0 
         self.stdevs[np.isnan(self.stdevs)] = 100

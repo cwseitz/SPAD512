@@ -297,6 +297,14 @@ class Trace:
                 self.correct(full=full)
                 self.params = self.fit_decay()
                 self.success = True
+
+                if self.params[1] > self.params[3]:
+                    temp = self.params[3]
+                    self.params[3] = self.params[1]
+                    self.params[1] = temp
+
+                    # add amplitude swapping code maybe? if bi rld it might be sus
+
             except RuntimeError:
                 self.params = [0, 0, 0, 0]
         else: self.params = [0, 0, 0, 0]
