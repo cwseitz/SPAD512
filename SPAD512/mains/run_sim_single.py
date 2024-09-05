@@ -4,7 +4,7 @@ from skimage.io import imread, imsave
 import json
 import time
 from SPAD512.exps import Fitter, Plotter
-from SPAD512.sims import Generator, plotLifetimes
+from SPAD512.sims import Generator
 
 '''
 Simulation of SPAD time-gated FLIM. Make sure units in .json are consistent with below.
