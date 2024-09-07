@@ -72,7 +72,7 @@ class Generator:
         prob = np.zeros((len(self.lifetimes), len(self.times)))
         for i, lt in enumerate(self.lifetimes):
             lam = 1 / lt
-            prob[i, :] += self.zeta * (np.exp(-lam * (self.times)) - np.exp(-lam * (self.times + self.width)))  # based on exponential PDF 
+            prob[i, :] += self.zeta * (np.exp(-lam * (self.times)) - np.exp(-lam * (self.times + self.width)))  # based on exponential PDF
             if convolve:
                 prob[i, :] = self.convolveProb(prob[i, :]) 
 
@@ -108,7 +108,7 @@ class Generator:
 
     '''Helper method for parallelizaiton'''
     def helper(self, pixel):
-        if np.sum(pixel)%self.x == 0:
+        if np.random.random() < 0.01:
             print(f'Generating {pixel}')
         return self.genTrace()
 

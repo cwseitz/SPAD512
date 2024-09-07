@@ -4,7 +4,7 @@ from skimage.io import imread, imsave
 import json
 import time
 from SPAD512.exps import Fitter, Plotter
-from SPAD512.sims import Generator, plot_lifetimes
+from SPAD512.sims import Generator, plot_lifetimes, plot_fvals
 
 '''
 Simulation of SPAD time-gated FLIM. Make sure units in .json are consistent with below.
@@ -70,7 +70,7 @@ class Simulator:
                 self.stdevs[0,i,j] = temp
 
             if self.config['lifetimes'][0] < self.config['lifetimes'][1]:
-                temp = self.config['lifetimes'][1].copy()
+                temp = self.config['lifetimes'][1]
                 self.config['lifetimes'][1] = self.config['lifetimes'][0] 
                 self.config['lifetimes'][0] = temp
 
@@ -87,8 +87,6 @@ class Simulator:
                 self.config_copy[self.param1] = curr_param1
                 self.config_copy[self.param2] = curr_param2
 
-                print(self.config_copy[self.param1],self.config_copy[self.param2])
-
                 print(f'Generating data for {(curr_param1):.3f} {self.param1}, {(curr_param2):.3f} {self.param2}')
                 tic = time.time()
                 dt = Generator(self.config_copy)
@@ -101,7 +99,7 @@ class Simulator:
                 results = fit.fit_exps(image=dt.image)
                 self.post_sim(results, i, j)
                 toc = time.time()
-                print(f'Data analyzed in {(toc-tic):.1f} seconds. F-value {self.f_vals[i,j]:.3f} \n')
+                print(f'Data analyzed in {(toc-tic):.1f} seconds. F\'-value {self.f_vals[i,j]:.3f} \n')
 
     def plot_full(self,show=True):
         results = np.load(self.config['filename'] + '_results.npz')
@@ -110,7 +108,8 @@ class Simulator:
         self.counts = results['counts'].astype(int)
         self.f_vals = results['f_vals'].astype(float)
 
-        plot_lifetimes(self.means, self.stdevs, self.config['integ'], self.config['step'], self.config['lifetimes'], self.config['filename'], show=show)
+        plot_fvals(self.f_vals, self.config[self.param1], self.config[self.param2], self.config['filename'], show=show)
+        # plot_lifetimes(self.means, self.stdevs, self.config['integ'], self.config['step'], self.config['lifetimes'], self.config['filename'], show=show)
 
 if __name__ == '__main__':
     obj = Simulator(config_path)

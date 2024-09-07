@@ -14,7 +14,7 @@ def mono_rld(dt, g, t0, data):
 
 dt = 2
 g = 5
-t0 = 10.5
+t0 = 0
 data = (2386.51218541, 1953.91091879)
 
 print(mono_rld(dt, g, t0, data))

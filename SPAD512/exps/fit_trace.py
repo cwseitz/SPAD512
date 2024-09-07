@@ -220,15 +220,23 @@ class Trace:
                 xdat = self.times[loc:]
                 ydat = self.data[loc:]
 
-                params, _ = opt.curve_fit(self.bi, xdat, ydat, p0=guess)
+                try:
+                    params, _ = opt.curve_fit(self.bi, xdat, ydat, p0=guess)
+                    A_d = np.vstack([np.exp(-params[1]*xdat), np.exp(-params[3]*xdat)]).T
+
+
+                    cond_num = np.linalg.cond(A_d) # check matrix condition and add regularization if needed
+                    if cond_num > 1e12:
+                        print("Warning: Matrix is ill-conditioned, adding regularization.")
+                        A_d += (1e-6) * np.identity(A_d.shape[1])
+
+                    weights, _ = opt.nnls(A_d, ydat)
+                    params[0] = weights[0] + weights[1]
+                    params[2] = weights[0] / params[0]    
+                    return params         
                 
-                A_d = np.vstack([np.exp(-params[1]*xdat), np.exp(-params[3]*xdat)]).T
-                weights, _ = opt.nnls(A_d, ydat)
-
-                params[0] = weights[0] + weights[1]
-                params[2] = weights[0]/params[0]
-
-                return params
+                except np.linalg.LinAlgError as e:
+                    raise RuntimeError("Matrix is singular, unable to proceed with NNLS.")
 
             case 'bi_conv_nnls':
                 loc = min(np.argmax(self.data), len(self.data) - 4)
@@ -295,7 +303,7 @@ class Trace:
         if self.sum > self.thresh:
             try:
                 self.correct(full=full)
-                self.params = self.fit_decay()
+                self.params = list(self.fit_decay())
                 self.success = True
 
                 if self.params[1] > self.params[3]:
@@ -307,4 +315,5 @@ class Trace:
 
             except RuntimeError:
                 self.params = [0, 0, 0, 0]
-        else: self.params = [0, 0, 0, 0]
+        else: 
+            self.params = [0, 0, 0, 0]

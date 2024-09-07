@@ -58,10 +58,8 @@ class Simulator:
         print(f"{self.config['fit']} fitting done in {(toc-tic):.1f} seconds: {self.config['filename'] + '_nnls'}_fit_results.npz")
         return results
         
-    def plot(self, results=True, subname='',show=True):
-        if not results:
-            results = np.load(self.config['filename'] + subname + '_fit_results.npz')
-
+    def plot(self, subname='',show=True):
+        results = np.load(self.config['filename'] + subname + '_fit_results.npz')
         plot = Plotter(self.config)
         plot.plot_all(results, self.config['filename'] + subname, show=show) 
 
@@ -69,8 +67,8 @@ class Simulator:
 
 if __name__ == '__main__':
     obj = Simulator(config_path)
-    dt = obj.gen()
-    results = obj.run(dt, subname='_thing')
-    obj.plot(results=False, subname='_thing')
+    # dt = obj.gen()
+    # results = obj.run(dt)
+    obj.plot()
     
 
