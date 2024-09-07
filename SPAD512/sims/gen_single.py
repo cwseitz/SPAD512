@@ -24,6 +24,7 @@ class Generator:
             "thresh": 0,
             "irf_mean": 0,
             "irf_width": 0, 
+            "dark_cps": 0, 
             "fit": 0,
             "kernel_size": 0,
             "lifetimes": 0,
@@ -78,7 +79,11 @@ class Generator:
 
         # optimized binomial drawing for long data using numba
         data += binom_sim(self.bits, len(data), bin_gates, self.weight, prob) # binom_sim is JIT compiled by numba
-        
+
+        dcr = ((self.integ/1e6) * (1/self.dark_cps)) * (self.width * self.freq * 1e-3) # dark count rate based on forward bias open time
+        dark_counts = np.random.poisson(dcr, size=self.numsteps) 
+        data += dark_counts 
+
         return data
     
     '''Convolution of a probability trace with a Gaussian'''
@@ -108,7 +113,7 @@ class Generator:
 
     '''Helper method for parallelizaiton'''
     def helper(self, pixel):
-        if np.random.random() < 0.01:
+        if np.random.random() < 0.001:
             print(f'Generating {pixel}')
         return self.genTrace()
 

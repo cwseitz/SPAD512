@@ -17,6 +17,7 @@
     "thresh": 0,
     "irf_mean": 0,
     "irf_width": 1.4, 
+    "dark_cps": 25,
     "zeta": 0.05,
     "x": 50,
     "y": 50,
