@@ -1,9 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+import pickle  # For pickling
 
 @staticmethod
-def plot_lifetimes(mean_img, std_img, param1s, param2s, taus, filename, show=True):
+def plot_lifetimes(mean_img, std_img, param1s, param2s, taus, filename, show=True, pickle_fig=False):
     ntau, nx, ny = mean_img.shape
 
     fig, ax = plt.subplots(ntau, 2, figsize=(12, 6 if ntau == 1 else 12))
@@ -20,12 +21,16 @@ def plot_lifetimes(mean_img, std_img, param1s, param2s, taus, filename, show=Tru
 
     plt.tight_layout()
     plt.savefig(filename + '_fit_results', bbox_inches='tight')
-    print(f'Figure saved as {filename + '_fit_results'}')
+    print(f'Figure saved as {filename + "_fit_results"}')
+
+
+    with open(filename + '_fit_results.pkl', 'wb') as f:
+        pickle.dump(fig, f)
 
     if show:
         plt.show()
 
-def plot_fvals(fval_img, param1s, param2s, filename, show=True):
+def plot_fvals(fval_img, param1s, param2s, filename, show=True, pickle_fig=False):
     fig, ax = plt.subplots()
     norm = mcolors.Normalize(vmin=0, vmax=5)
     param1s = np.asarray(param1s) * 1e-3
@@ -35,6 +40,10 @@ def plot_fvals(fval_img, param1s, param2s, filename, show=True):
     plot_panel(ax, fval_img, f'Simulation accross integration time and step sizes for bi-exponential RLD', 'F\'-values, log scale', param1s, param2s, norm=norm)
     plt.tight_layout()
     plt.savefig(filename + '_results', bbox_inches='tight')
+
+    with open(filename + '_results.pkl', 'wb') as f:
+        pickle.dump(fig, f)
+
     if show:
         plt.show()
 

@@ -1,40 +1,61 @@
-import matplotlib.pyplot as plt #type: ignore
-from skimage.io import imread #type: ignore
-import numpy as np #type: ignore
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import json
 
-'''
-Plots FLIMJ outputs
-'''
+'''chatgpt code because i just needed it replotted quickly'''
 
-A = imread('240607/A_6bit.tif')
-Intensity = imread('240607/I_6bit.tif')
-tau = imread('240607/tau_6bit.tif')
+config_path = "C:\\Users\\ishaa\\Documents\\FLIM\\SPAD512\\SPAD512\\mains\\run_sim_full.json"
 
-print(tau)
-print('max value is')
-print(np.amax(tau))
+def load_config(config_path):
+    with open(config_path) as f:
+        config = json.load(f)
+    param1s = config['integ']  # Integration times
+    param2s = config['step']   # Step sizes
+    return param1s, param2s
 
-for i in range(len(tau)):
-  for j in range(len(tau[0])):
-    if tau[i][j] > 1000:
-      tau[i][j] = 0
-    if tau[i][j] < -1000:
-       tau[i][j] = 0
+def plot_panel(ax, img, title, cbar_label, yticks, xticks, norm=None):
+    nx, ny = img.shape
+    cax = ax.imshow(img, cmap='plasma', norm=norm)
+    cbar = plt.colorbar(cax, ax=ax, shrink=0.8)
+    cbar.set_label(cbar_label)
+    ax.set_title(title)
+    ax.set_xlabel('Step size (ns)')
+    ax.set_ylabel('Integration time (us)')
+    ax.set_yticks(np.linspace(0, nx - 1, num=nx, endpoint=True))
+    ax.set_yticklabels(np.round(yticks, 2))
+    ax.set_xticks(np.linspace(0, ny - 1, num=ny, endpoint=True))
+    ax.set_xticklabels(np.round(xticks, 2))
+    plt.setp(ax.get_xticklabels(), rotation=45)
 
-fig,ax=plt.subplots(1,3,figsize=(9,3),sharex=True,sharey=True)
-im1 = ax[0].imshow(A,cmap='plasma')
-im2 = ax[1].imshow(Intensity,cmap='gray')
-im3 = ax[2].imshow(tau,cmap='hsv')
-ax[0].set_title('A')
-ax[1].set_title('Intensity')
-ax[2].set_title(r'$\tau$')
+def plot_fvals_side_by_side(rld_filename, nnls_filename, config_path, show=True):
+    param1s, param2s = load_config(config_path)
 
-for axi in ax.ravel():
-    axi.set_xticks([])
-    axi.set_yticks([])
+    rld_data = np.load(rld_filename)
+    rld_fvals = rld_data['f_vals'].astype(float)
 
-plt.colorbar(im1,ax=ax[0],label='cts')
-plt.colorbar(im2,ax=ax[1],label='cts')
-plt.colorbar(im3,ax=ax[2],label='ns')
-plt.tight_layout()
-plt.show()
+    nnls_data = np.load(nnls_filename)
+    nnls_fvals = nnls_data['f_vals'].astype(float)
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+
+    norm = mcolors.Normalize(vmin=0, vmax=5)
+    param1s = np.asarray(param1s) * 1e-3  # Convert to us
+    param2s = np.asarray(param2s) * 1e-3  # Convert to ns
+
+    rld_fvals_log = np.log10(np.abs(rld_fvals))
+    plot_panel(axes[0], rld_fvals_log, 'A) RLD', 'F\'-values, log scale', param1s, param2s, norm=norm)
+
+    nnls_fvals_log = np.log10(np.abs(nnls_fvals))
+    plot_panel(axes[1], nnls_fvals_log, 'B) NNLS', 'F\'-values, log scale', param1s, param2s, norm=norm)
+
+    plt.tight_layout()
+    plt.savefig('combined_rld_nnls_results.png', bbox_inches='tight')
+
+    if show:
+        plt.show()
+
+rld_filename = "C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\rld_fvals_integ_step_results.npz"
+nnls_filename = "C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\nnls_fvals_integ_step_results.npz"
+
+plot_fvals_side_by_side(rld_filename, nnls_filename, config_path, show=True)

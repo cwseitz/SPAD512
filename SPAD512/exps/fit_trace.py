@@ -313,7 +313,7 @@ class Trace:
 
                     # add amplitude swapping code maybe? if bi rld it might be sus
 
-            except RuntimeError:
+            except (RuntimeError, ValueError):
                 self.params = [0, 0, 0, 0]
         else: 
             self.params = [0, 0, 0, 0]
