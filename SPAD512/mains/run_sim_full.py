@@ -108,8 +108,8 @@ class Simulator:
         self.counts = results['counts'].astype(int)
         self.f_vals = results['f_vals'].astype(float)
 
-        plot_fvals(self.f_vals, self.config[self.param1], self.config[self.param2], self.config['filename'], show=show)
-        # plot_lifetimes(self.means, self.stdevs, self.config['integ'], self.config['step'], self.config['lifetimes'], self.config['filename'], show=show)
+        # plot_fvals(self.f_vals, self.config[self.param1], self.config[self.param2], self.config['filename'], show=show)
+        plot_lifetimes(self.means, self.stdevs, self.config['bits'], self.config['integ'], self.config['lifetimes'], self.config['filename'], show=show)
 
 if __name__ == '__main__':
     obj = Simulator(config_path)

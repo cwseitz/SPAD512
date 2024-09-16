@@ -1,61 +1,74 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-import json
 
-'''chatgpt code because i just needed it replotted quickly'''
+# Function to plot the "tau1" and "tau2" entries from the .npz file
+def plot_lifetimes(npz_files, output_file, show=True):
+    # Load the tau1 and tau2 data from each npz file
+    tau1_data = []
+    tau2_data = []
+    for file in npz_files:
+        data = np.load(file)
+        if 'tau1' in data and 'tau2' in data:
+            tau1_data.append(data['tau1'])
+            tau2_data.append(data['tau2'])
+        else:
+            raise ValueError(f"File {file} does not contain 'tau1' or 'tau2' entries.")
 
-config_path = "C:\\Users\\ishaa\\Documents\\FLIM\\SPAD512\\SPAD512\\mains\\run_sim_full.json"
+    # Number of datasets and the shape of tau1/tau2 data
+    n_datasets = len(tau1_data)
+    nx, ny = tau1_data[0].shape  # Assuming the same shape for all
 
-def load_config(config_path):
-    with open(config_path) as f:
-        config = json.load(f)
-    param1s = config['integ']  # Integration times
-    param2s = config['step']   # Step sizes
-    return param1s, param2s
+    # Create a figure with one column for each .npz file, and two rows for tau1 and tau2
+    fig, ax = plt.subplots(2 * 2, n_datasets, figsize=(4 * n_datasets, 4 * 2 * 2))
 
-def plot_panel(ax, img, title, cbar_label, yticks, xticks, norm=None):
-    nx, ny = img.shape
-    cax = ax.imshow(img, cmap='plasma', norm=norm)
-    cbar = plt.colorbar(cax, ax=ax, shrink=0.8)
-    cbar.set_label(cbar_label)
-    ax.set_title(title)
-    ax.set_xlabel('Step size (ns)')
-    ax.set_ylabel('Integration time (us)')
-    ax.set_yticks(np.linspace(0, nx - 1, num=nx, endpoint=True))
-    ax.set_yticklabels(np.round(yticks, 2))
-    ax.set_xticks(np.linspace(0, ny - 1, num=ny, endpoint=True))
-    ax.set_xticklabels(np.round(xticks, 2))
-    plt.setp(ax.get_xticklabels(), rotation=45)
+    # Make sure ax is 2D even if there's only one row or one column
+    if 2 == 1:
+        ax = ax[np.newaxis, :]
+    if n_datasets == 1:
+        ax = ax[:, np.newaxis]
 
-def plot_fvals_side_by_side(rld_filename, nnls_filename, config_path, show=True):
-    param1s, param2s = load_config(config_path)
+    # Loop through the datasets and plot tau1 and tau2
+    for i, (tau1, tau2) in enumerate(zip(tau1_data, tau2_data)):
+        for j in range(2):
+            # Define colormap normalization for tau1 and tau2
+            tau1_lower = np.min(tau1[j])
+            tau1_upper = np.max(tau1[j])
+            tau2_lower = np.min(tau2[j])
+            tau2_upper = np.max(tau2[j])
 
-    rld_data = np.load(rld_filename)
-    rld_fvals = rld_data['f_vals'].astype(float)
+            tau1_norm = mcolors.Normalize(vmin=tau1_lower, vmax=tau1_upper)
+            tau2_norm = mcolors.Normalize(vmin=tau2_lower, vmax=tau2_upper)
 
-    nnls_data = np.load(nnls_filename)
-    nnls_fvals = nnls_data['f_vals'].astype(float)
+            # Plot tau1 data
+            cax1 = ax[2 * j, i].imshow(tau1[j], cmap='seismic', norm=tau1_norm)
+            fig.colorbar(cax1, ax=ax[2 * j, i], label=f'Tau1 (file {i + 1}, tau {j + 1})')
 
-    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+            # Plot tau2 data
+            cax2 = ax[2 * j + 1, i].imshow(tau2[j], cmap='seismic', norm=tau2_norm)
+            fig.colorbar(cax2, ax=ax[2 * j + 1, i], label=f'Tau2 (file {i + 1}, tau {j + 1})')
 
-    norm = mcolors.Normalize(vmin=0, vmax=5)
-    param1s = np.asarray(param1s) * 1e-3  # Convert to us
-    param2s = np.asarray(param2s) * 1e-3  # Convert to ns
+            # Set the title for each subplot
+            ax[2 * j, i].set_title(f'File {i + 1} - Tau1 (tau {j + 1})')
+            ax[2 * j + 1, i].set_title(f'File {i + 1} - Tau2 (tau {j + 1})')
 
-    rld_fvals_log = np.log10(np.abs(rld_fvals))
-    plot_panel(axes[0], rld_fvals_log, 'A) RLD', 'F\'-values, log scale', param1s, param2s, norm=norm)
-
-    nnls_fvals_log = np.log10(np.abs(nnls_fvals))
-    plot_panel(axes[1], nnls_fvals_log, 'B) NNLS', 'F\'-values, log scale', param1s, param2s, norm=norm)
-
+    # Adjust layout and save the figure
     plt.tight_layout()
-    plt.savefig('combined_rld_nnls_results.png', bbox_inches='tight')
+    plt.savefig(output_file, bbox_inches='tight')
+    print(f'Figure saved as {output_file}')
 
     if show:
         plt.show()
 
-rld_filename = "C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\rld_fvals_integ_step_results.npz"
-nnls_filename = "C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\nnls_fvals_integ_step_results.npz"
+# List of .npz files
+npz_files = [
+    r"C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\500us_6bit_7k_fit_results.npz",
+    r"C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\500us_6bit_3k_fit_results.npz",
+    r"C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\500us_6bit_4k_fit_results.npz"
+]
 
-plot_fvals_side_by_side(rld_filename, nnls_filename, config_path, show=True)
+# Output file name for the plot
+output_file = r"C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\lifetimes_comparison.png"
+
+# Call the function to plot tau1 and tau2 from all .npz files
+plot_lifetimes(npz_files, output_file, show=True)

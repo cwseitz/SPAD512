@@ -201,6 +201,55 @@ class Plotter:
             norm = mcolors.TwoSlopeNorm(vmin=vmin, vcenter=center, vmax=vmax)
             return cmap, norm
         return cmap
+    
+    def plot_hist(self, tau1, tau2, bins=50, splice=(5, 20), filename='lifetime_histogram_spliced.png', show=True):
+        tau1_flat = tau1.flatten()
+        tau2_flat = tau2.flatten()
+
+        tau1_flat = tau1_flat[tau1_flat >= 1]  # Remove values in tau1 less than 1
+        tau2_flat = tau2_flat[tau2_flat >= 1]
+
+        left = splice[0]
+        right = splice[1]
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(10, 6), gridspec_kw={'width_ratios': [2, 2], 'wspace': 0.1})
+
+        ax1.hist(tau1_flat[tau1_flat < left], bins=bins, alpha=0.5, label=f'Tau1 (mean = {np.mean(tau1_flat):.2f} ns)', color='blue')
+        ax1.hist(tau2_flat[tau2_flat < left], bins=bins, alpha=0.5, label=f'Tau2 (mean = {np.mean(tau2_flat):.2f} ns)', color='red')
+        ax1.set_xlim(0, left)
+        ax1.set_xlabel('Lifetime (ns)')
+        ax1.set_ylabel('Frequency')
+        ax1.set_title(f'Lifetimes < {left} ns')
+
+        ax2.hist(tau1_flat[tau1_flat > right], bins=bins, alpha=0.5, color='blue')
+        ax2.hist(tau2_flat[tau2_flat > right], bins=bins, alpha=0.5, color='red')
+        ax2.set_xlim(right, np.max([np.max(tau1_flat), np.max(tau2_flat)]))
+        ax2.set_xlabel('Lifetime (ns)')
+        ax2.set_title(f'Lifetimes > {right} ns')
+
+        ax1.spines['right'].set_visible(False)
+        ax2.spines['left'].set_visible(False)
+        ax1.tick_params(labelright=False)
+        ax2.tick_params(labelleft=False)
+
+        d = 0.02
+        kwargs = dict(transform=ax1.transAxes, color='k', clip_on=False)
+        ax1.plot((1 - d, 1 + d), (-d, +d), **kwargs)
+        ax1.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)
+
+        kwargs.update(transform=ax2.transAxes)
+        ax2.plot((-d, +d), (-d, +d), **kwargs)
+        ax2.plot((-d, +d), (1 - d, 1 + d), **kwargs)
+
+        handles, labels = ax1.get_legend_handles_labels()
+        fig.legend(handles, labels, loc='upper center')
+
+        plt.tight_layout()
+
+        plt.savefig(filename)
+        if show:
+            plt.show()
+
 
     def plot_all(self, results, filename, show=False):
         A1, A2, tau1, tau2, intensity, full_trace, full_params, track, times = self.preprocess_results(results)
