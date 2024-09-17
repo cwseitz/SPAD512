@@ -1,10 +1,10 @@
 {
     "frames": 1,
-    "bits": 8,
+    "bits": 4,
     "power": 300, 
     "freq": 10,
     "numsteps": 4,
-    "integ": 5000,
+    "integ": 50,
     "width": 10000,
     "step": 15000,
     "offset": 0,
@@ -12,13 +12,13 @@
     "irf_mean": 0,
     "irf_width": 1.4, 
     "fit": "bi_nnls",
-    "kernel_size": 7,
+    "kernel_size": 15,
     "lifetimes": [20, 5],
     "weight": 0.5,
     "zeta": 0.05,
     "dark_cps": 25,
     "x": 50,
     "y": 50,
-    "filename": "C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\corr_yes",
+    "filename": "C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\50us_4bit_15k",
     "folder": "C:\\Users\\ishaa\\Documents\\FLIM\\240827\\data\\gated_images\\acq00003"
 }
