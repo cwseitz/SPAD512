@@ -55,7 +55,7 @@ class Simulator:
         results = fit.fit_exps(image=dt.image)
         fit.save_results(self.config['filename'] + subname, results)
         toc = time.time()
-        print(f"{self.config['fit']} fitting done in {(toc-tic):.1f} seconds: {self.config['filename'] + '_nnls'}_fit_results.npz")
+        print(f"{self.config['fit']} fitting done in {(toc-tic):.1f} seconds: {self.config['filename'] + subname}_fit_results.npz")
         return results
         
     def plot(self, subname='',show=True):
@@ -69,9 +69,18 @@ class Simulator:
         # print(f"Results plotted: {self.config['filename']}_results.png")
 
 if __name__ == '__main__':
-    obj = Simulator(config_path)
-    dt = obj.gen()
-    results = obj.run(dt)
-    obj.plot() 
-    
+    integs = [18000, 18500]
+
+    with open(config_path) as f:
+        config = json.load(f)
+        filename = config['filename']
+        del config
+
+    for integ in integs:
+        obj = Simulator(config_path)
+        obj.config['integ'] = integ
+        obj.config['filename'] = filename + str(integ)
+        dt = obj.gen()
+        results = obj.run(dt)
+
 

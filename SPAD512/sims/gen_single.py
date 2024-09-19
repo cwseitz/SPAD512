@@ -84,8 +84,6 @@ class Generator:
         dark_counts = np.random.poisson(dcr, size=self.numsteps) 
         data += dark_counts 
 
-        print(data)
-
         return data
     
     '''Convolution of a probability trace with a Gaussian'''

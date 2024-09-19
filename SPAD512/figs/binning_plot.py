@@ -4,7 +4,7 @@ import seaborn as sns
 import re
 import math
 
-def plot_tau2_histograms(npz_files, output_file, show=True):
+def plot(npz_files, output_file, show=True):
     bit6_files = [f for f in npz_files if '6bit' in f]
     bit4_files = [f for f in npz_files if '4bit' in f]
 
@@ -83,4 +83,4 @@ npz_files = [
 ]
 
 output_file = r"C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\tau2_histograms.png"
-plot_tau2_histograms(npz_files, output_file, show=True)
+plot(npz_files, output_file, show=True)
