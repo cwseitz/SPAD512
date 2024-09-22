@@ -1,19 +1,21 @@
+import os
 from PIL import Image
 import tifffile as tiff
 import numpy as np
 
-files = [
-    "C:\\Users\\ishaa\\Documents\\FLIM\\240825\\acq00003\\IMG00000-0000.png",
-    "C:\\Users\\ishaa\\Documents\\FLIM\\240825\\acq00003\\IMG00000-0001.png",
-    "C:\\Users\\ishaa\\Documents\\FLIM\\240825\\acq00003\\IMG00000-0002.png",
-    "C:\\Users\\ishaa\\Documents\\FLIM\\240825\\acq00003\\IMG00000-0003.png"
+base_dir = r"C:\\Users\\ishaa\\Documents\\FLIM\\240920"
+
+subdirs = [
+    d for d in os.listdir(base_dir)
+    if os.path.isdir(os.path.join(base_dir, d)) and d.startswith('acq')
 ]
 
-images = [Image.open(image) for image in files]
-images = [np.asarray(image) for image in images]
-
-filename = "C:\\Users\\ishaa\\Documents\\FLIM\\240825\\240825_SPAD-QD-10MHz-1f-4g-50000us-15000ps-15000ps-18ps-150uW.tif"
-
-tiff.imwrite(filename, images)
-
-print(f"Saved TIFF movie as {filename}")
+for subdir in subdirs:
+    folder_path = os.path.join(base_dir, subdir)
+    files = [f for f in os.listdir(folder_path) if f.endswith('.png')]
+    files.sort()
+    file_paths = [os.path.join(folder_path, f) for f in files]
+    images = [np.asarray(Image.open(image)) for image in file_paths]
+    output = os.path.join(base_dir, f"{subdir}_stacked.tif")
+    tiff.imwrite(output, images)
+    print(f"Saved TIFF movie as {output}")
