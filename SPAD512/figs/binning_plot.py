@@ -1,86 +1,52 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import re
-import math
 
-def plot(npz_files, output_file, show=True):
-    bit6_files = [f for f in npz_files if '6bit' in f]
-    bit4_files = [f for f in npz_files if '4bit' in f]
+# Load the .npz files
+lma_data = np.load(r"C:\Users\ishaa\Documents\FLIM\ManFigs\lma_fit_results.npz")
+nnls_data = np.load(r"C:\Users\ishaa\Documents\FLIM\ManFigs\nnls_fit_results.npz")
 
-    datasets = []
-    for bit_files in [bit6_files, bit4_files]:
-        for file in bit_files:
-            data = np.load(file)
-            if 'tau2' in data:
-                tau2 = data['tau2'].flatten()
-                tau2 = tau2[(tau2 != 0) & (tau2 >= 2) & (tau2 <= 8)]
-            else:
-                raise ValueError(f"File {file} does not contain 'tau2' entry.")
+# Extract tau1 and tau2 from LMA and filter values less than 3
+tau1_lma = lma_data['tau1'].ravel()
+tau2_lma = lma_data['tau2'].ravel()
+tau1_lma = tau1_lma[tau1_lma >= 3]
+tau2_lma = tau2_lma[tau2_lma >= 3]
 
-            match = re.search(r'(\d+)k', file)
-            if match:
-                k_raw = int(match.group(1))
-                kernel_size = 2 * k_raw + 1
-                k_value = kernel_size * kernel_size  
-                pixels = f'{k_value} binned'
-            else:
-                k_value = None
-                pixels = 'Unknown binned'
+# Extract tau1 and tau2 from NNLS and filter values less than 3
+tau1_nnls = nnls_data['tau1'].ravel()
+tau1_nnls = tau1_nnls[tau1_nnls >= 3]
+tau2_nnls = nnls_data['tau2'].ravel()
+tau2_nnls = tau2_nnls[tau2_nnls >= 3]
 
-            datasets.append({
-                'tau2': tau2,
-                'file': file,
-                'k_value': k_value,
-                'pixels': pixels,
-                'bit_depth': '6-bit' if '6bit' in file else '4-bit'
-            })
+# Determine common bin edges for consistent bin width
+min_value = min(np.min(tau1_lma), np.min(tau2_lma), np.min(tau1_nnls), np.min(tau2_nnls))
+max_value = max(np.max(tau1_lma), np.max(tau2_lma), np.max(tau1_nnls), np.max(tau2_nnls))
+bins = np.linspace(min_value, max_value, 200)
 
+# Set seaborn style for a polished look
+sns.set_theme(style="white")
 
-    sns.set_theme(style="white")  # Changed from sns.set to sns.set_theme
+# Create the figure and subplots
+fig, ax = plt.subplots(2, 1, figsize=(10, 8), sharex=True, sharey=True)
 
-    fig, ax = plt.subplots(2, 3, figsize=(15, 8), squeeze=False)
-    colors = sns.color_palette("muted", n_colors=6)
-    for idx, dataset in enumerate(datasets):
-        row = 0 if dataset['bit_depth'] == '6-bit' else 1
-        col = idx % 3
+# Plot the stacked histograms for LMA
+ax[0].hist([tau1_lma, tau2_lma], bins=bins, color=['red', 'blue'], alpha=0.6, label=['Longer', 'Shorter'], stacked=True)
+ax[0].set_title('Fitting without non-negative step', fontweight='bold')
+ax[0].set_xlabel('Lifetimes (ns)')
+ax[0].set_ylabel('Frequency')
+ax[0].legend()
 
-        sns.histplot(
-            dataset['tau2'],
-            bins=50,
-            kde=True,
-            stat='density', 
-            color=colors[idx],
-            ax=ax[row, col]
-        )
+# Plot the stacked histograms for NNLS
+ax[1].hist([tau1_nnls, tau2_nnls], bins=bins, color=['red', 'blue'], alpha=0.6, label=['Longer', 'Shorter'], stacked=True)
+ax[1].set_title('Fitting with LMA + NNLS', fontweight='bold')
+ax[1].set_xlabel('Lifetimes (ns)')
+ax[1].set_ylabel('Frequency')
+ax[1].legend()
 
-        ax[row, col].set_xlim(2, 8)
-        ax[row, col].set_xlabel('Smaller lifetime (ns)')
-        ax[row, col].set_ylabel('Density')
-        ax[row, col].spines['top'].set_visible(False)
-        ax[row, col].spines['right'].set_visible(False)
+# Final adjustments
+for a in ax:
+    a.spines['top'].set_visible(False)
+    a.spines['right'].set_visible(False)
 
-        if dataset['k_value'] is not None:
-            frames_needed = math.ceil(dataset['k_value'] / 49)
-            ax[row, col].set_title(f"{frames_needed} frames", fontweight='bold')  # Added fontweight='bold'
-        else:
-            ax[row, col].set_title("Unknown frames", fontweight='bold')  # Added fontweight='bold'
-
-    plt.tight_layout()
-    plt.savefig(output_file, bbox_inches='tight')
-    print(f'Figure saved as {output_file}')
-
-    if show:
-        plt.show()
-
-npz_files = [
-    r"C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\bitstuffs\\50us_4bit_11k_fit_results.npz",
-    r"C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\bitstuffs\\50us_4bit_13k_fit_results.npz",
-    r"C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\bitstuffs\\50us_4bit_15k_fit_results.npz",
-    r"C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\bitstuffs\\500us_6bit_5k_fit_results.npz",
-    r"C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\bitstuffs\\500us_6bit_7k_fit_results.npz",
-    r"C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\bitstuffs\\500us_6bit_9k_fit_results.npz"
-]
-
-output_file = r"C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\tau2_histograms.png"
-plot(npz_files, output_file, show=True)
+plt.tight_layout()
+plt.show()

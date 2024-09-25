@@ -145,7 +145,6 @@ class Trace:
     def correct(self, full=False): # interpolate counts into the raw detection probability
         bin_time = self.integ/(2**self.bits - 1)
         bin_gates = int(self.freq * bin_time)
-
         max_counts = ((1 + self.kernel_size*2)**2) * (2**self.bits - 1)
         if full: 
             max_counts *= self.track
@@ -223,7 +222,6 @@ class Trace:
                 try:
                     params, _ = opt.curve_fit(self.bi, xdat, ydat, p0=guess)
                     A_d = np.vstack([np.exp(-params[1]*xdat), np.exp(-params[3]*xdat)]).T
-
 
                     cond_num = np.linalg.cond(A_d) # check matrix condition and add regularization if needed
                     if cond_num > 1e12:

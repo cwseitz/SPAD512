@@ -47,6 +47,10 @@ class Simulator:
         self.counts = np.zeros((len(self.config[self.param1]), len(self.config[self.param2])))
         self.f_vals = np.zeros((len(self.config[self.param1]), len(self.config[self.param2])))
 
+        with open(self.config['filename'] + '_mtdt.json', 'w') as file:
+            json.dump(self.config, file, indent=4)
+        print(f'Metadata saved to {self.config['filename'] + '_metadata.json', 'w'}')
+
     def post_sim(self, results, i, j):
         nonzero = results[2][(results[2] != 0) & (~np.isnan(results[2]))]
         self.means[0, i, j] += np.mean(nonzero)
@@ -108,10 +112,9 @@ class Simulator:
         self.counts = results['counts'].astype(int)
         self.f_vals = results['f_vals'].astype(float)
 
-        # plot_fvals(self.f_vals, self.config[self.param1], self.config[self.param2], self.config['filename'], show=show)
-        plot_lifetimes(self.means, self.stdevs, self.config['bits'], self.config['integ'], self.config['lifetimes'], self.config['filename'], show=show)
+        plot_lifetimes(self.means, self.stdevs, self.config[self.param1], self.config[self.param2], self.config['lifetimes'], self.config['filename'], show=show)
 
 if __name__ == '__main__':
     obj = Simulator(config_path)
-    # obj.run_full()
+    obj.run_full()
     obj.plot_full()

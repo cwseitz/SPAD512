@@ -66,21 +66,12 @@ class Simulator:
         # A1, A2, tau1, tau2, intensity, full_trace, full_params, track, times = plot.preprocess_results(results)
         # plot.plot_hist(tau1, tau2, splice = (8, 17), filename=self.config['filename'] + subname + '_lifetime_histogram.png', show=show)
 
-        # print(f"Results plotted: {self.config['filename']}_results.png")
+        print(f"Results plotted: {self.config['filename']}_results.png")
 
 if __name__ == '__main__':
-    integs = [18000, 18500]
-
-    with open(config_path) as f:
-        config = json.load(f)
-        filename = config['filename']
-        del config
-
-    for integ in integs:
-        obj = Simulator(config_path)
-        obj.config['integ'] = integ
-        obj.config['filename'] = filename + str(integ)
-        dt = obj.gen()
-        results = obj.run(dt)
+    obj = Simulator(config_path)
+    dt = obj.gen()
+    results = obj.run(dt)
+    obj.plot()
 
 

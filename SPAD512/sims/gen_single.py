@@ -65,26 +65,28 @@ class Generator:
 
     '''Generation of a single fluorescent lifetime trace given the ground truth/SPAD parameters (in self), and convolution requirements'''
     def genTrace(self, convolve=True):
-        numgates = int(self.freq * self.integ)  # number of repetitions for a single step
-        bin_gates = int(numgates / ((2 ** self.bits) - 1))  # number of repetitions per binary image
-        data = np.zeros(self.numsteps, dtype=int)  # object to store data
-        
-        # set up 2D probability array, 1 row for each lifetime
+        numgates = int(self.freq * self.integ)  
+        bin_gates = int(numgates / ((2 ** self.bits) - 1))  
+        total_images = 2 ** self.bits - 1  
+
         prob = np.zeros((len(self.lifetimes), len(self.times)))
         for i, lt in enumerate(self.lifetimes):
             lam = 1 / lt
-            prob[i, :] += self.zeta * (np.exp(-lam * (self.times)) - np.exp(-lam * (self.times + self.width)))  # based on exponential PDF
+            prob[i, :] = self.zeta * (np.exp(-lam * self.times) - np.exp(-lam * (self.times + self.width)))
             if convolve:
-                prob[i, :] = self.convolveProb(prob[i, :]) 
+                prob[i, :] = self.convolveProb(prob[i, :])
 
-        # optimized binomial drawing for long data using numba
-        data += binom_sim(self.bits, len(data), bin_gates, self.weight, prob) # binom_sim is JIT compiled by numba
+        P = (1 - self.weight) * prob[0, :] + self.weight * prob[1, :]
 
-        dcr = ((self.integ/1e6) * (1/self.dark_cps)) * (self.width * self.freq * 1e-3) # dark count rate based on forward bias open time
-        dark_counts = np.random.poisson(dcr, size=self.numsteps) 
-        data += dark_counts 
+        P_bin = 1 - (1 - P) ** bin_gates
 
-        return data
+        counts = np.random.binomial(total_images, P_bin)
+
+        dcr = ((self.integ / 1e6) * (1 / self.dark_cps)) * (self.width * self.freq * 1e-3)
+        dark_counts = np.random.poisson(dcr, size=self.numsteps)
+        data = counts + dark_counts
+
+        return data.astype(int)
     
     '''Convolution of a probability trace with a Gaussian'''
     def convolveProb(self, trace):
