@@ -300,7 +300,7 @@ class Trace:
     def fit_trace(self, full=False): # dont fit pixels that dont meet the specified count threshold
         if self.sum > self.thresh:
             try:
-                self.correct(full=full)
+                # self.correct(full=full)
                 self.params = list(self.fit_decay())
                 self.success = True
 

@@ -1,8 +1,8 @@
 {
-    "filename": "C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\new\\steps_integs_8bit",
+    "filename": "C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\new\\steps_integs_uncorrected",
     "test_params": ["step", "integ"],
     "bits": 8,
-    "integ": [20000, 15000, 10000, 5000],
+    "integ": [100, 250, 500, 1000, 2500, 5000, 7500, 10000, 15000, 20000],
     "kernel_size": 3,
     "width": 10000,
     "step": [100, 250, 500, 1000, 2500, 5000, 7500, 10000, 15000, 20000],
@@ -19,7 +19,7 @@
     "irf_width": 1.4, 
     "dark_cps": 25,
     "zeta": 0.05,
-    "x": 7,
-    "y": 7,
+    "x": 50,
+    "y": 50,
     "folder": "C:\\Users\\ishaa\\Documents\\FLIM\\240827\\data\\gated_images\\acq00003"
 }

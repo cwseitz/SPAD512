@@ -113,9 +113,11 @@ class Generator:
         plt.title(f'Simulated Decay for {self.integ*1e-3} ms integration, {1e-3*self.step} ns step, {self.lifetimes} ns lifetime')
         plt.show()
 
+        return (x, data)
+
     '''Helper method for parallelizaiton'''
     def helper(self, pixel):
-        if np.random.random() < 0.001:
+        if np.random.random() < 0.002:
             print(f'Generating {pixel}')
         return self.genTrace()
 

@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Load the .npz files
 lma_data = np.load(r"C:\Users\ishaa\Documents\FLIM\ManFigs\lma_fit_results.npz")
 nnls_data = np.load(r"C:\Users\ishaa\Documents\FLIM\ManFigs\nnls_fit_results.npz")
 

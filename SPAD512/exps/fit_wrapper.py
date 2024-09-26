@@ -51,7 +51,6 @@ class Fitter:
 
     def fit_exps(self, filename=None, image=None):
         tic = time.time()
-        print('Reading image')
         if filename:
             with tf.TiffFile(filename + '.tif') as tif:
                 image = tif.asarray()  
@@ -85,7 +84,7 @@ class Fitter:
 
                     self.full_trace += image[:, i, j]
                     self.track += 1
-                    if np.random.random() < 1: # print every so often just so that progress can be seen
+                    if np.random.random() < .005: # print every so often just so that progress can be seen
                         print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns, {1/(outputs[3]+1e-10)} ns')
 
         outputs, success, sum, i, j = self.helper(self.full_trace.reshape(len(self.full_trace),1,1), 0, 0, full=True)
