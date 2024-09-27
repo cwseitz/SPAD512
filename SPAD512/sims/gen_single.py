@@ -76,7 +76,10 @@ class Generator:
             if convolve:
                 prob[i, :] = self.convolveProb(prob[i, :])
 
-        P = (1 - self.weight) * prob[0, :] + self.weight * prob[1, :]
+        if len(self.lifetimes)==2: 
+            P = (1 - self.weight) * prob[0, :] + self.weight * prob[1, :]
+        else: 
+            P = prob[0, :]
 
         P_bin = 1 - (1 - P) ** bin_gates
 

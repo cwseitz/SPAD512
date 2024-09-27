@@ -49,6 +49,9 @@ class Plotter:
         track = results['track'].astype(int)
         times = results['times'].astype(float)
 
+        full_params[1] = 1/(full_params[1] + 1e-10)
+        full_params[3] = 1/(full_params[3] + 1e-10)
+
         k = self.kernel_size
         if k > 0:
             A1 = A1[k:-k, k:-k]
@@ -144,9 +147,11 @@ class Plotter:
 
     def _plot_trace(self, ax, times, full_trace, full_params, fit_type):
         ax.set_title('Fully binned trace')
+        
+        full_trace /= np.max(full_trace)
         ax.scatter(times, full_trace, s=5)
         if fit_type == 'mono':
-            ax.plot(times, self.decay(times, full_params[0], full_params[1]), label=f'Fit: tau = {1/full_params[1]:.2f}', color='black')
+            ax.plot(times, self.decay(times, full_params[0], 1/full_params[3]), label=f'Fit: tau = {full_params[3]:.2f}', color='black')
         elif fit_type == 'bi':
             ax.plot(times, self.decay_double(times, full_params[0], 1/full_params[1], full_params[2], 1/full_params[3]), label=f'Fit: tau = {1/full_params[1]:.2f}, {1/full_params[3]:.2f}', color='black')
             # ax.plot(times, self.decay_double(times, full_params[0]*full_params[2], 1/full_params[1], full_params[0]*(1-full_params[2]), 1/full_params[3]), label=f'Fit: tau = {1/full_params[1]:.2f}, {1/full_params[3]:.2f}', color='black')
@@ -254,7 +259,7 @@ class Plotter:
     def plot_all(self, results, filename, show=False):
         A1, A2, tau1, tau2, intensity, full_trace, full_params, track, times = self.preprocess_results(results)
         if self.fit in ('mono', 'mono_conv', 'mono_conv_log', 'mono_conv_mh', 'mono_rld', 'mono_rld_50ovp'):
-            self.plot_mono(A1, tau1, intensity, full_trace, full_params, times, track, filename, show)
+            self.plot_mono(A2, tau2, intensity, full_trace, full_params, times, track, filename, show)
         elif self.fit in ('bi', 'bi_conv', 'bi_mh', 'bi_nnls', 'bi_nnls_conv'):
             self.plot_bi(A1, A2, tau1, tau2, intensity, full_trace, full_params, times, track, filename, show)
         elif self.fit in ('bi_rld'):

@@ -71,9 +71,7 @@ class Simulator:
 if __name__ == '__main__':
     obj = Simulator(config_path)
     dt = obj.gen()
-    x, y = dt.plotTrace()
-    np.savez(obj.config['filename'] + '_trace.npz', x = x, y = y)
-    # results = obj.run(dt)
-    # obj.plot()
+    results = obj.run(dt)
+    obj.plot()
 
 
