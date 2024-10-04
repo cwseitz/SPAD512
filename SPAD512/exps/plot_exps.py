@@ -150,18 +150,37 @@ class Plotter:
         
         full_trace /= np.max(full_trace)
         ax.scatter(times, full_trace, s=5)
+        
         if fit_type == 'mono':
-            ax.plot(times, self.decay(times, full_params[0], 1/full_params[3]), label=f'Fit: tau = {full_params[3]:.2f}', color='black')
+            A = full_params[0]
+            lam = full_params[1]
+            tau = 1 / lam
+            ax.plot(times, self.decay(times, A, lam), label=f'Fit: tau = {tau:.2f} ns', color='black')
+        
         elif fit_type == 'bi':
-            ax.plot(times, self.decay_double(times, full_params[0], 1/full_params[1], full_params[2], 1/full_params[3]), label=f'Fit: tau = {1/full_params[1]:.2f}, {1/full_params[3]:.2f}', color='black')
-            # ax.plot(times, self.decay_double(times, full_params[0]*full_params[2], 1/full_params[1], full_params[0]*(1-full_params[2]), 1/full_params[3]), label=f'Fit: tau = {1/full_params[1]:.2f}, {1/full_params[3]:.2f}', color='black')
-
+            A = full_params[0]
+            lam1 = full_params[1]
+            B = full_params[2]
+            lam2 = full_params[3]
+            tau1 = 1 / lam1
+            tau2 = 1 / lam2
+            ax.plot(times, self.decay_double(times, A, tau1, B, tau2), label=f'Fit: tau1 = {tau1:.2f} ns, tau2 = {tau2:.2f} ns', color='black')
+        
+        elif fit_type == 'mono_rld':
+            A = full_params[0]
+            lam = full_params[1]
+            tau = 1 / lam
+            ax.plot(times, self.decay(times, A, lam), label=f'Fit: tau = {tau:.2f} ns', color='black')
+        
+        # Add additional fit types as needed, matching the parameter structure returned by their fitting functions
+        
         ax.set_xlabel('Time, ns')
         ax.set_ylabel('Counts')
-        ax.set_ylim(0, 1.5 * max(full_trace))
+        ax.set_ylim(0, 1.5 * np.max(full_trace))
         ax.tick_params(axis='x', which='both', bottom=True, top=True)
         ax.tick_params(axis='y', which='both', left=True, right=True)
         ax.legend()
+
 
     def _plot_rld(self, ax, times, full_trace, full_params, fit_type):
         ax.set_title('RLD Visualization')

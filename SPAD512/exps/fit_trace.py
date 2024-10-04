@@ -145,18 +145,19 @@ class Trace:
     def correct(self, full=False): # interpolate counts into the raw detection probability
         bin_time = self.integ/(2**self.bits - 1)
         bin_gates = int(self.freq * bin_time)
+        
         max_counts = ((1 + self.kernel_size*2)**2) * (2**self.bits - 1)
         if full: 
             max_counts *= self.track
-
+            
         probs = self.data/max_counts
         probs = 1 - (1 - probs)**(1/(bin_gates))
-        self.data = 1000*probs # return scaled version for numerical convenience
+        self.data = max_counts*probs # rescale
 
 
 
     '''Fitting main function'''
-    def fit_decay(self): # organize fitting logic based on what fit was chosen in config
+    def fit_decay(self, full=False): # organize fitting logic based on what fit was chosen in config
         warnings.filterwarnings('ignore', category=RuntimeWarning) # ignore warnings when doing NN-NL-LS
         warnings.filterwarnings('ignore', category=opt.OptimizeWarning)
 
@@ -173,13 +174,46 @@ class Trace:
 
             case 'bi':
                 loc = min(np.argmax(self.data), len(self.data) - 4)
-                guess = [np.max(self.data), 0.1, np.max(self.data) / 2, 0.05]
                 xdat = self.times[loc:]
                 ydat = self.data[loc:]
-                # xdat = self.times
-                # ydat = self.deconvolve_fourier(self.data/np.sum(self.data))
-                params, _ = opt.curve_fit(self.bi, xdat, ydat, p0=guess)
-                return params
+
+                A_guess = np.max(ydat)
+                lam1_guess = 1.0 / (xdat[0] + 1e-6)  
+                lam2_guess = lam1_guess / 2
+                B_guess = 0.5  # maybe there's a better guess here
+
+                guess = [A_guess, lam1_guess, B_guess, lam2_guess]
+                bounds = (
+                    [0, 1e-8, 0, 1e-8],  # enforce strict positivity for all parameters
+                    [np.inf, np.inf, 1, np.inf]  # B <= 1
+                )
+
+                def residuals(p, x, y, cutoff = 1e-2):
+                    A, lam1, B, lam2 = p
+                    model = self.bi(x, A, lam1, B, lam2)
+                    res = model - y
+                    
+                    delta_lam = np.abs(lam1 - lam2) # penalize close lambdas
+                    if delta_lam < cutoff:
+                        penalty = 1e6 * (cutoff - delta_lam)
+                        res += penalty
+
+                    return res
+
+                try:
+                    # lma doesn't work with bounds, so use trf, but maybe dogbox would work better?
+                    results = opt.least_squares(residuals, guess, args=(xdat, ydat), bounds=bounds, method='trf')
+                    params = results.x
+               
+                    if full:
+                        plt.plot(self.times, self.data)
+                        plt.plot(self.times, self.bi(self.times, *params))
+                        plt.show()
+
+                    return params
+
+                except Exception as e:
+                    raise RuntimeError("Fitting failed: " + str(e))
 
             case 'mono_conv':
                 guess = [np.max(self.data), 0.1]
@@ -301,7 +335,7 @@ class Trace:
         if self.sum > self.thresh:
             try:
                 self.correct(full=full)
-                self.params = list(self.fit_decay())
+                self.params = list(self.fit_decay(full=full))
                 self.success = True
 
                 if self.params[1] > self.params[3]:

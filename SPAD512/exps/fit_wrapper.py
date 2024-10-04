@@ -47,7 +47,8 @@ class Fitter:
 
         dt = Trace(data_knl, i, j, **self.__dict__)
         dt.fit_trace(full=full)
-        return dt.params, dt.success, dt.sum, dt.i, dt.j
+
+        return dt.params, dt.success, dt.sum, dt.i, dt.j, dt.data
 
     def fit_exps(self, filename=None, image=None):
         tic = time.time()
@@ -74,22 +75,22 @@ class Fitter:
             futures = [executor.submit(self.helper, image[:, (i-self.kernel_size):(i+self.kernel_size+1), (j-self.kernel_size):(j+self.kernel_size+1)], i, j) for i in range(self.kernel_size,x-self.kernel_size) for j in range(self.kernel_size, y-self.kernel_size)]
 
             for future in as_completed(futures):
-                outputs, success, sum, i, j = future.result()
+                outputs, success, sum, i, j, data = future.result()
                 if success:
                     self.A1[i,j] += outputs[0]
                     self.tau1[i,j] += 1/(outputs[1]+1e-10)
                     self.A2[i,j] += outputs[2]
                     self.tau2[i,j] += 1/(outputs[3]+1e-10)
                     self.intensity[i,j] += sum
-
-                    self.full_trace += image[:, i, j]
+                    self.full_trace += data
                     self.track += 1
+
                     if np.random.random() < .005: # print every so often just so that progress can be seen
                         print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns, {1/(outputs[3]+1e-10)} ns')
 
-        outputs, success, sum, i, j = self.helper(self.full_trace.reshape(len(self.full_trace),1,1), 0, 0, full=True)
-        
-        return self.A1, self.A2, self.tau1, self.tau2, self.intensity, self.full_trace, outputs, self.track, self.times
+        outputs, success, sum, i, j, full_trace = self.helper(self.full_trace.reshape(len(self.full_trace),1,1), 0, 0, full=True)
+
+        return self.A1, self.A2, self.tau1, self.tau2, self.intensity, full_trace, outputs, self.track, self.times
     
     def save_results(self, filename, results):
         np.savez(
