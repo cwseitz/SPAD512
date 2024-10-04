@@ -3,6 +3,7 @@ import tifffile as tf
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import time
 from SPAD512.exps import Trace
+import matplotlib.pyplot as plt
     
 class Fitter:
     def __init__(self,config,**kwargs):
@@ -28,9 +29,9 @@ class Fitter:
         self.width *= 1e-3 
         self.offset *= 1e-3
 
-        self.A1 = None
+        self.A = None
         self.tau1 = None
-        self.A2 = None
+        self.B = None
         self.tau2 = None
         self.intensity = None
         self.full_trace = None
@@ -64,8 +65,8 @@ class Fitter:
         toc = time.time()
         print(f'Image read in {(toc-tic):.1f} seconds')
 
-        self.A1 = np.zeros((x, y), dtype=float)
-        self.A2 = np.zeros((x, y), dtype=float)
+        self.A = np.zeros((x, y), dtype=float)
+        self.B = np.zeros((x, y), dtype=float)
         self.tau1 = np.zeros((x, y), dtype=float)
         self.tau2 = np.zeros((x, y), dtype=float)
         self.intensity = np.zeros((x, y), dtype=float)
@@ -77,9 +78,9 @@ class Fitter:
             for future in as_completed(futures):
                 outputs, success, sum, i, j, data = future.result()
                 if success:
-                    self.A1[i,j] += outputs[0]
+                    self.A[i,j] += outputs[0]
                     self.tau1[i,j] += 1/(outputs[1]+1e-10)
-                    self.A2[i,j] += outputs[2]
+                    self.B[i,j] += outputs[2]
                     self.tau2[i,j] += 1/(outputs[3]+1e-10)
                     self.intensity[i,j] += sum
                     self.full_trace += data
@@ -89,14 +90,13 @@ class Fitter:
                         print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns, {1/(outputs[3]+1e-10)} ns')
 
         outputs, success, sum, i, j, full_trace = self.helper(self.full_trace.reshape(len(self.full_trace),1,1), 0, 0, full=True)
-
-        return self.A1, self.A2, self.tau1, self.tau2, self.intensity, full_trace, outputs, self.track, self.times
+        return self.A, self.B, self.tau1, self.tau2, self.intensity, full_trace, outputs, self.track, self.times
     
     def save_results(self, filename, results):
         np.savez(
             filename + '_fit_results.npz', 
-            A1=results[0], 
-            A2=results[1], 
+            A=results[0], 
+            B=results[1], 
             tau1=results[2], 
             tau2=results[3], 
             intensity=results[4], 

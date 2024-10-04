@@ -139,6 +139,22 @@ class Trace:
 
         return deconvolved
     
+    # # another failed attempt at writing deconvolution code AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    # def deconvolve_RL(self, iter=50):
+    #     data = self.data.astype(np.float64)
+    #     psf = self.gaussian(self.times, self.irf_mean, self.irf_width)
+    #     psf /= psf.sum()  
+    #     psf_mirror = psf[::-1]
+    #     est = np.full_like(data, np.mean(data) + 1e-10)
+        
+    #     for _ in range(iter):
+    #         convolved_est = convolve(est, psf, mode='same') + 1e-10
+    #         blur = data / convolved_est
+    #         est *= convolve(blur, psf_mirror, mode='same')
+    #         est = np.maximum(est, 0)
+        
+    #     return est
+    
 
 
     '''RLD bit-depth helper method'''
@@ -204,11 +220,6 @@ class Trace:
                     # lma doesn't work with bounds, so use trf, but maybe dogbox would work better?
                     results = opt.least_squares(residuals, guess, args=(xdat, ydat), bounds=bounds, method='trf')
                     params = results.x
-               
-                    if full:
-                        plt.plot(self.times, self.data)
-                        plt.plot(self.times, self.bi(self.times, *params))
-                        plt.show()
 
                     return params
 
@@ -342,8 +353,7 @@ class Trace:
                     temp = self.params[3]
                     self.params[3] = self.params[1]
                     self.params[1] = temp
-
-                    # add amplitude swapping code maybe? if bi rld it might be sus
+                    self.params[2] = 1 - self.params[2] # swap B weight because taus were swapped
 
             except (RuntimeError, ValueError):
                 self.params = [0, 0, 0, 0]

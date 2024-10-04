@@ -137,20 +137,20 @@ class Generator:
 
         # imsave(self.filename + '.tif', self.image)
 
-@njit
-def binom_sim(bits, data_len, bin_gates, weight, prob): # does not work for monoexp but later issue i think
-    holder = np.zeros(data_len, dtype=np.int16)
+# @njit
+# def binom_sim(bits, data_len, bin_gates, weight, prob): # does not work for monoexp but later issue i think
+#     holder = np.zeros(data_len, dtype=np.int16)
     
-    for _ in range(2**bits - 1):
-        random_vals = np.random.random((data_len, bin_gates))
-        choices = random_vals >= weight
+#     for _ in range(2**bits - 1):
+#         random_vals = np.random.random((data_len, bin_gates))
+#         choices = random_vals >= weight
         
-        for i in range(data_len):
-            for j in range(bin_gates):
-                choice_index = int(choices[i, j])  # need int for numba
-                prob_value = prob[choice_index, i]  
-                if np.random.random() < prob_value:  # avoid np.random.binomial(1, prob_value) for numba
-                    holder[i] += 1
-                    break  # exit inner on first success
+#         for i in range(data_len):
+#             for j in range(bin_gates):
+#                 choice_index = int(choices[i, j])  # need int for numba
+#                 prob_value = prob[choice_index, i]  
+#                 if np.random.random() < prob_value:  # avoid np.random.binomial(1, prob_value) for numba
+#                     holder[i] += 1
+#                     break  # exit inner on first success
     
-    return holder
+#     return holder
