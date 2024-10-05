@@ -69,20 +69,13 @@ class Generator:
         bin_gates = int(numgates / ((2 ** self.bits) - 1))  
         total_images = 2 ** self.bits - 1  
 
-        prob = np.zeros((len(self.lifetimes), len(self.times)))
+        prob = np.zeros(len(self.times))
         for i, lt in enumerate(self.lifetimes):
             lam = 1 / lt
-            prob[i, :] = self.zeta * (np.exp(-lam * self.times) - np.exp(-lam * (self.times + self.width)))
-            if convolve:
-                prob[i, :] = self.convolveProb(prob[i, :])
+            prob += self.weight[i] * self.zeta * (np.exp(-lam * self.times) - np.exp(-lam * (self.times + self.width)))
+        if convolve: prob = self.convolveProb(prob)
 
-        if len(self.lifetimes)==2: 
-            P = (1 - self.weight) * prob[0, :] + self.weight * prob[1, :]
-        else: 
-            P = prob[0, :]
-
-        P_bin = 1 - (1 - P) ** bin_gates
-
+        P_bin = 1 - (1 - prob) ** bin_gates
         counts = np.random.binomial(total_images, P_bin)
 
         dcr = ((self.integ / 1e6) * (1 / self.dark_cps)) * (self.width * self.freq * 1e-3)
@@ -120,8 +113,8 @@ class Generator:
 
     '''Helper method for parallelizaiton'''
     def helper(self, pixel):
-        if np.random.random() < 0.002:
-            print(f'Generating {pixel}')
+        # if np.random.random() < 0.002:
+        #     print(f'Generating {pixel}')
         return self.genTrace()
 
     '''Parallelization coordinator'''

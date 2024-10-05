@@ -46,6 +46,7 @@ class Simulator:
         self.stdevs = np.zeros((len(self.config['lifetimes']), len(self.config[self.param1]), len(self.config[self.param2])))
         self.counts = np.zeros((len(self.config[self.param1]), len(self.config[self.param2])))
         self.f_vals = np.zeros((len(self.config[self.param1]), len(self.config[self.param2])))
+        self.z_scores = np.zeros((len(self.config[self.param1]), len(self.config[self.param2])))
 
         with open(self.config['filename'] + '_mtdt.json', 'w') as file:
             json.dump(self.config, file, indent=4)
@@ -56,14 +57,13 @@ class Simulator:
         self.means[0, i, j] += np.mean(nonzero)
         self.stdevs[0, i, j] += np.std(nonzero)
         self.counts[i,j] += np.mean(results[4])
-        precs = self.stdevs[0,i,j]/self.means[0,i,j]
-        accs = np.sqrt((self.means[0,i,j] - self.config['lifetimes'][0])**2)
 
         if len(self.config['lifetimes']) > 1:
             nonzero = results[3][(results[3] != 0) & (~np.isnan(results[3]))]
             self.means[1, i, j] += np.mean(nonzero)
             self.stdevs[1, i, j] += np.std(nonzero)
-            precs += self.stdevs[1,i,j]/self.means[1,i,j]
+            precs = self.stdevs[1,i,j]/self.means[1,i,j]
+            precs += self.stdevs[0,i,j]/self.means[0,i,j]
 
             if self.means[0,i,j] < self.means[1,i,j]:
                 temp = self.means[1,i,j]
@@ -72,13 +72,21 @@ class Simulator:
                 temp = self.stdevs[1,i,j]
                 self.stdevs[1,i,j] = self.stdevs[0,i,j]
                 self.stdevs[0,i,j] = temp
-
             if self.config['lifetimes'][0] < self.config['lifetimes'][1]:
                 temp = self.config['lifetimes'][1]
                 self.config['lifetimes'][1] = self.config['lifetimes'][0] 
                 self.config['lifetimes'][0] = temp
+            
+            self.z_scores[i,j] += ((self.means[0,i,j] - self.config['lifetimes'][0])/self.stdevs[0,i,j])**2
+            self.z_scores[i,j] += ((self.means[1,i,j] - self.config['lifetimes'][1])/self.stdevs[1,i,j])**2
+            self.z_scores[i,j] = np.sqrt(self.z_scores[i,j])
 
             accs = np.sqrt((self.means[0,i,j] - self.config['lifetimes'][0])**2 + (self.means[1,i,j] - self.config['lifetimes'][1])**2)
+        else:
+            self.z_scores[i,j] = np.abs((self.means[0,i,j] - self.config['lifetimes'][0])/self.stdevs[0])
+            precs = self.stdevs[0,i,j]/self.means[0,i,j]
+            accs = np.abs(self.means[0,i,j] - self.config['lifetimes'][0])
+
         self.f_vals[i,j] = np.sqrt(self.counts[i,j]) * accs * precs
 
         self.means[np.isnan(self.means)] = 0 
@@ -103,7 +111,7 @@ class Simulator:
                 results = fit.fit_exps(image=dt.image)
                 self.post_sim(results, i, j)
                 toc = time.time()
-                print(f'Data analyzed in {(toc-tic):.1f} seconds. F\'-value {self.f_vals[i,j]:.3f} \n')
+                print(f'Data analyzed in {(toc-tic):.1f} seconds. Means: {self.means[0,i,j]:.2f}, {self.means[1,i,j]:.2f}; StDevs Means: {self.stdevs[0,i,j]:.2f}, {self.stdevs[1,i,j]:.2f} \n')
 
     def plot_full(self,show=True):
         results = np.load(self.config['filename'] + '_results.npz')

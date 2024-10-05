@@ -220,9 +220,13 @@ class Plotter:
 
         self.plot_trace(ax[1, 2], times, full_trace, full_params, 'bi')
 
-        for axi in ax.ravel():
-            axi.set_xticks([])
-            axi.set_yticks([])
+        for i, axi in enumerate(ax.ravel()):
+            print(i, axi)
+            if i != 5: # remove ticks from all plots except trace
+                axi.set_xticks([])
+                axi.set_yticks([])
+
+
         plt.tight_layout()
         plt.savefig(filename + '_results.png')
         if show:

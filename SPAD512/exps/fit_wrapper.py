@@ -86,8 +86,8 @@ class Fitter:
                     self.full_trace += data
                     self.track += 1
 
-                    if np.random.random() < .005: # print every so often just so that progress can be seen
-                        print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns, {1/(outputs[3]+1e-10)} ns')
+                    # if np.random.random() < .005: # print every so often just so that progress can be seen
+                        # print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns, {1/(outputs[3]+1e-10)} ns')
 
         outputs, success, sum, i, j, full_trace = self.helper(self.full_trace.reshape(len(self.full_trace),1,1), 0, 0, full=True)
         return self.A, self.B, self.tau1, self.tau2, self.intensity, full_trace, outputs, self.track, self.times
