@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from skimage.io import imread
 
-filenames = 'C:\\Users\\ishaa\\Documents\\FLIM\\240813\\240813_SPAD-10MHz-1f-500g-10000us-5ns-100ps-18ps-1500uW'
-threshs = [500]  # thresholds to test
+filenames = "C:\\Users\\ishaa\\Documents\\FLIM\\240604\\240604_10ms_adjusted"
+threshs = [10000]  # thresholds to test
 
 # def lentrace(filename):
 #     base_filename = filename.split('/')[-1]

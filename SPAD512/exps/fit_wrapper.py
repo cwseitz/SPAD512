@@ -29,6 +29,9 @@ class Fitter:
         self.width *= 1e-3 
         self.offset *= 1e-3
 
+        if not isinstance(self.times, np.ndarray):
+            self.times = (np.arange(self.numsteps) * self.step) + self.offset
+
         self.A = None
         self.tau1 = None
         self.B = None
@@ -45,6 +48,8 @@ class Fitter:
         for a in range(x):
             for b in range(y):
                 data_knl += data[:, a, b]
+
+        # print(f'Iterating pixel {i}, {j}. Counts : {np.sum(data_knl)}')
 
         dt = Trace(data_knl, i, j, **self.__dict__)
         dt.fit_trace(full=full)
@@ -86,8 +91,8 @@ class Fitter:
                     self.full_trace += data
                     self.track += 1
 
-                    # if np.random.random() < .005: # print every so often just so that progress can be seen
-                        # print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns, {1/(outputs[3]+1e-10)} ns')
+                    if np.random.random() < 0.01: # print every so often just so that progress can be seen
+                        print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns, {1/(outputs[3]+1e-10)} ns')
 
         outputs, success, sum, i, j, full_trace = self.helper(self.full_trace.reshape(len(self.full_trace),1,1), 0, 0, full=True)
         return self.A, self.B, self.tau1, self.tau2, self.intensity, full_trace, outputs, self.track, self.times

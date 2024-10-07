@@ -29,7 +29,7 @@ Script for exponential analyses of time-gated FLIM data. .json formatting info b
 '''
 
 read = False # read from folder (if read=False {default}, must specify a file below)
-file = 'C:\\Users\\ishaa\\Documents\\FLIM\\240813\\240813_SPAD-10MHz-1f-500g-10000us-5ns-100ps-18ps-1500uW' # make sure to remove .tif suffix
+file = "C:\\Users\\ishaa\\Documents\\FLIM\\240604\\240604_10ms_adjusted" # make sure to remove .tif suffix
 config_path = "C:\\Users\\ishaa\\Documents\\FLIM\\SPAD512\\SPAD512\\mains\\run_exponential.json" # no leading slash, keep .json suffix
 show = True # show final plot
 

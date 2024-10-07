@@ -359,3 +359,105 @@ class Trace:
                 self.params = [0, 0, 0, 0]
         else: 
             self.params = [0, 0, 0, 0]
+
+def comp_prob(t, lts, wgt, zeta, width):
+    p = np.zeros(len(t))
+    for i, lt in enumerate(lts):
+        lam = 1 / lt
+        p += wgt[i] * zeta * (np.exp(-lam * t) - np.exp(-lam * (t + width)))
+    return p
+
+if __name__ == '__main__':
+    # Simulation parameters
+    bits = 8
+    freq = 10  # GHz
+    width_ps = 10000  # Pulse width in picoseconds
+    step_ps = 500     # Time step in picoseconds
+    offset_ps = 5000  # Time offset in picoseconds
+    zeta = 0.05
+    dark_cps = 25
+
+    # True decay parameters
+    lts_true = [20, 5]  # Lifetimes in nanoseconds
+    wgt_true = [0.5, 0.5]
+
+    # Convert units
+    width = width_ps * 1e-3  # Convert to nanoseconds
+    step = step_ps * 1e-3    # Convert to nanoseconds
+    offset = offset_ps * 1e-3  # Convert to nanoseconds
+    total_img = 2 ** bits - 1
+    numsteps = int(1e3 / (freq * step))
+    times = np.arange(numsteps) * step + offset
+
+    # Compute the true detection probabilities
+    prob_true = comp_prob(times, lts_true, wgt_true, zeta, width)
+
+    # Define integration times (in milliseconds)
+    integ_times = [1000, 2500, 5000, 7500, 10000, 12500, 15000, 17500, 20000]
+
+    # Initialize arrays to store errors
+    tau1_errors = []
+    tau2_errors = []
+    integ_times_s = []  # Store integration times in seconds for plotting
+
+    # Store true parameters for comparison
+    lam1_true = 1 / lts_true[0]
+    lam2_true = 1 / lts_true[1]
+
+    # Loop over different integration times
+    for integ in integ_times:
+        # Convert integration time to seconds
+        integ_s = integ / 1e3
+        integ_times_s.append(integ_s)
+
+        # Number of gates
+        numgates = freq * integ_s * 1e3  # Convert seconds to nanoseconds
+        bin_gates = numgates / total_img
+
+        # Recalculate P_bin and counts
+        P_bin = 1 - (1 - prob_true) ** bin_gates
+        counts = np.random.binomial(total_img, P_bin)
+
+        # Create a Trace object with the counts data
+        trace = Trace(data=counts, i=0, j=0, times=times, fit='bi', step=step)
+
+        # Perform the bi-exponential fit
+        try:
+            trace.fit_trace()
+            if trace.success:
+                params_estimated = trace.params
+                # Extract estimated parameters
+                A_hat, lam1_hat, B_hat, lam2_hat = params_estimated
+                tau1_hat = 1 / lam1_hat
+                tau2_hat = 1 / lam2_hat
+
+                # Compute estimation errors
+                tau1_error = tau1_hat - lts_true[0]
+                tau2_error = tau2_hat - lts_true[1]
+            else:
+                tau1_error = np.nan
+                tau2_error = np.nan
+        except Exception as e:
+            print(f"Fit failed at integration time {integ_s:.2f}s: {e}")
+            tau1_error = np.nan
+            tau2_error = np.nan
+
+        # Store errors
+        tau1_errors.append(tau1_error)
+        tau2_errors.append(tau2_error)
+
+    # Convert lists to arrays for plotting
+    integ_times_s = np.array(integ_times_s)
+    tau1_errors = np.array(tau1_errors)
+    tau2_errors = np.array(tau2_errors)
+
+    # Plotting the results
+    plt.figure(figsize=(10, 6))
+    plt.plot(integ_times_s, tau1_errors, 'o-', label='Tau1 Error')
+    plt.plot(integ_times_s, tau2_errors, 's-', label='Tau2 Error')
+    plt.xlabel('Integration Time (s)')
+    plt.ylabel('Lifetime Estimation Error (ns)')
+    plt.title('Effect of Integration Time on Lifetime Estimates')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
