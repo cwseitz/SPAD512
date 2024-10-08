@@ -61,10 +61,10 @@ class Simulator:
     def plot(self, subname='',show=True):
         results = np.load(self.config['filename'] + subname + '_fit_results.npz')
         plot = Plotter(self.config)
-        plot.plot_all(results, self.config['filename'] + subname, show=show) 
+        # plot.plot_all(results, self.config['filename'] + subname, show=show) 
 
-        # A1, A2, tau1, tau2, intensity, full_trace, full_params, track, times = plot.preprocess_results(results)
-        # plot.plot_hist(tau1, tau2, splice = (8, 17), filename=self.config['filename'] + subname + '_lifetime_histogram.png', show=show)
+        A1, A2, tau1, tau2, intensity, full_trace, full_params, track, times = plot.preprocess_results(results)
+        plot.plot_hist(tau1, tau2, splice = (8, 17), filename=self.config['filename'] + subname + '_lifetime_histogram.png', show=show)
 
         print(f"Results plotted: {self.config['filename']}_results.png")
 

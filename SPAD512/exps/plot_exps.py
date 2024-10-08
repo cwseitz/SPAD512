@@ -143,7 +143,7 @@ class Plotter:
 
 
     '''main plotter functions'''
-    def plot_hist(self, tau1, tau2, bins=50, splice=(5, 20), filename='lifetime_histogram_spliced.png', show=True):
+    def plot_hist(self, tau1, tau2, bins=20, splice=(5, 20), filename='lifetime_histogram_spliced.png', show=True):
         tau1_flat = tau1.flatten()
         tau2_flat = tau2.flatten()
 

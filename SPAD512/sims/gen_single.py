@@ -64,7 +64,7 @@ class Generator:
         self.times = (np.arange(self.numsteps) * self.step) + self.offset # ns
 
     '''Generation of a single fluorescent lifetime trace given the ground truth/SPAD parameters (in self), and convolution requirements'''
-    def genTrace(self, convolve=True):
+    def genTrace(self, convolve=False):
         numgates = int(self.freq * self.integ)  
         bin_gates = int(numgates / ((2 ** self.bits) - 1))  
         total_images = 2 ** self.bits - 1  
