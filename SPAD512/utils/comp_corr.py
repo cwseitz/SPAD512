@@ -8,9 +8,9 @@ def mine(x, K, Imax):
 def spad512(x, Imax):
     return -Imax*np.log(1 - x/Imax)
 
-x = np.linspace(0, 254, 500)
-Imax = 63
-K = 5000
+x = np.linspace(1, 254, 500)
+Imax = 255
+K = 1000
 plt.plot(x, mine(x, K, Imax), label='New correction')
 plt.plot(x, spad512(x, Imax), label='Existing correction')
 plt.legend()
