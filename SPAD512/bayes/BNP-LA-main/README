@@ -1,0 +1,75 @@
+
+Bayesian nonparametric lifetime analysis (BNP-LA) is a software packaged developed base on the framework described 
+in "Fluorescence Lifetime: Beating the IRF and interpulse window" by Mohamadreza Fazel, Alexander Vallmitjana, 
+Lorenzo Scipioni, Enrico Gratton, Michelle A. Digman and Steve Presse, Biophysical Journal (2023). 
+
+BNP-LA is capable of dealing with a broad range of lifetimes and photon ratios using as few photons as 500 acquired 
+using a pulsed illumination procedure. The MATLAB software package comes with a gui and here we illustrate how to 
+work with the gui. To run the algorithm you need to have matlab 2020 or higher versions installed with the 
+Statistics and Machine Learning Toolbox available.
+
+To open the gui set your MATLAB path to the Functions-folder, type "gui" in the command window and hit "Enter". 
+The gui has 4 sections:
+
+1) Exp Params: this section contains calibrated parameters from the experimental setup:
+          Interpulse time: the period between two consecutive laser pulses in ns (Default: 12.8ns)
+          IRF mean:        mean of the Gaussian IRF in ns (Default: 12.2ns)
+          IRF sigma:       sigma of the Gaussian IRF in ns (Default: 0.66ns)
+          
+2) Method Params: parameters of the analysis method which are mostly good as they are
+	  Max Species:     maximum number of species (described by M in the paper) to be considered in the
+	  		   Dirichlet process. This should be larger than the number of species present in 
+	  		   the input data (Default: 5)
+                           N.B. Setting too high can increase computational cost.
+	  Max Pulses:      maximum number of pulses following the excitation pulse over which a fluorophore might 
+		           remain excited (Default: 5) 
+                           N.B. Setting too high can increase computational cost.
+	  Alpha:	   parameter of the gamma prior on lifetimes (Default: 1)
+	  Beta:	           parameter of the gamma prior on lifetimes (Default: 50)
+	  
+3) Section with no title: 
+	  Photon Count:    number of photons to be used within the analysis (must be smaller than the total
+                           input photons) (Default: 5000)
+	  Iterations:      number of samples to be taken from the posterior (more samples tend to give better 
+                           results but adds computational cost) (Default: 2500)
+	  LOAD DATA:       this button popups a directory where data file can be selected. The data should be an  
+                           array of photon arrival times in "ns" and saved as a row vector called "Dt".
+	  RUN:             this button runs the algorithm
+	  
+4) Results:
+	  Photon Ratio Threshold: this is a key parameter in plotting results. All plots will show histograms
+                                  of samples with photon ratios (weights) larger than this threshold value
+	  Parameter:              pick one of the options from the popup menu to be shown. There are four options:
+			          a) "plot ratio" will show a plot of all the photon ratio samples vs Monte Carlo 
+                                     iterations (good at assessing convergence) taken from the posterior.
+                                  b) "plot lifetime" same as above but for the lifetimes.
+                                  c) "hist lifetime" will show the histogram of the sampled lifetimes associated to
+                                     the species with photon ratios larger than the threshold given.
+                                  d) "hist ratios" the same as item c but for photon ratios.
+	  PLOT:                   this button will plot the results for the parameter picked above
+	  
+After the analysis is done, the time that it took to analyze the data will be printed in the command window. We 
+would suggest to first look at the plot of the photon ratios to detemine the number of species. This number is given 
+as the number of species with non-negligible photon ratios in the resulting plot. Next, use the photon ratio plot to 
+set a threshold value and plot the lifetime histograms to see the found lifetimes. 
+
+The package contains a set of simulated data with lifetimes of 0.2ns and 0.6ns (both below the default IRF sigma) 
+with the default parameters in the gui. Use the load button to load the data and hit RUN. It will take less than 30s 
+to analyze the data. Next, select one of the parameters from the popup menu in the "Results" section and hit PLOT.   
+Note: the default number of iterations is 2500 but this value is data dependent and some data sets might need larger 
+number of iterations. Specifically, data sets containing 3 or more species or more similar lifetimes require more 
+iterations (samples) which, in turn, leads to more computational complexity. The other data set is in vivo 
+experimental data containing three species. For a description of this data see the following section.
+
+The script "GenData.m" can be used to simulate different data sets. The existing parameters will generate the 
+simulated data given in the Data-folder.
+
+The function "findIRF" can be used to calibrate the parameters of a Gaussian IRF, namely mean and standard 
+deviation, using a data set containing a single species with known lifetime.
+
+If you happen to have any problem please shoot us an email at fazel.mohamadreza@gmail.com or spresse@asu.edu
+	   
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Experimental Data Description:
+Experimental data were acquired on an ISS-Alba confocal microscope. Excitation was provided by a 780 nm 2-photon laser pulsed at 80 MHz (Calmar Laser). Emission was collected by an avalanche photodiode (Excelitas Technologies) and an ISS A320 Fast FLIM unit for lifetime determination. A 760 short-pass dichroic was used to split the excitation and emission light; no additional emission filter was used. Images were collected with a 16 μs pixel dwell time with an image size of 256 × 256 pixels and a 0.39 μm pixel size, accumulating 7–9 frames for each data set. After each experiment, the images were preprocessed by extracting individual photons and constructing a list of arrival times for each photon, both in reference to the start of the measurement and to the previous laser pulse. MDA-MB-231 cells were seeded in a glass-bottom 8-well plate (Ibidi GmbH) previously coated with 2 μg/mL Fibronectin in Dulbecco’s phosphate buffer solution (DPBS) without Ca, Mg, Phenol Red (GenClone, Genesee). Cells were stained with 50 μg/mL pHrodo Green Dextran, 100 nM TMRM, and 50 nM LysoTracker Deep Red (Invitrogen) for 4 h and subsequently imaged; see Fazel, et al, ACS Photonics 2023. 
+For this data set, the parameters are slightly different from the default values in the gui and given as: Interpulse times = 12.5ns, IRF mean = 12.22ns, IRF sigma = 0.8ns. To analyze this data set we suggest using 20K-30K photons, 5K-10K iterations and a threshold of 0.1. The lifetimes for these fluorophore species are ~0.6ns, ~2.4ns, and ~4.5ns.

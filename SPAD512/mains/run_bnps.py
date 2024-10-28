@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from skimage.io import imread, imsave
 import json
 import time
-from SPAD512.bnps import BNP, Plotter
+from SPAD512.bayes import BNP, Plotter
 
 config_path = 'SPAD512/SPAD512/mains/run_bnps.json'
 show = True # show final plot

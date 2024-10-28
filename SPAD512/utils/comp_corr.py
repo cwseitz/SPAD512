@@ -10,7 +10,7 @@ def spad512(x, Imax):
 
 x = np.linspace(1, 254, 500)
 Imax = 255
-K = 1000
+K = 10000
 plt.plot(x, mine(x, K, Imax), label='New correction')
 plt.plot(x, spad512(x, Imax), label='Existing correction')
 plt.legend()
