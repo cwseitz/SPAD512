@@ -83,7 +83,12 @@ def log_like(y_i, K, P_tot_i_array):
     return np.sum(log_L)
 
 def log_prior(param, alpha, beta):
-    return (alpha - 1) * np.log(param) - beta * param
+    if isinstance(param, (int, float)) and param > 0:
+        return (alpha - 1) * np.log(param) - beta * param
+    else:
+        # Log or handle the error for invalid values
+        print(f"Invalid value for param: {param}")
+        return -np.inf  # return a very low log probability for invalid param
 
 def acceptance_prob(y_i, K, theta, theta_prime, param, acq_params, priors):
     P_i_current = P_i(theta, acq_params)
