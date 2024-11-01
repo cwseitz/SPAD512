@@ -3,7 +3,7 @@ from PIL import Image
 import tifffile as tiff
 import numpy as np
 
-base_dir = r"C:\\Users\\ishaa\\Documents\\FLIM\\240920"
+base_dir = r"k:\\ishaan\\241101\\data\\gated_images"
 
 subdirs = [
     d for d in os.listdir(base_dir)
