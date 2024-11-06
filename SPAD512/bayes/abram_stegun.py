@@ -11,18 +11,26 @@ def erfc_approx(x):
     b5 = 1.061405429
     p = 0.3275911
 
-    t = 1/(1 + p*x)
-    poly = b1*t + b2*(t**2) + b3*(t**3) + b4*(t**4) + b5*(t**5)
+    # Calculate t and poly values for positive |x|
+    t = 1 / (1 + p * np.abs(x))
+    poly = b1 * t + b2 * (t**2) + b3 * (t**3) + b4 * (t**4) + b5 * (t**5)
+    z = np.exp(-x**2)
     
-    z = np.exp(-(x**2))
+    # Calculate final result
+    result = z * poly
 
-    return z*poly
+    # Adjust for negative x values
+    result = np.where(x >= 0, result, 2 - result)
+    
+    return result
 
-x = np.linspace(0, 5, 1000) 
+
+x = np.linspace(-5, 5, 1000) 
 abram = erfc_approx(x)
 scipy = erfc(x)
 
 err = np.abs(abram - scipy)
+
 
 plt.figure(figsize=(12, 6))
 
