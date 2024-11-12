@@ -21,23 +21,18 @@ def h(t, B, lam1, lam2, sigma, tau_IRF):
 
     return term1 + term2
 
-iterations = 100  
+def integrate(offset, step, width, numsteps):
+    pi = np.zeros(numsteps)
 
-t_mins = np.linspace(0.018, 100, 1000)
-t_maxes = np.linspace(10.018, 100.018, 1000)
+    starts = offset + np.arange(numsteps)*step
+    stops = starts + width
+    res, err = quad(h, starts, stops, args=(B, lam1, lam2, sigma, tau_IRF))
 
-start_time = time.time()
-for j in range(iterations):
-    mid_time = time.time()
+offset = .018
+step = 0.5
+width = 5
+numsteps = 200
 
-    for i in range(len(t_mins)):    
-        result, error = quad(h, t_mins[i], t_maxes[i], args=(B, lam1, lam2, sigma, tau_IRF))
-
-    print(f'iteration {j} complete in {time.time() - mid_time}')
-end_time = time.time()
-
-time_taken = end_time - start_time
-print(f"Time taken for {iterations} iterations with {len(t_mins)} steps: {time_taken:.2f} seconds")
 
 '''estimated per gate integration time is 0.3 ms'''
 

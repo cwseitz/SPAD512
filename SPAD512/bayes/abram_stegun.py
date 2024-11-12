@@ -11,15 +11,10 @@ def erfc_approx(x):
     b5 = 1.061405429
     p = 0.3275911
 
-    # Calculate t and poly values for positive |x|
     t = 1 / (1 + p * np.abs(x))
     poly = b1 * t + b2 * (t**2) + b3 * (t**3) + b4 * (t**4) + b5 * (t**5)
     z = np.exp(-x**2)
-    
-    # Calculate final result
     result = z * poly
-
-    # Adjust for negative x values
     result = np.where(x >= 0, result, 2 - result)
     
     return result

@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from skimage.io import imread
 
-filenames = "C:\\Users\\ishaa\\Documents\\FLIM\\240604\\240604_10ms_adjusted"
-threshs = [10000]  # thresholds to test
+filenames = "C:\\Users\\ishaa\\Documents\\FLIM\\241101\\acq00000_stacked"
+threshs = [750]  # thresholds to test
 
 # def lentrace(filename):
 #     base_filename = filename.split('/')[-1]
@@ -19,8 +19,6 @@ def display_intensity_image(filename, thresh):
     image = imread(filename + '.tif')
     length, x, y = np.shape(image)
     # length = lentrace(filename + '.tif')
-    length = 500
-    image = image[:length, :, :]
 
     intensity = np.zeros((x, y))
 
