@@ -7,14 +7,9 @@ from pytensor.graph import Apply, Op
 import pytensor as pt
 from scipy.optimize import approx_fprime
 
-'''ground truth values (not known)'''
-lam1 = 1/20
-lam2 = 1/5
-A = 0.1
-B = 0.5
-chi = 1e-4
-
-'''model constants (known in experiment)'''
+'''model constants (known in experiment)
+ground truth values are defined in gen() to avoid variable naming annoyances
+'''
 K = 10000 # number of laser pulses per step
 numsteps = 20 # number of steps
 step = 5 # ns
@@ -38,10 +33,7 @@ def P_i(start, end, A, B, lam1, lam2, tau_irf, sigma_irf):
     h_vals = h(t_vals, tau_irf, sigma_irf, B, lam1, lam2)
     return A * np.trapz(h_vals, t_vals)
 
-
-
-'''generate perfect data'''
-def gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, A, B, lam1, lam2, chi):
+def gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, A=0.3, B=0.5, lam1=0.05, lam2=0.2, chi=0.0001):
     P_chi = 1 - np.exp(-chi)
     data = []
 
@@ -80,106 +72,95 @@ def finite_differences_loglike(m, c, sigma, x, data, eps=1e-7):
     return grad_wrt_mc[:,0], grad_wrt_mc[:,1]
 
 class LogLikeWithGrad(Op):
-    def make_node(self, m, c, sigma, x, data) -> Apply:
+    def make_node(self, lam1, lam2, A, B, chi, data) -> Apply:
         # same as before
-        m = pt.tensor.as_tensor_variable(m)
-        c = pt.tensor.as_tensor_variable(c)
-        sigma = pt.tensor.as_tensor_variable(sigma)
-        x = pt.tensor.as_tensor_variable(x)
+        lam1 = pt.tensor.as_tensor_variable(lam1)
+        lam2 = pt.tensor.as_tensor_variable(lam2)
+        A = pt.tensor.as_tensor_variable(A)
+        B = pt.tensor.as_tensor_variable(B)
+        chi = pt.tensor.as_tensor_variable(chi)
         data = pt.tensor.as_tensor_variable(data)
 
-        inputs = [m, c, sigma, x, data]
+        inputs = [lam1, lam2, A, B, chi, data]
         outputs = [data.type()]
         return Apply(self, inputs, outputs)
 
     def perform(self, node: Apply, inputs: list[np.ndarray], outputs: list[list[None]]) -> None:
         # also same
-        m, c, sigma, x, data = inputs  
-        loglike_eval = my_loglike(m, c, sigma, x, data)
+        lam1, lam2, A, B, chi, data = inputs  
+        loglike_eval = my_loglike(lam1, lam2, A, B, chi, data)
         outputs[0][0] = np.asarray(loglike_eval)
 
-    def grad(self, inputs: list[pt.tensor.TensorVariable], g: list[pt.tensor.TensorVariable]
-    ) -> list[pt.tensor.TensorVariable]:
-        # this will return the vector jacobian product for gradient
-        m, c, sigma, x, data = inputs
-        if m.type.ndim != 0 or c.type.ndim != 0:
+    def grad(self, inputs: list[pt.tensor.TensorVariable], g: list[pt.tensor.TensorVariable]) -> list[pt.tensor.TensorVariable]:
+        lam1, lam2, A, B, chi, data = inputs
+        if lam1.type.ndim != 0 or lam2.type.ndim != 0 or A.type.ndim != 0 or B.type.ndim != 0 or chi.type.ndim != 0:
             raise NotImplementedError("Graident only implemented for scalar m and c")
         
-        grad_wrt_m, grad_wrt_c = loglikegrad_op(m, c, sigma, x, data)
+        grad_wrt_lam1, grad_wrt_lam2, grad_wrt_A, grad_wrt_B, grad_wrt_chi = loglikegrad_op(lam1, lam2, A, B, chi, data)
 
         # out_grad is a tensor of gradients of the Op outputs wrt to the function cost
         [out_grad] = g
         return [
-            pt.tensor.sum(out_grad * grad_wrt_m),
-            pt.tensor.sum(out_grad * grad_wrt_c),
-            # the other 3 inputs still need a gradient but we dont need it because they are model constants
-            pt.gradient.grad_not_implemented(self, 2, sigma), # THIS DOESNT WORK AAAAAAAAAAAAAAAAAAAA
-            pt.gradient.grad_not_implemented(self, 3, x), # THIS DOESNT WORK AAAAAAAAAAAAAAAAAAAA
-            pt.gradient.grad_not_implemented(self, 4, data), # THIS DOESNT WORK AAAAAAAAAAAAAAAAAAAA
+            pt.tensor.sum(out_grad * grad_wrt_lam1),
+            pt.tensor.sum(out_grad * grad_wrt_lam2),
+            pt.tensor.sum(out_grad * grad_wrt_A),
+            pt.tensor.sum(out_grad * grad_wrt_B),
+            pt.tensor.sum(out_grad * grad_wrt_chi),
+            pt.gradient.grad_not_implemented(self, 4, data), # maybe don't need with data??
         ]
 
 class LogLikeGrad(Op):
     def make_node(self, m, c, sigma, x, data) -> Apply:
-        m = pt.tensor.as_tensor_variable(m)
-        c = pt.tensor.as_tensor_variable(c)
-        sigma = pt.tensor.as_tensor_variable(sigma)
-        x = pt.tensor.as_tensor_variable(x)
+        lam1 = pt.tensor.as_tensor_variable(lam1)
+        lam2 = pt.tensor.as_tensor_variable(lam2)
+        A = pt.tensor.as_tensor_variable(A)
+        B = pt.tensor.as_tensor_variable(B)
+        chi = pt.tensor.as_tensor_variable(chi)
         data = pt.tensor.as_tensor_variable(data)
 
-        inputs = [m, c, sigma, x, data]
-        outputs = [data.type(), data.type()]
+        inputs = [lam1, lam2, A, B, chi, data]
+        outputs = [data.type(), data.type(), data.type(), data.type(), data.type()]
 
         return Apply(self, inputs, outputs)
 
     def perform(self, node: Apply, inputs: list[np.ndarray], outputs: list[list[None]]) -> None:
-        m, c, sigma, x, data = inputs
+        lam1, lam2, A, B, chi, data = inputs
 
-        grad_wrt_m, grad_wrt_c = finite_differences_loglike(m, c, sigma, x, data)
+        # calculate gradients
+        grad_wrt_lam1, grad_wrt_lam2, grad_wrt_A, grad_wrt_B, grad_wrt_chi = finite_differences_loglike(lam1, lam2, A, B, chi, data)
 
-        outputs[0][0] = grad_wrt_m
-        outputs[1][0] = grad_wrt_c
+        outputs[0][0] = grad_wrt_lam1
+        outputs[1][0] = grad_wrt_lam2
+        outputs[2][0] = grad_wrt_A
+        outputs[3][0] = grad_wrt_B
+        outputs[4][0] = grad_wrt_chi
 
 loglikewithgrad_op = LogLikeWithGrad()
 loglikegrad_op = LogLikeGrad()
 
 if __name__ == '__main__':
-    N = 10 
-    sigma = 1
-    x = np.linspace(0, 9, N)
-    mtrue = 0.4
-    ctrue = 3
-    truemodel = my_model(mtrue, ctrue, x)
+    # 1: generate data
+    data = gen(K, numsteps, step, offset, width, tau_irf, sigma_irf) # use kwargs to change ground truth
 
-    rng = np.random.default_rng(716743)
-    data = sigma * rng.normal(size = N) + truemodel
-
-    # print(finite_differences_loglike(mtrue, ctrue, sigma, x, data))
-
-    # dont mess with order of parameters
-    def custom_dist_loglike(data, m, c, sigma, x):
-        return loglikewithgrad_op(m, c, sigma, x, data)
-    
-    m_symb = pt.tensor.scalar("m")
-    c_symb = pt.tensor.scalar("c")
-
-    # Get the log-likelihood output and gradient
-    logp_output = loglikewithgrad_op(m_symb, c_symb, sigma, x, data)
-    grad_wrt_m, grad_wrt_c = pt.gradient.grad(logp_output.sum(), wrt=[m_symb, c_symb])
-
-    print("Gradient with respect to m:", grad_wrt_m.eval({m_symb: mtrue, c_symb: ctrue}))
-    print("Gradient with respect to c:", grad_wrt_c.eval({m_symb: mtrue, c_symb: ctrue}))
+    # 2: custom likelihood function
+    def custom_dist_loglike(data, lam1, lam2, A, B, chi):
+        return loglikewithgrad_op(lam1, lam2, A, B, chi, data)
 
     with pm.Model() as grad_model:
-        m = pm.Uniform("m", lower=-10.0, upper=10.0)
-        c = pm.Uniform("c", lower=-10.0, upper=10.0)
+        # 3: define priors and likelihood
+        lam1 = pm.Uniform("lam1", lower=0, upper=2)
+        lam2 = pm.Uniform("c", lower=0, upper=2)
+        A = pm.Beta("A", )
+        B = pm.Beta("B", )
+        chi = pm.Gamma("chi", )
 
-        # use custom distribution to implement custom likelihood
         likelihood = pm.CustomDist(
-            "likelihood", m, c, sigma, x, observed=data, logp=custom_dist_loglike
+            "likelihood", lam1, lam2, A, B, chi, observed=data, logp=custom_dist_loglike
         )
 
+        # perform sampling
         with grad_model:
-            idata_grad = pm.sample(step=pm.NUTS())
+            idata_grad = pm.sample()
 
-        az.plot_trace(idata_grad, lines=[("m", {}, mtrue), ("c", {}, ctrue)])
+        az.plot_trace(idata_grad, lines=[("lam1", {}, 0.05), ("lam2", {}, 0.2)])
         plt.show()
