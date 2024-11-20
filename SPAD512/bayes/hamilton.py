@@ -4,7 +4,8 @@ import arviz as az
 import scipy.special as sp
 import matplotlib.pyplot as plt
 from pytensor.graph import Apply, Op
-import pytensor as pt
+import pytensor.tensor as pt
+import pytensor
 from scipy.optimize import approx_fprime
 
 '''model constants (known in experiment)
@@ -129,12 +130,12 @@ def grad_main(lam1, lam2, A, B, chi, data):
 class LogLikeWithGrad(Op):
     def make_node(self, lam1, lam2, A, B, chi, data) -> Apply:
         # same as before
-        lam1 = pt.tensor.as_tensor_variable(lam1)
-        lam2 = pt.tensor.as_tensor_variable(lam2)
-        A = pt.tensor.as_tensor_variable(A)
-        B = pt.tensor.as_tensor_variable(B)
-        chi = pt.tensor.as_tensor_variable(chi)
-        data = pt.tensor.as_tensor_variable(data)
+        lam1 = pt.as_tensor_variable(lam1)
+        lam2 = pt.as_tensor_variable(lam2)
+        A = pt.as_tensor_variable(A)
+        B = pt.as_tensor_variable(B)
+        chi = pt.as_tensor_variable(chi)
+        data = pt.as_tensor_variable(data)
 
         inputs = [lam1, lam2, A, B, chi, data]
         outputs = [data.type()]
@@ -146,7 +147,7 @@ class LogLikeWithGrad(Op):
         loglike_eval = cal_loglike(lam1, lam2, A, B, chi, data)
         outputs[0][0] = np.asarray(loglike_eval)
 
-    def grad(self, inputs: list[pt.tensor.TensorVariable], g: list[pt.tensor.TensorVariable]) -> list[pt.tensor.TensorVariable]:
+    def grad(self, inputs: list[pt.TensorVariable], g: list[pt.TensorVariable]) -> list[pt.TensorVariable]:
         lam1, lam2, A, B, chi, data = inputs
         if lam1.type.ndim != 0 or lam2.type.ndim != 0 or A.type.ndim != 0 or B.type.ndim != 0 or chi.type.ndim != 0:
             raise NotImplementedError("Graident only implemented for scalars")
@@ -156,22 +157,22 @@ class LogLikeWithGrad(Op):
         # out_grad is a tensor of gradients of the Op outputs wrt to the function cost
         [out_grad] = g
         return [
-            pt.tensor.sum(out_grad * grad_wrt_lam1),
-            pt.tensor.sum(out_grad * grad_wrt_lam2),
-            pt.tensor.sum(out_grad * grad_wrt_A),
-            pt.tensor.sum(out_grad * grad_wrt_B),
-            pt.tensor.sum(out_grad * grad_wrt_chi),
-            pt.gradient.grad_not_implemented(self, 4, data), # maybe don't need with data??
+            pt.sum(out_grad * grad_wrt_lam1),
+            pt.sum(out_grad * grad_wrt_lam2),
+            pt.sum(out_grad * grad_wrt_A),
+            pt.sum(out_grad * grad_wrt_B),
+            pt.sum(out_grad * grad_wrt_chi),
+            pytensor.gradient.grad_not_implemented(self, 4, data), # maybe don't need with data??
         ]
 
 class LogLikeGrad(Op):
     def make_node(self, m, c, sigma, x, data) -> Apply:
-        lam1 = pt.tensor.as_tensor_variable(lam1)
-        lam2 = pt.tensor.as_tensor_variable(lam2)
-        A = pt.tensor.as_tensor_variable(A)
-        B = pt.tensor.as_tensor_variable(B)
-        chi = pt.tensor.as_tensor_variable(chi)
-        data = pt.tensor.as_tensor_variable(data)
+        lam1 = pt.as_tensor_variable(lam1)
+        lam2 = pt.as_tensor_variable(lam2)
+        A = pt.as_tensor_variable(A)
+        B = pt.as_tensor_variable(B)
+        chi = pt.as_tensor_variable(chi)
+        data = pt.as_tensor_variable(data)
 
         inputs = [lam1, lam2, A, B, chi, data]
         outputs = [data.type(), data.type(), data.type(), data.type(), data.type()]
