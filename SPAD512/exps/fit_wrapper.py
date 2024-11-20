@@ -77,7 +77,7 @@ class Fitter:
         self.intensity = np.zeros((x, y), dtype=float)
         self.full_trace = np.zeros((self.numsteps), dtype=float)
 
-        with ProcessPoolExecutor(max_workers=10) as executor:
+        with ProcessPoolExecutor(max_workers=1) as executor:
             futures = [executor.submit(self.helper, image[:, (i-self.kernel_size):(i+self.kernel_size+1), (j-self.kernel_size):(j+self.kernel_size+1)], i, j) for i in range(self.kernel_size,x-self.kernel_size) for j in range(self.kernel_size, y-self.kernel_size)]
 
             for future in as_completed(futures):

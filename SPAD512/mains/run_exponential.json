@@ -2,7 +2,7 @@
    "freq": 10,
    "frames": 1,
    "numsteps": 200,
-   "integ": 25000,
+   "integ": 75000,
    "width": 5000,
    "step": 500,
    "offset": 18,
