@@ -20,13 +20,12 @@ width = 5 # ns
 tau_irf = 1.5
 sigma_irf = 0.5
 
-A_true = 0.5
-B_true = 0.5
-lam1_true = 0.05
-lam2_true = 0.2
-chi_true = 0.0001
+A_true = 0.1
+B_true = 0.8
+lam1_true = 0.03
+lam2_true = 0.45
+chi_true = 0.001
 
-'''define helper functions for likelihood'''
 def h(t, tau_irf, sigma_irf, B, lam1, lam2):
     term1 = B * lam1 * np.exp(lam1 * (tau_irf - t) + 0.5 * lam1**2 * sigma_irf**2) \
             * sp.erfc((tau_irf - t - lam1 * sigma_irf**2) / (sigma_irf * np.sqrt(2)))
@@ -34,26 +33,12 @@ def h(t, tau_irf, sigma_irf, B, lam1, lam2):
             * sp.erfc((tau_irf - t - lam2 * sigma_irf**2) / (sigma_irf * np.sqrt(2)))
     return term1 + term2
 
-def dh_dB(t, tau_irf, sigma_irf, B, lam1, lam2):
-    term1 = 1 * lam1 * np.exp(lam1 * (tau_irf - t) + 0.5 * lam1**2 * sigma_irf**2) \
-            * sp.erfc((tau_irf - t - lam1 * sigma_irf**2) / (sigma_irf * np.sqrt(2)))
-    term2 = -1 * lam2 * np.exp(lam2 * (tau_irf - t) + 0.5 * lam2**2 * sigma_irf**2) \
-            * sp.erfc((tau_irf - t - lam2 * sigma_irf**2) / (sigma_irf * np.sqrt(2)))
-    return term1 + term2
-
-def dh_dlam(t, tau_irf, sigma_irf, B, lam1, lam2):
-    outer = B * np.exp((lam1*(sigma_irf**2) - 2*t + 2*tau_irf)/2)
-    term1 = lam1 * sigma_irf * np.sqrt(2/np.pi) * np.exp((-(lam1 * sigma_irf**2 + t - tau_irf)**2)/(2 * sigma_irf**2))
-    term2 = (1 + (lam1**2)*(sigma_irf**2) + lam1*(tau_irf - t)) \
-            * sp.erfc(-(lam1 * sigma_irf**2 + t - tau_irf)/(np.sqrt(2)*sigma_irf))
-    return outer * (term1 + term2)
-
 def P_i(start, end, A, B, lam1, lam2, tau_irf, sigma_irf, h_func):
     t_vals = np.linspace(start, end, 100)  # for trapezioidal sum, quad integration probably not needed
     h_vals = h_func(t_vals, tau_irf, sigma_irf, B, lam1, lam2)
     return A * np.trapz(h_vals, t_vals)
 
-def gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, A=0.3, B=0.5, lam1=0.05, lam2=0.2, chi=0.0001):
+def gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, lam1=0.05, lam2=0.2, A=0.5, B=0.5, chi=0.0001):
     P_chi = 1 - np.exp(-chi)
     data = []
 
@@ -69,14 +54,8 @@ def gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, A=0.3, B=0.5, lam1
 
     return data
 
-
-data = gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, A_true, B_true, lam1_true, lam2_true, chi_true)
-data = np.float64(data)
-
 def cal_loglike(lam1, lam2, A, B, chi, data):
     loglike = np.zeros(len(data))
-    print(f'lam1: {lam1, lam2, A, B, chi}')
-    print(f'data: {data}')
 
     for i, yi in enumerate(data):
         Pi = P_i(offset + i*step, offset + i*step + width,
@@ -85,15 +64,26 @@ def cal_loglike(lam1, lam2, A, B, chi, data):
         
         Pchi = 1 - np.exp(-chi)
         Ptot = Pi + Pchi
+        Ptot = Ptot.item()
+
+        if Ptot <= 0: Ptot = 1e-8
+        if Ptot >= 1: Ptot = 1 - 1e-8
 
         log_binom = sp.gammaln(K + 1) - sp.gammaln(yi + 1) - sp.gammaln(K - yi + 1)
         loglike[i] += log_binom
 
-        print(yi)
         loglike[i] += yi * np.log(Ptot)
         loglike[i] += (K-yi) * np.log(1-Ptot)
 
-    return loglike     
+    return loglike  
+
+
+
+data = gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, 
+           A=A_true, B=B_true, lam1=lam1_true, lam2=lam2_true, chi=chi_true)
+data = np.float64(data)
+
+
 
 class LogLike(Op):
     def make_node(self, lam1, lam2, A, B, chi, data) -> Apply:
@@ -115,36 +105,27 @@ class LogLike(Op):
         outputs[0][0] = np.asarray(loglike_eval)
 
 loglike_op = LogLike()
-test_out = loglike_op(lam1_true, lam2_true, A_true, B_true, chi_true, data)
-print(f'test out eval: {test_out.eval()}')
-print(f'not in blackbox: {cal_loglike(lam1_true, lam2_true, A_true, B_true, chi_true, data)}')
-pytensor.dprint(test_out, print_type=True)
+def custom_dist_loglike(data, lam1, lam2, A, B, chi):
+    return loglike_op(lam1, lam2, A, B, chi, data)
 
+# test_out = loglike_op(lam1_true, lam2_true, A_true, B_true, chi_true, data)
+# pytensor.dprint(test_out)
 
 if __name__ == '__main__':
-    # 1: generate data
-    data = gen(K, numsteps, step, offset, width, tau_irf, sigma_irf) # use kwargs to change ground truth
-
-    # 2: custom likelihood function
-    def custom_dist_loglike(data, lam1, lam2, A, B, chi):
-        return loglike_op(lam1, lam2, A, B, chi, data)
-
     with pm.Model() as model:
-        # 3: define priors and likelihood
-        lam1 = pm.Uniform("lam1", lower=0, upper=2)
-        lam2 = pm.Uniform("c", lower=0, upper=2)
-        A = pm.Beta("A", alpha=1, beta=1)
-        B = pm.Beta("B", alpha=1, beta=1)
-        chi = pm.Uniform("chi", lower=0.00005, upper=0.00015)
+        lam1 = pm.Uniform("lam1", lower=0, upper=1)
+        lam2 = pm.Uniform("lam2", lower=0, upper=1)
+        A = pm.Uniform("A", lower=0, upper=1)
+        B = pm.Uniform("B", lower=0, upper=1)
+        chi = pm.Uniform("chi", lower=0.00005, upper=0.0015)
 
         likelihood = pm.CustomDist(
             "likelihood", lam1, lam2, A, B, chi, observed=data, logp=custom_dist_loglike
         )
 
         ip = model.initial_point()
-        model.debug(verbose=True)
-        # idata = pm.sample(3000, tune=1000)
-       
+        # model.debug(verbose=True)
+        idata = pm.sample(3000, tune=1000)
 
-        # az.plot_trace(idata, lines=[("lam1", {}, 0.05), ("lam2", {}, 0.2)])
-        # plt.show()
+        az.plot_trace(idata, lines=[("lam1", {}, lam1_true), ("lam2", {}, lam2_true), ("A", {}, A_true), ("B", {}, B_true), ("chi", {}, chi_true)])
+        plt.show()
