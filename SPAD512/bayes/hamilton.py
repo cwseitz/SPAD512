@@ -19,7 +19,11 @@ width = 5 # ns
 tau_irf = 1.5
 sigma_irf = 0.5
 
-
+A_true = 0.1
+B_true = 0.8
+lam1_true = 0.03
+lam2_true = 0.45
+chi_true = 0.001
 
 '''define helper functions for likelihood'''
 def h(t, tau_irf, sigma_irf, B, lam1, lam2):
@@ -46,7 +50,6 @@ def dh_dlam(t, tau_irf, sigma_irf, B, lam1, lam2):
 def P_i(start, end, A, B, lam1, lam2, tau_irf, sigma_irf, h_func):
     t_vals = np.linspace(start, end, 100)  # for trapezioidal sum, quad integration probably not needed
     h_vals = h_func(t_vals, tau_irf, sigma_irf, B, lam1, lam2)
-    print(f'A: {A}, B: {B}, lam1: {lam1}, lam2: {lam2}')
     return A * np.trapz(h_vals, t_vals)
 
 def gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, A=0.3, B=0.5, lam1=0.05, lam2=0.2, chi=0.0001):
@@ -66,7 +69,7 @@ def gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, A=0.3, B=0.5, lam1
     return data
 
 
-# data = gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, A, B, lam1, lam2, chi)
+data = gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, A=A_true, B_true, lam1=lam1_true, lam2=lam2_true, chi=chi_true)
 
 
 def cal_loglike(lam1, lam2, A, B, chi, data):
@@ -78,11 +81,16 @@ def cal_loglike(lam1, lam2, A, B, chi, data):
         )
         Pchi = 1 - np.exp(-chi)
         Ptot = Pi + Pchi
+        Ptot = Ptot.item()
 
-        loglike += np.log(sp.comb(K, yi))
-        loglike += yi * np.log(Ptot)
-        loglike += (K-yi) * np.log(1-Ptot)
-        print(f'Pi: {Pi}')
+        if Ptot <= 0: Ptot = 1e-8
+        if Ptot >= 1: Ptot = 1 - 1e-8
+
+        log_binom = sp.gammaln(K + 1) - sp.gammaln(yi + 1) - sp.gammaln(K - yi + 1)
+        loglike[i] += log_binom
+
+        loglike[i] += yi * np.log(Ptot)
+        loglike[i] += (K-yi) * np.log(1-Ptot)
 
     return loglike     
 

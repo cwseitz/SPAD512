@@ -116,7 +116,7 @@ if __name__ == '__main__':
         lam1 = pm.Uniform("lam1", lower=0, upper=1)
         lam2 = pm.Uniform("lam2", lower=0, upper=1)
         A = pm.Uniform("A", lower=0, upper=1)
-        B = pm.Uniform("B", lower=0, upper=1)
+        B = pm.Uniform("B", lower=0.5, upper=1)
         chi = pm.Uniform("chi", lower=0.00005, upper=0.0015)
 
         likelihood = pm.CustomDist(
@@ -129,3 +129,30 @@ if __name__ == '__main__':
 
         az.plot_trace(idata, lines=[("lam1", {}, lam1_true), ("lam2", {}, lam2_true), ("A", {}, A_true), ("B", {}, B_true), ("chi", {}, chi_true)])
         plt.show()
+
+        print(az.summary(idata, round_to=2, hdi_prob=0.95))
+
+        # ppc = pm.sample_posterior_predictive(idata)
+
+        # az.plot_ppc(ppc, data_pairs={"likelihood", "observed"})
+        # plt.show()
+        az.plot_energy(idata)
+        plt.show()
+        az.plot_rank(idata)
+        plt.show()
+        az.plot_pair(idata, var_names=["lam1", "lam2", "A", "B", "chi"], kind="kde", marginals=True)
+        plt.show()
+        az.plot_autocorr(idata, var_names=["lam1", "lam2", "A", "B", "chi"])
+        plt.show()
+        az.plot_parallel(idata, var_names=["lam1", "lam2", "A", "B", "chi"])
+        plt.show()
+
+        waic = az.waic(idata)
+        loo = az.loo(idata)
+        rhat = az.rhat(idata)
+        ess = az.ess(idata)
+        print("WAIC:", waic)
+        print("LOO:", loo)
+        print("R-hat:", rhat)
+        print("Effective Sample Size:", ess)
+        
