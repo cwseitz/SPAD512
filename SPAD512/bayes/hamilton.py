@@ -7,6 +7,7 @@ from pytensor.graph import Apply, Op
 import pytensor.tensor as pt
 import pytensor
 from scipy.optimize import approx_fprime
+import os
 
 '''model constants (known in experiment)
 ground truth values are defined in gen() to avoid variable naming annoyances
@@ -69,7 +70,7 @@ def gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, A=0.3, B=0.5, lam1
     return data
 
 
-data = gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, A=A_true, B_true, lam1=lam1_true, lam2=lam2_true, chi=chi_true)
+data = gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, A=A_true, B=B_true, lam1=lam1_true, lam2=lam2_true, chi=chi_true)
 
 
 def cal_loglike(lam1, lam2, A, B, chi, data):
@@ -95,45 +96,56 @@ def cal_loglike(lam1, lam2, A, B, chi, data):
     return loglike     
 
 def grad_main(lam1, lam2, A, B, chi, data):
-    grad_wrt_lam1 = 0
-    grad_wrt_lam2 = 0
-    grad_wrt_A = 0
-    grad_wrt_B = 0
-    grad_wrt_chi = 0
+    grad_wrt_lam1 = np.zeros(len(data))
+    grad_wrt_lam2 = np.zeros(len(data))
+    grad_wrt_A = np.zeros(len(data))
+    grad_wrt_B = np.zeros(len(data))
+    grad_wrt_chi = np.zeros(len(data))
 
-    for i, val in enumerate(data): # iterate over each step individually for now
-        # ptot calculation
+    for i, val in enumerate(data):
         Pi = P_i(offset + i*step, offset + i*step + width,
             A, B, lam1, lam2, tau_irf, sigma_irf, h
         )
         Pchi = 1 - np.exp(-chi)
         Ptot = Pi + Pchi
+        Ptot = Ptot.item()
+
+        if Ptot <= 0: Ptot = 1e-8
+        if Ptot >= 1: Ptot = 1 - 1e-8
 
         # chi
         dP_dchi = np.exp(-chi)
-        grad_wrt_chi += ((val/Ptot) + ((val - K)/(1-Ptot))) * dP_dchi
+        grad_wrt_chi[i] += ((val / Ptot) - (K - val) / (1 - Ptot)) * dP_dchi
 
         # A
-        dP_dA = (Ptot - 1 + np.exp(-chi))/A
-        grad_wrt_A += ((val/Ptot) + ((val - K)/(1-Ptot))) * dP_dA
+        dP_dA = Pi / A
+        grad_wrt_A[i] += ((val / Ptot) - (K - val) / (1 - Ptot)) * dP_dA
 
         # B
-        t_vals = np.linspace(offset + i*step,  offset + i*step + width, 100)  # for trapezioidal sum, quad integration probably not needed
+        t_vals = np.linspace(offset + i*step, offset + i*step + width, 100)
         h_vals = dh_dB(t_vals, tau_irf, sigma_irf, B, lam1, lam2)
         dP_dB = A * np.trapz(h_vals, t_vals)
-        grad_wrt_B += ((val/Ptot) + ((val - K)/(1-Ptot))) * dP_dB
+        grad_wrt_B[i] += ((val / Ptot) - (K - val) / (1 - Ptot)) * dP_dB
 
         # lam1
         h_vals = dh_dlam(t_vals, tau_irf, sigma_irf, B, lam1, lam2)
         dP_dlam1 = A * np.trapz(h_vals, t_vals)
-        grad_wrt_lam1 += ((val/Ptot) + ((val - K)/(1-Ptot))) * dP_dlam1
+        grad_wrt_lam1[i] += ((val / Ptot) - (K - val) / (1 - Ptot)) * dP_dlam1
 
         # lam2
-        h_vals = dh_dlam(t_vals, tau_irf, sigma_irf, B, lam2, lam1) # just swap lam1/lam2 because there is no lam1 lam2 mixing
+        h_vals = dh_dlam(t_vals, tau_irf, sigma_irf, B, lam2, lam1)  # swap lam1/lam2 for second derivative
         dP_dlam2 = A * np.trapz(h_vals, t_vals)
-        grad_wrt_lam2 += ((val/Ptot) + ((val - K)/(1-Ptot))) * dP_dlam2
+        grad_wrt_lam2[i] += ((val / Ptot) - (K - val) / (1 - Ptot)) * dP_dlam2
     
-    return grad_wrt_lam1, grad_wrt_lam2, grad_wrt_A, grad_wrt_B, grad_wrt_chi
+    print(f'lam1 grad akjdfhaiugiqGFAIURALIUHFLIAUEWFLI: f{grad_wrt_lam1}')
+
+    return (
+        np.array([grad_wrt_lam1]),
+        np.array([grad_wrt_lam2]),
+        np.array([grad_wrt_A]),
+        np.array([grad_wrt_B]),
+        np.array([grad_wrt_chi]),
+    )
 
 class LogLikeWithGrad(Op):
     def make_node(self, lam1, lam2, A, B, chi, data) -> Apply:
@@ -157,9 +169,6 @@ class LogLikeWithGrad(Op):
 
     def grad(self, inputs: list[pt.TensorVariable], g: list[pt.TensorVariable]) -> list[pt.TensorVariable]:
         lam1, lam2, A, B, chi, data = inputs
-        if lam1.type.ndim != 0 or lam2.type.ndim != 0 or A.type.ndim != 0 or B.type.ndim != 0 or chi.type.ndim != 0:
-            raise NotImplementedError("Graident only implemented for scalars")
-        
         grad_wrt_lam1, grad_wrt_lam2, grad_wrt_A, grad_wrt_B, grad_wrt_chi = loglikegrad_op(lam1, lam2, A, B, chi, data)
 
         # out_grad is a tensor of gradients of the Op outputs wrt to the function cost
@@ -170,11 +179,11 @@ class LogLikeWithGrad(Op):
             pt.sum(out_grad * grad_wrt_A),
             pt.sum(out_grad * grad_wrt_B),
             pt.sum(out_grad * grad_wrt_chi),
-            pytensor.gradient.grad_not_implemented(self, 4, data), # maybe don't need with data??
+            pytensor.gradient.grad_not_implemented(self, 5, data), # maybe don't need with data??
         ]
 
 class LogLikeGrad(Op):
-    def make_node(self, m, c, sigma, x, data) -> Apply:
+    def make_node(self, lam1, lam2, A, B, chi, data) -> Apply:
         lam1 = pt.as_tensor_variable(lam1)
         lam2 = pt.as_tensor_variable(lam2)
         A = pt.as_tensor_variable(A)
@@ -200,30 +209,72 @@ class LogLikeGrad(Op):
 
 loglikewithgrad_op = LogLikeWithGrad()
 loglikegrad_op = LogLikeGrad()
+def custom_dist_loglike(data, lam1, lam2, A, B, chi):
+    return loglikewithgrad_op(lam1, lam2, A, B, chi, data)
 
 if __name__ == '__main__':
-    # 1: generate data
-    data = gen(K, numsteps, step, offset, width, tau_irf, sigma_irf) # use kwargs to change ground truth
-
-    # 2: custom likelihood function
-    def custom_dist_loglike(data, lam1, lam2, A, B, chi):
-        return loglikewithgrad_op(lam1, lam2, A, B, chi, data)
-
     with pm.Model() as grad_model:
-        # 3: define priors and likelihood
-        lam1 = pm.Uniform("lam1", lower=0, upper=2)
-        lam2 = pm.Uniform("c", lower=0, upper=2)
-        A = pm.Beta("A", alpha=1, beta=1)
-        B = pm.Beta("B", alpha=1, beta=1)
-        chi = pm.Gamma("chi", alpha=2, beta=0.001)
+        lam1 = pm.Uniform("lam1", lower=0, upper=1)
+        lam2 = pm.Uniform("lam2", lower=0, upper=1)
+        A = pm.Uniform("A", lower=0, upper=1)
+        B = pm.Uniform("B", lower=0.5, upper=1)
+        chi = pm.Uniform("chi", lower=0.00005, upper=0.0015)
 
         likelihood = pm.CustomDist(
             "likelihood", lam1, lam2, A, B, chi, observed=data, logp=custom_dist_loglike
         )
 
-        # perform sampling
+        # Perform sampling
         with grad_model:
             idata_grad = pm.sample()
 
-        az.plot_trace(idata_grad, lines=[("lam1", {}, 0.05), ("lam2", {}, 0.2)])
-        plt.show()
+        # Save summary statistics
+        summary_stats = az.summary(idata_grad, round_to=2)
+        summary_file = "summary_statistics.csv"
+        summary_stats.to_csv(summary_file)
+        print(f"Summary statistics saved to {summary_file}")
+
+        plots_dir = "C:\\Users\\ishaa\\Documents\\FLIM\\bayesian"
+        os.makedirs(plots_dir, exist_ok=True)
+
+        try:
+            az.plot_trace(idata_grad, lines=[("lam1", {}, lam1_true), ("lam2", {}, lam2_true)])
+            plt.savefig(os.path.join(plots_dir, "trace_plot.png"))
+            plt.close()
+            print("Trace plot saved.")
+        except Exception as e:
+            print(f"Error generating trace plot: {e}")
+
+        try:
+            az.plot_energy(idata_grad)
+            plt.savefig(os.path.join(plots_dir, "energy_plot.png"))
+            plt.close()
+            print("Energy plot saved.")
+        except Exception as e:
+            print(f"Error generating energy plot: {e}")
+
+        try:
+            az.plot_posterior(idata_grad)
+            plt.savefig(os.path.join(plots_dir, "posterior_plot.png"))
+            plt.close()
+            print("Posterior plot saved.")
+        except Exception as e:
+            print(f"Error generating posterior plot: {e}")
+
+        try:
+            az.plot_pair(idata_grad, kind='kde', divergences=True)
+            plt.savefig(os.path.join(plots_dir, "pair_plot.png"))
+            plt.close()
+            print("Pairwise scatterplot saved.")
+        except Exception as e:
+            print(f"Error generating pairwise scatterplot: {e}")
+
+        try:
+            az.plot_rank(idata_grad)
+            plt.savefig(os.path.join(plots_dir, "rank_plot.png"))
+            plt.close()
+            print("Rank plot saved.")
+        except Exception as e:
+            print(f"Error generating rank plot: {e}")
+
+        print(f"All plots saved in {plots_dir}.")
