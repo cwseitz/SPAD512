@@ -7,6 +7,7 @@ from pytensor.graph import Apply, Op
 import pytensor.tensor as pt
 import pytensor
 from scipy.optimize import approx_fprime
+import os
 rng = np.random.default_rng(716743)
 
 '''model constants (known in experiment)
@@ -123,36 +124,60 @@ if __name__ == '__main__':
             "likelihood", lam1, lam2, A, B, chi, observed=data, logp=custom_dist_loglike
         )
 
-        ip = model.initial_point()
-        # model.debug(verbose=True)
-        idata = pm.sample(3000, tune=1000)
+        # Perform sampling
+        with model:
+            idata = pm.sample()
 
-        az.plot_trace(idata, lines=[("lam1", {}, lam1_true), ("lam2", {}, lam2_true), ("A", {}, A_true), ("B", {}, B_true), ("chi", {}, chi_true)])
-        plt.show()
+        stats = az.summary(idata, round_to=2)
+        stats.to_csv("C:\\Users\\ishaa\\Documents\\FLIM\\bayesian\\241122_trial_nograd\\summary.csv")
+        print(f"Summary statistics saved")
 
-        print(az.summary(idata, round_to=2, hdi_prob=0.95))
+        plots_dir = "C:\\Users\\ishaa\\Documents\\FLIM\\bayesian"
+        os.makedirs(plots_dir, exist_ok=True)
 
-        # ppc = pm.sample_posterior_predictive(idata)
+        try:
+            az.plot_trace(idata, lines=[("lam1", {}, lam1_true), ("lam2", {}, lam2_true)])
+            plt.tight_layout()
+            plt.savefig(os.path.join(plots_dir, "trace_plot.png"))
+            plt.close()
+            print("Trace plot saved.")
+        except Exception as e: 
+            pass
+ 
+        try:
+            az.plot_energy(idata)
+            plt.tight_layout()
+            plt.savefig(os.path.join(plots_dir, "energy_plot.png"))
+            plt.close()
+            print("Energy plot saved.")
+        except Exception as e:
+            pass
 
-        # az.plot_ppc(ppc, data_pairs={"likelihood", "observed"})
-        # plt.show()
-        az.plot_energy(idata)
-        plt.show()
-        az.plot_rank(idata)
-        plt.show()
-        az.plot_pair(idata, var_names=["lam1", "lam2", "A", "B", "chi"], kind="kde", marginals=True)
-        plt.show()
-        az.plot_autocorr(idata, var_names=["lam1", "lam2", "A", "B", "chi"])
-        plt.show()
-        az.plot_parallel(idata, var_names=["lam1", "lam2", "A", "B", "chi"])
-        plt.show()
+        try:
+            az.plot_posterior(idata)
+            plt.tight_layout()
+            plt.savefig(os.path.join(plots_dir, "posterior_plot.png"))
+            plt.close()
+            print("Posterior plot saved.")
+        except Exception as e:
+            pass
 
-        waic = az.waic(idata)
-        loo = az.loo(idata)
-        rhat = az.rhat(idata)
-        ess = az.ess(idata)
-        print("WAIC:", waic)
-        print("LOO:", loo)
-        print("R-hat:", rhat)
-        print("Effective Sample Size:", ess)
-        
+        try:
+            az.plot_pair(idata, kind='kde', divergences=True)
+            plt.tight_layout()
+            plt.savefig(os.path.join(plots_dir, "pair_plot.png"))
+            plt.close()
+            print("Pairwise scatterplot saved.")
+        except Exception as e:
+            pass
+
+        try:
+            az.plot_rank(idata)
+            plt.tight_layout()
+            plt.savefig(os.path.join(plots_dir, "rank_plot.png"))
+            plt.close()
+            print("Rank plot saved.")
+        except Exception as e:
+            pass
+
+        print(f"plots saved in {plots_dir}.")
