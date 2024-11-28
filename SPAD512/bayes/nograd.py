@@ -25,7 +25,7 @@ A_true = 0.1
 B_true = 0.8
 lam1_true = 0.03
 lam2_true = 0.45
-chi_true = 0.001
+chi_true = 0.1
 
 def h(t, tau_irf, sigma_irf, B, lam1, lam2):
     term1 = B * lam1 * np.exp(lam1 * (tau_irf - t) + 0.5 * lam1**2 * sigma_irf**2) \
@@ -83,6 +83,8 @@ def cal_loglike(lam1, lam2, A, B, chi, data):
 data = gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, 
            A=A_true, B=B_true, lam1=lam1_true, lam2=lam2_true, chi=chi_true)
 data = np.float64(data)
+plt.plot(data)
+plt.show()
 
 
 
@@ -114,49 +116,51 @@ def custom_dist_loglike(data, lam1, lam2, A, B, chi):
 
 if __name__ == '__main__':
     with pm.Model() as model:
+        # note these priors down, particularly B prior uniform 0-1 or 0.5-1 has a very large impact
+        # lam and chi can take gamma priors, A and B beta priors
         lam1 = pm.Uniform("lam1", lower=0, upper=1)
         lam2 = pm.Uniform("lam2", lower=0, upper=1)
         A = pm.Uniform("A", lower=0, upper=1)
         B = pm.Uniform("B", lower=0.5, upper=1)
-        chi = pm.Uniform("chi", lower=0.00005, upper=0.0015)
+        chi = pm.Uniform("chi", lower=0.00005, upper=0.015)
+        
 
         likelihood = pm.CustomDist(
             "likelihood", lam1, lam2, A, B, chi, observed=data, logp=custom_dist_loglike
         )
-
-        # Perform sampling
         with model:
             idata = pm.sample()
 
-        stats = az.summary(idata, round_to=2)
-        stats.to_csv("C:\\Users\\ishaa\\Documents\\FLIM\\bayesian\\241122_trial_nograd\\summary.csv")
+        stats = az.summary(idata, round_to=5)
+        stats.to_csv("C:\\Users\\ishaa\\Documents\\FLIM\\242211\\summary.csv")
         print(f"Summary statistics saved")
 
-        plots_dir = "C:\\Users\\ishaa\\Documents\\FLIM\\bayesian"
+        plots_dir = "C:\\Users\\ishaa\\Documents\\FLIM\\242211"
         os.makedirs(plots_dir, exist_ok=True)
 
         try:
             az.plot_trace(idata, lines=[("lam1", {}, lam1_true), ("lam2", {}, lam2_true)])
             plt.tight_layout()
-            plt.savefig(os.path.join(plots_dir, "trace_plot.png"))
+            plt.show()
             plt.close()
             print("Trace plot saved.")
         except Exception as e: 
             pass
  
-        try:
-            az.plot_energy(idata)
-            plt.tight_layout()
-            plt.savefig(os.path.join(plots_dir, "energy_plot.png"))
-            plt.close()
-            print("Energy plot saved.")
-        except Exception as e:
-            pass
+        # try:
+        #     az.plot_energy(idata)
+        #     plt.tight_layout()
+        #     plt.show()
+        #     plt.savefig(plots_dir + "\\energy_plot.png")
+        #     plt.close()
+        #     print("Energy plot saved.")
+        # except Exception as e:
+        #     pass
 
         try:
             az.plot_posterior(idata)
             plt.tight_layout()
-            plt.savefig(os.path.join(plots_dir, "posterior_plot.png"))
+            plt.show()
             plt.close()
             print("Posterior plot saved.")
         except Exception as e:
@@ -165,7 +169,7 @@ if __name__ == '__main__':
         try:
             az.plot_pair(idata, kind='kde', divergences=True)
             plt.tight_layout()
-            plt.savefig(os.path.join(plots_dir, "pair_plot.png"))
+            plt.show()
             plt.close()
             print("Pairwise scatterplot saved.")
         except Exception as e:
@@ -174,7 +178,7 @@ if __name__ == '__main__':
         try:
             az.plot_rank(idata)
             plt.tight_layout()
-            plt.savefig(os.path.join(plots_dir, "rank_plot.png"))
+            plt.show()
             plt.close()
             print("Rank plot saved.")
         except Exception as e:

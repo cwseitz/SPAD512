@@ -71,7 +71,15 @@ class Simulator:
 if __name__ == '__main__':
     obj = Simulator(config_path)
     dt = obj.gen()
+
+    bins = 20
+    for i in range(bins):
+        dt.image[:, 0, :] += dt.image[:, i+1, :]
+    dt.image = np.ndarray.flatten(dt.image[:, 0, :])
+    dt.image = np.reshape(dt.image, (len(dt.image), 1, 1)) / bins
+    print(dt.image)
+
     results = obj.run(dt)
-    obj.plot()
+    # obj.plot()
 
 
