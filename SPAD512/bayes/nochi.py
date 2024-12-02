@@ -7,7 +7,7 @@ from pytensor.graph import Apply, Op
 import pytensor.tensor as pt
 import pytensor
 from scipy.optimize import approx_fprime
-from scipy.integrate import quad
+from scipy.integrate import simps
 import os
 rng = np.random.default_rng(716743)
 
@@ -36,10 +36,10 @@ def h(t, tau_irf, sigma_irf, B, lam1, lam2):
     return term1 + term2
 
 def P_i(start, end, A, B, lam1, lam2, tau_irf, sigma_irf, h_func):
-    norm, norm_err = quad(h_func, 0, 1000, args=(tau_irf, sigma_irf, B, lam1, lam2))  
-    res, err = quad(h_func, start, end, args=(tau_irf, sigma_irf, B, lam1, lam2))
-    return A * res/norm
-
+    t_vals = np.linspace(start, end, 100)  # for trapezioidal sum, quad integration probably not needed
+    h_vals = h_func(t_vals, tau_irf, sigma_irf, B, lam1, lam2)
+    print(np.trapz(h_vals, t_vals))
+    return A  * np.trapz(h_vals, t_vals)
 def gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, lam1=0.05, lam2=0.2, A=0.5, B=0.5, chi=0.0001):
     P_chi = 1 - np.exp(-chi)
     data = []
@@ -56,7 +56,7 @@ def gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, lam1=0.05, lam2=0.
 
     return data
 
-def cal_loglike(lam1, lam2, A, B, chi, data):
+def cal_loglike(lam1, lam2, A, B, data):
     loglike = np.zeros(len(data))
 
     for i, yi in enumerate(data):
@@ -64,8 +64,7 @@ def cal_loglike(lam1, lam2, A, B, chi, data):
             A, B, lam1, lam2, tau_irf, sigma_irf, h
         )
         
-        Pchi = 1 - np.exp(-chi)
-        Ptot = Pi + Pchi
+        Ptot = Pi
         Ptot = Ptot.item()
 
         if Ptot <= 0: Ptot = 1e-8
@@ -82,50 +81,50 @@ def cal_loglike(lam1, lam2, A, B, chi, data):
 
 
 data = gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, 
-           A=A_true, B=B_true, lam1=lam1_true, lam2=lam2_true, chi=chi_true)
+           A=A_true, B=B_true, lam1=lam1_true, lam2=lam2_true)
 data = np.float64(data)
+plt.plot(data)
+plt.show()
 
 
 
 class LogLike(Op):
-    def make_node(self, lam1, lam2, A, B, chi, data) -> Apply:
+    def make_node(self, lam1, lam2, A, B, data) -> Apply:
         lam1 = pt.as_tensor_variable(lam1)
         lam2 = pt.as_tensor_variable(lam2)
         A = pt.as_tensor_variable(A)
         B = pt.as_tensor_variable(B)
-        chi = pt.as_tensor_variable(chi)
         data = pt.as_tensor_variable(data)
 
-        inputs = [lam1, lam2, A, B, chi, data]
+        inputs = [lam1, lam2, A, B, data]
         outputs = [data.type()]
 
         return Apply(self, inputs, outputs)
     
     def perform(self, node: Apply, inputs: list[np.ndarray], outputs: list[list[None]]) -> None:
-        lam1, lam2, A, B, chi, data = inputs  
-        loglike_eval = cal_loglike(lam1, lam2, A, B, chi, data)
+        lam1, lam2, A, B, data = inputs  
+        loglike_eval = cal_loglike(lam1, lam2, A, B, data)
         outputs[0][0] = np.asarray(loglike_eval)
 
 loglike_op = LogLike()
-def custom_dist_loglike(data, lam1, lam2, A, B, chi):
-    return loglike_op(lam1, lam2, A, B, chi, data)
+def custom_dist_loglike(data, lam1, lam2, A, B):
+    return loglike_op(lam1, lam2, A, B, data)
 
-# test_out = loglike_op(lam1_true, lam2_true, A_true, B_true, chi_true, data)
+# test_out = loglike_op(lam1_true, lam2_true, A_true, B_true, data)
 # pytensor.dprint(test_out)
 
 if __name__ == '__main__':
     with pm.Model() as model:
         # note these priors down, particularly B prior uniform 0-1 or 0.5-1 has a very large impact
-        # lam and chi can take gamma priors, A and B beta priors
+        # lam can take log gaussian or maybe gamma priors, A and B beta priors
         lam1 = pm.Uniform("lam1", lower=0, upper=1)
         lam2 = pm.Uniform("lam2", lower=0, upper=1)
         A = pm.Uniform("A", lower=0, upper=1)
         B = pm.Uniform("B", lower=0.5, upper=1)
-        chi = pm.Uniform("chi", lower=0.00005, upper=0.015)
         
 
         likelihood = pm.CustomDist(
-            "likelihood", lam1, lam2, A, B, chi, observed=data, logp=custom_dist_loglike
+            "likelihood", lam1, lam2, A, B, observed=data, logp=custom_dist_loglike
         )
         with model:
             idata = pm.sample()

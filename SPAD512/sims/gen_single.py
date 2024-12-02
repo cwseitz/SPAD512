@@ -97,7 +97,10 @@ class Generator:
 
     '''Function to help make sure refactoring data generation isn't changing the product'''
     def plotTrace(self):
-        data = self.genTrace()
+        if not hasattr(self, 'image'):
+            data = self.genTrace()
+        else:
+            data = self.image
 
         x = np.arange(len(data)) * self.step
         plt.figure(figsize=(6, 4))

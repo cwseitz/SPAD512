@@ -41,12 +41,12 @@ class Simulator:
             self.config = json.load(f)
 
     def gen(self):
-        print('Generating data')
+        # print('Generating data')
         tic = time.time()
         dt = Generator(self.config)
         dt.genImage()
         toc = time.time()
-        print(f'Done in {(toc-tic):.1f} seconds. Analyzing')
+        # print(f'Done in {(toc-tic):.1f} seconds. Analyzing')
         return dt
 
     def run(self, dt, subname=''): # single vals (not in array) for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
@@ -55,7 +55,8 @@ class Simulator:
         results = fit.fit_exps(image=dt.image)
         fit.save_results(self.config['filename'] + subname, results)
         toc = time.time()
-        print(f"{self.config['fit']} fitting done in {(toc-tic):.1f} seconds: {self.config['filename'] + subname}_fit_results.npz")
+        # print(f"{self.config['fit']} fitting done in {(toc-tic):.1f} seconds: {self.config['filename'] + subname}_fit_results.npz")
+        # print(f"Fitting done in {(toc-tic):.1f} seconds.")
         return results
         
     def plot(self, subname='',show=True):
@@ -70,16 +71,44 @@ class Simulator:
 
 if __name__ == '__main__':
     obj = Simulator(config_path)
-    dt = obj.gen()
+    
+    iter = 50
+    arr_bins = [1, 5, 10, 15, 20, 25, 50, 100]
+    final = np.zeros(len(arr_bins))
+    
+    for i, bins in enumerate(arr_bins):
+        obj.config['x'] = arr_bins[i]
+        tau1s = np.zeros(iter)
+        tau2s = np.zeros(iter)
 
-    bins = 20
-    for i in range(bins):
-        dt.image[:, 0, :] += dt.image[:, i+1, :]
-    dt.image = np.ndarray.flatten(dt.image[:, 0, :])
-    dt.image = np.reshape(dt.image, (len(dt.image), 1, 1)) / bins
-    print(dt.image)
+        for j in range(iter):
+            dt = obj.gen()
 
-    results = obj.run(dt)
-    # obj.plot()
+            dt.image[:, 0, :] = np.sum(dt.image, axis=1)
+            dt.image = dt.image[:, 0, :].reshape(-1, 1, 1) / bins
 
+            results = obj.run(dt)
+            if results[2].item() < results[3].item():
+                tau1s[j] = results[2].item()
+                tau2s[j] = results[3].item()
+            else:
+                tau1s[j] = results[3].item()
+                tau2s[j] = results[2].item()
 
+            print(f'{j+1}: {tau1s[j]:.2f},  {tau2s[j]:.2f}')
+        
+        final[i] += np.std(tau1s)/np.mean(tau1s) + np.std(tau2s)/np.mean(tau2s)
+        print(f'Precision for {arr_bins[i]} bins: {final[i]} \n \n')
+    print(f'Overall precision: {final} \n \n')
+
+    with open(config_path, 'r') as f:
+        metadt = json.load(f)
+
+    np.savez('c:\\Users\\ishaa\\Documents\\FLIM\\241202\\8bit_results.npz', 
+             final=final, 
+             iter=iter, 
+             arr_bins=arr_bins, 
+             metadata=metadt)
+    
+    plt.plot(final)
+    plt.show()

@@ -68,7 +68,7 @@ class Fitter:
         else:
             raise Exception('No filename or image provided to fit_exps, make sure to provide one or the other.')
         toc = time.time()
-        print(f'Image read in {(toc-tic):.1f} seconds')
+        # print(f'Image read in {(toc-tic):.1f} seconds')
 
         self.A = np.zeros((x, y), dtype=float)
         self.B = np.zeros((x, y), dtype=float)
@@ -91,7 +91,7 @@ class Fitter:
                     self.full_trace += data
                     self.track += 1
 
-                    if np.random.random() < 2: # print every so often just so that progress can be seen
+                    if np.random.random() < 0: # print every so often just so that progress can be seen
                         print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns, {1/(outputs[3]+1e-10)} ns')
 
         outputs, success, sum, i, j, full_trace = self.helper(self.full_trace.reshape(len(self.full_trace),1,1), 0, 0, full=True)
