@@ -72,43 +72,60 @@ class Simulator:
 if __name__ == '__main__':
     obj = Simulator(config_path)
     
-    iter = 50
-    arr_bins = [1, 5, 10, 15, 20, 25, 50, 100]
-    final = np.zeros(len(arr_bins))
+    iter = 250
+    arr_bins = [1, 2, 4, 6, 8, 10, 15, 20, 25, 30, 35, 40, 45, 50, 75, 100, 150, 200, 250, 500]
+    tau1s = np.zeros(len(arr_bins))
+    tau2s = np.zeros(len(arr_bins))
     
     for i, bins in enumerate(arr_bins):
-        obj.config['x'] = arr_bins[i]
-        tau1s = np.zeros(iter)
-        tau2s = np.zeros(iter)
+        tic = time.time()
+        obj.config['x'] = bins
+        obj.config['y'] = iter
+        dt = obj.gen()
 
-        for j in range(iter):
-            dt = obj.gen()
-
-            dt.image[:, 0, :] = np.sum(dt.image, axis=1)
-            dt.image = dt.image[:, 0, :].reshape(-1, 1, 1) / bins
-
-            results = obj.run(dt)
-            if results[2].item() < results[3].item():
-                tau1s[j] = results[2].item()
-                tau2s[j] = results[3].item()
-            else:
-                tau1s[j] = results[3].item()
-                tau2s[j] = results[2].item()
-
-            print(f'{j+1}: {tau1s[j]:.2f},  {tau2s[j]:.2f}')
         
-        final[i] += np.std(tau1s)/np.mean(tau1s) + np.std(tau2s)/np.mean(tau2s)
-        print(f'Precision for {arr_bins[i]} bins: {final[i]} \n \n')
-    print(f'Overall precision: {final} \n \n')
+        dt.image[:, 0, :] = np.sum(dt.image, axis=1) /bins
+        dt.image = dt.image[:, :1, :] 
+        obj.config['x'] = 1 #  need to relabel dimensions to take advantage of vectorization in analysis after rebinning
+        
+
+        results = obj.run(dt)        
+
+        def spliced_std(data):
+            data = np.ravel(data)
+
+            q1 = np.percentile(data, 25)
+            q3 = np.percentile(data, 75)
+            iqr = q3-q1
+            upper = q3 + 1.5*iqr
+            lower = q1 - 1.5*iqr
+
+            filtered = data[(data > lower) & (data < upper)]
+            return np.std(filtered)/np.mean(filtered)
+
+
+        tau1s[i] += spliced_std(results[2]) # results should already be sorted into higher and lower component
+        tau2s[i] += spliced_std(results[3])
+
+        toc = time.time()
+        print(f'{arr_bins[i]} bins done in {(toc-tic):.1f} s: {tau1s[i]:.3f}, {tau2s[i]:.3f} \n \n')
+    print(f'Overall precision: {tau1s}, {tau2s} \n \n')
 
     with open(config_path, 'r') as f:
         metadt = json.load(f)
 
-    np.savez('c:\\Users\\ishaa\\Documents\\FLIM\\241202\\8bit_results.npz', 
-             final=final, 
+    np.savez('c:\\Users\\ishaa\\Documents\\FLIM\\241202\\4bit_results.npz', 
+             tau1s=tau1s,
+             tau2s=tau2s, 
              iter=iter, 
              arr_bins=arr_bins, 
              metadata=metadt)
     
-    plt.plot(final)
+    plt.plot(arr_bins, tau1s, 'o-b', label='20 ns true')
+    plt.plot(arr_bins, tau2s, 'o-k', label='5 ns true')
+    plt.grid(True)
+    plt.legend()
+    plt.title('8-bit RSD improvement with binning')
+    plt.xlabel('Number of binned pixels')
+    plt.ylabel('Relative standard deviation')
     plt.show()

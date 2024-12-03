@@ -1,10 +1,10 @@
 {
     "frames": 1,
-    "bits": 8,
+    "bits": 4,
     "power": 300, 
     "freq": 10,
     "numsteps": 10,
-    "integ": 1000,
+    "integ": 100,
     "width": 5000,
     "step": 7500,
     "offset": 2500,
