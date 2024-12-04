@@ -72,8 +72,8 @@ class Simulator:
 if __name__ == '__main__':
     obj = Simulator(config_path)
     
-    iter = 250
-    arr_bins = [1, 2, 4, 6, 8, 10, 15, 20, 25, 30, 35, 40, 45, 50, 75, 100, 150, 200, 250, 500]
+    iter = 100
+    arr_bins = [1, 2, 4, 6, 8, 10, 15, 20, 25, 30, 35, 40, 45, 50, 75, 100, 250, 500]
     tau1s = np.zeros(len(arr_bins))
     tau2s = np.zeros(len(arr_bins))
     
@@ -82,12 +82,10 @@ if __name__ == '__main__':
         obj.config['x'] = bins
         obj.config['y'] = iter
         dt = obj.gen()
-
         
-        dt.image[:, 0, :] = np.sum(dt.image, axis=1) /bins
-        dt.image = dt.image[:, :1, :] 
+        dt.image[:, 0, :] = np.float64(np.sum(dt.image, axis=1))
+        dt.image = np.float64(dt.image[:, :1, :])/bins
         obj.config['x'] = 1 #  need to relabel dimensions to take advantage of vectorization in analysis after rebinning
-        
 
         results = obj.run(dt)        
 
@@ -114,7 +112,7 @@ if __name__ == '__main__':
     with open(config_path, 'r') as f:
         metadt = json.load(f)
 
-    np.savez('c:\\Users\\ishaa\\Documents\\FLIM\\241202\\4bit_results.npz', 
+    np.savez('c:\\Users\\ishaa\\Documents\\FLIM\\241202\\6bit_results.npz', 
              tau1s=tau1s,
              tau2s=tau2s, 
              iter=iter, 
