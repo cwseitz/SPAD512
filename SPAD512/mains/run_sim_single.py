@@ -70,10 +70,12 @@ class Simulator:
         print(f"Results plotted: {self.config['filename']}_results.png")
 
 if __name__ == '__main__':
-    obj = Simulator(config_path)
-    
     iter = 100
-    arr_bins = [1, 2, 4, 6, 8, 10, 15, 20, 25, 30, 35, 40, 45, 50, 75, 100, 250, 500]
+    # arr_bins = [1, 2, 4, 6, 8, 10, 15, 20, 25, 30, 35, 40, 45, 50, 75, 100, 125, 150, 175, 200, 250, 300, 350, 400, 450, 500]
+    arr_bins = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 24, 26, 28]
+    filename = 'c:\\Users\\ishaa\\Documents\\FLIM\\241202\\8bit2_results.npz'
+
+    obj = Simulator(config_path)
     tau1s = np.zeros(len(arr_bins))
     tau2s = np.zeros(len(arr_bins))
     
@@ -112,7 +114,7 @@ if __name__ == '__main__':
     with open(config_path, 'r') as f:
         metadt = json.load(f)
 
-    np.savez('c:\\Users\\ishaa\\Documents\\FLIM\\241202\\6bit_results.npz', 
+    np.savez(filename, 
              tau1s=tau1s,
              tau2s=tau2s, 
              iter=iter, 
@@ -123,7 +125,7 @@ if __name__ == '__main__':
     plt.plot(arr_bins, tau2s, 'o-k', label='5 ns true')
     plt.grid(True)
     plt.legend()
-    plt.title('8-bit RSD improvement with binning')
+    plt.title('4-bit RSD improvement with binning')
     plt.xlabel('Number of binned pixels')
     plt.ylabel('Relative standard deviation')
     plt.show()
