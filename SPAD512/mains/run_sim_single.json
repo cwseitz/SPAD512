@@ -3,7 +3,7 @@
     "bits": 8,
     "power": 300, 
     "freq": 10,
-    "numsteps": 10,
+    "numsteps": 4,
     "integ": 1000,
     "width": 5000,
     "step": 7500,

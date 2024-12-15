@@ -71,9 +71,9 @@ class Simulator:
 
 if __name__ == '__main__':
     iter = 100
-    # arr_bins = [1, 2, 4, 6, 8, 10, 15, 20, 25, 30, 35, 40, 45, 50, 75, 100, 125, 150, 175, 200, 250, 300, 350, 400, 450, 500]
-    arr_bins = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 24, 26, 28]
-    filename = 'c:\\Users\\ishaa\\Documents\\FLIM\\241202\\8bit2_results.npz'
+    arr_bins = [50, 75, 100, 125, 150, 175, 200, 250, 300, 350, 400, 450, 500]
+    # arr_bins = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 24, 26, 28]
+    filename = 'c:\\Users\\ishaa\\Documents\\FLIM\\241202\\8bit_4step.npz'
 
     obj = Simulator(config_path)
     tau1s = np.zeros(len(arr_bins))
