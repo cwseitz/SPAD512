@@ -1,9 +1,9 @@
 {
     "frames": 1,
-    "bits": 8,
+    "bits": 4,
     "power": 300, 
     "freq": 10,
-    "numsteps": 4,
+    "numsteps": 10,
     "integ": 1000,
     "width": 5000,
     "step": 7500,
@@ -12,13 +12,13 @@
     "irf_mean": 0,
     "irf_width": 1.4, 
     "fit": "bi",
-    "kernel_size": 0,
+    "kernel_size": 5,
     "lifetimes": [5, 20],
     "weight": [0.5, 0.5],
     "zeta": 0.05,
     "dark_cps": 25,
-    "x": 625,
-    "y": 1,
+    "x": 50,
+    "y": 50,
     "filename": "C:\\Users\\ishaa\\Documents\\FLIM\\ManFigs\\edge\\100us_5ns",
     "folder": "C:\\Users\\ishaa\\Documents\\FLIM\\240827\\data\\gated_images\\acq00003"
 }

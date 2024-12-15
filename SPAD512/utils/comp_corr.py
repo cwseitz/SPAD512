@@ -10,8 +10,13 @@ def spad512(x, Imax):
 
 x = np.linspace(1, 254, 500)
 Imax = 255
-K = 10000
-plt.plot(x, mine(x, K, Imax), label='New correction')
-plt.plot(x, spad512(x, Imax), label='Existing correction')
+K = 1000
+
+plt.plot(x, Imax * (mine(x, K, Imax)/np.max(mine(x, K, Imax))), label='New correction')
+plt.plot(x, Imax * (spad512(x, Imax)/np.max(spad512(x, Imax))), label='Existing correction')
+plt.xlabel('Recorded Counts')
+plt.ylabel('Corrected Counts')
+plt.title('0.1 ms Integration, 8-bit')
+plt.grid(True)
 plt.legend()
 plt.show()  

@@ -147,8 +147,11 @@ class Plotter:
         tau1_flat = tau1.flatten()
         tau2_flat = tau2.flatten()
 
-        tau1_flat = tau1_flat[tau1_flat >= 1]  # Remove values in tau1 less than 1
-        tau2_flat = tau2_flat[tau2_flat >= 1]
+        # tau1_flat = tau1_flat[tau1_flat >= 1]  # remove values in tau1 less than 1
+        # tau2_flat = tau2_flat[tau2_flat >= 1]
+
+        print(f'tau1: {tau1_flat}')
+        print(f'tau2: {tau2_flat}')
 
         left = splice[0]
         right = splice[1]

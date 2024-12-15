@@ -69,63 +69,72 @@ class Simulator:
 
         print(f"Results plotted: {self.config['filename']}_results.png")
 
-if __name__ == '__main__':
-    iter = 100
-    arr_bins = [50, 75, 100, 125, 150, 175, 200, 250, 300, 350, 400, 450, 500]
-    # arr_bins = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 24, 26, 28]
-    filename = 'c:\\Users\\ishaa\\Documents\\FLIM\\241202\\8bit_4step.npz'
+    def run_bintest():
+        iter = 100
+        arr_bins = [50, 75, 100, 125, 150, 175, 200, 250, 300, 350, 400, 450, 500]
+        # arr_bins = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 24, 26, 28]
+        filename = 'c:\\Users\\ishaa\\Documents\\FLIM\\241202\\8bit_4step.npz'
 
-    obj = Simulator(config_path)
-    tau1s = np.zeros(len(arr_bins))
-    tau2s = np.zeros(len(arr_bins))
-    
-    for i, bins in enumerate(arr_bins):
-        tic = time.time()
-        obj.config['x'] = bins
-        obj.config['y'] = iter
-        dt = obj.gen()
+        obj = Simulator(config_path)
+        tau1s = np.zeros(len(arr_bins))
+        tau2s = np.zeros(len(arr_bins))
         
-        dt.image[:, 0, :] = np.float64(np.sum(dt.image, axis=1))
-        dt.image = np.float64(dt.image[:, :1, :])/bins
-        obj.config['x'] = 1 #  need to relabel dimensions to take advantage of vectorization in analysis after rebinning
+        for i, bins in enumerate(arr_bins):
+            tic = time.time()
+            obj.config['x'] = bins
+            obj.config['y'] = iter
+            dt = obj.gen()
+            
+            dt.image[:, 0, :] = np.float64(np.sum(dt.image, axis=1))
+            dt.image = np.float64(dt.image[:, :1, :])/bins
+            obj.config['x'] = 1 #  need to relabel dimensions to take advantage of vectorization in analysis after rebinning
 
-        results = obj.run(dt)        
+            results = obj.run(dt)        
 
-        def spliced_std(data):
-            data = np.ravel(data)
+            def spliced_std(data):
+                data = np.ravel(data)
 
-            q1 = np.percentile(data, 25)
-            q3 = np.percentile(data, 75)
-            iqr = q3-q1
-            upper = q3 + 1.5*iqr
-            lower = q1 - 1.5*iqr
+                q1 = np.percentile(data, 25)
+                q3 = np.percentile(data, 75)
+                iqr = q3-q1
+                upper = q3 + 1.5*iqr
+                lower = q1 - 1.5*iqr
 
-            filtered = data[(data > lower) & (data < upper)]
-            return np.std(filtered)/np.mean(filtered)
+                filtered = data[(data > lower) & (data < upper)]
+                return np.std(filtered)/np.mean(filtered)
 
 
-        tau1s[i] += spliced_std(results[2]) # results should already be sorted into higher and lower component
-        tau2s[i] += spliced_std(results[3])
+            tau1s[i] += spliced_std(results[2]) # results should already be sorted into higher and lower component
+            tau2s[i] += spliced_std(results[3])
 
-        toc = time.time()
-        print(f'{arr_bins[i]} bins done in {(toc-tic):.1f} s: {tau1s[i]:.3f}, {tau2s[i]:.3f} \n \n')
-    print(f'Overall precision: {tau1s}, {tau2s} \n \n')
+            toc = time.time()
+            print(f'{arr_bins[i]} bins done in {(toc-tic):.1f} s: {tau1s[i]:.3f}, {tau2s[i]:.3f} \n \n')
+        print(f'Overall precision: {tau1s}, {tau2s} \n \n')
 
-    with open(config_path, 'r') as f:
-        metadt = json.load(f)
+        with open(config_path, 'r') as f:
+            metadt = json.load(f)
 
-    np.savez(filename, 
-             tau1s=tau1s,
-             tau2s=tau2s, 
-             iter=iter, 
-             arr_bins=arr_bins, 
-             metadata=metadt)
-    
-    plt.plot(arr_bins, tau1s, 'o-b', label='20 ns true')
-    plt.plot(arr_bins, tau2s, 'o-k', label='5 ns true')
-    plt.grid(True)
-    plt.legend()
-    plt.title('4-bit RSD improvement with binning')
-    plt.xlabel('Number of binned pixels')
-    plt.ylabel('Relative standard deviation')
-    plt.show()
+        np.savez(filename, 
+                tau1s=tau1s,
+                tau2s=tau2s, 
+                iter=iter, 
+                arr_bins=arr_bins, 
+                metadata=metadt)
+        
+        plt.plot(arr_bins, tau1s, 'o-b', label='20 ns true')
+        plt.plot(arr_bins, tau2s, 'o-k', label='5 ns true')
+        plt.grid(True)
+        plt.legend()
+        plt.title('4-bit RSD improvement with binning')
+        plt.xlabel('Number of binned pixels')
+        plt.ylabel('Relative standard deviation')
+        plt.show()
+
+    def run_json():
+        obj = Simulator(config_path)
+        dt = obj.gen()
+        results = obj.run(dt)
+        obj.plot()
+
+if __name__ == '__main__':
+    Simulator.run_json()

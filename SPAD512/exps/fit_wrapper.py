@@ -88,7 +88,7 @@ class Fitter:
                     self.B[i,j] += outputs[2]
                     self.tau2[i,j] += 1/(outputs[3]+1e-10)
                     self.intensity[i,j] += sum
-                    self.full_trace += data
+                    self.full_trace += data # full_trace enters fit_trace.py already corrected
                     self.track += 1
 
                     if np.random.random() < 0: # print every so often just so that progress can be seen
