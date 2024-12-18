@@ -163,7 +163,6 @@ class Trace:
             max_counts = ((1 + self.kernel_size*2)**2) * (2**self.bits - 1)
 
             probs = self.data/max_counts
-            print(probs)
             self.data = -max_counts * np.log(1 - probs + 1e-9) # avoid ln(0) with an epsilon
         else: 
             bin_time = self.integ/(2**self.bits - 1)

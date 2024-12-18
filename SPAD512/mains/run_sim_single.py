@@ -41,12 +41,13 @@ class Simulator:
             self.config = json.load(f)
 
     def gen(self):
-        # print('Generating data')
+        print('Generating data')
         tic = time.time()
         dt = Generator(self.config)
+        dt.plotTrace(show_max=True)
         dt.genImage()
         toc = time.time()
-        # print(f'Done in {(toc-tic):.1f} seconds. Analyzing')
+        print(f'Done in {(toc-tic):.1f} seconds. Analyzing')
         return dt
 
     def run(self, dt, subname=''): # single vals (not in array) for 'integrations', 'gatesteps', and 'lifetimes' fields in .json
@@ -130,11 +131,41 @@ class Simulator:
         plt.ylabel('Relative standard deviation')
         plt.show()
 
+    def run_integs():
+        obj = Simulator(config_path)
+        integs = [10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500]
+        tau1s = np.zeros(len(integs))
+        tau2s = np.zeros(len(integs))
+        k = obj.config['kernel_size']
+
+        for i, integ in enumerate(integs):
+            obj.config['integ'] = integ
+            dt = obj.gen()
+            results = obj.run(dt)
+
+            tau1s[i] += np.mean(results[2][k:-k, k:-k])
+            tau2s[i] += np.mean(results[3][k:-k, k:-k])
+            print(f'tau1: {tau1s[i]}, tau2: {tau2s[i]}')
+        
+        plt.plot(integs, tau1s, 'o-g', label='Longer lifetimes')
+        plt.plot(integs, tau2s, 'o-b', label='Shorter lifetimes')
+        plt.axhline(20, color='green', linestyle='--', label='20 ns ground truth')
+        plt.axhline(5, color='blue', linestyle='--', label = '50 ns ground truth')
+       
+        plt.xlabel('Integration times, ms')
+        plt.ylabel('Mean extracted lifetime, ns')
+        plt.ylim(0, 30)
+        plt.title('Accuracy of Lifetime Estimates with Integration Times')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+
     def run_json():
         obj = Simulator(config_path)
         dt = obj.gen()
-        results = obj.run(dt)
-        obj.plot()
+        # results = obj.run(dt)
+        # obj.plot()
 
 if __name__ == '__main__':
     Simulator.run_json()

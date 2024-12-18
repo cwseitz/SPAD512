@@ -146,6 +146,7 @@ class Plotter:
     def plot_hist(self, tau1, tau2, bins=20, splice=(5, 20), filename='lifetime_histogram_spliced.png', show=True):
         tau1_flat = tau1.flatten()
         tau2_flat = tau2.flatten()
+        plt.plot(tau1_flat)
 
         # tau1_flat = tau1_flat[tau1_flat >= 1]  # remove values in tau1 less than 1
         # tau2_flat = tau2_flat[tau2_flat >= 1]

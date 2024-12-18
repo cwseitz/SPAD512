@@ -96,20 +96,21 @@ class Generator:
         return detected[:len(trace)] 
 
     '''Function to help make sure refactoring data generation isn't changing the product'''
-    def plotTrace(self):
-        if not hasattr(self, 'image'):
-            data = self.genTrace()
-        else:
-            data = self.image
-
-        x = np.arange(len(data)) * self.step
+    def plotTrace(self, show_max=False):
+        data = self.genTrace()
+        x = np.arange(len(data)) * self.step + self.offset
         plt.figure(figsize=(6, 4))
         plt.plot(x, data, 'bo', markersize=3, label='Data')
         # plt.plot(x, decay(x, *params), 'r--', label='Fit: tau = {:.2f}'.format(params[1]))
+        if show_max:
+            plt.axhline(2**self.bits - 1, color='black', ls='--', label='Max Counts')
+
+
         plt.xlabel('Time, ns')
         plt.ylabel('Counts')
         plt.legend()
-        plt.title(f'Simulated Decay for {self.integ*1e-3} ms integration, {1e-3*self.step} ns step, {self.lifetimes} ns lifetime')
+        plt.grid(True)
+        plt.title(f'Simulated Decay for {self.integ*1e-3} ms integration, {self.step} ns step, {self.lifetimes} ns lifetimes')
         plt.show()
 
         return (x, data)
