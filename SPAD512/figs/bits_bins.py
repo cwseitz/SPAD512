@@ -9,8 +9,10 @@ data_8bit2 = np.load("C:\\Users\\ishaa\\Documents\\FLIM\\241202\\8bit2_results.n
 data = [data_4bit, data_6bit, data_8bit, data_8bit2]
 integs = [0.1, 0.25, 1, 1]
 colors = ['red', 'green', 'blue', 'blue']
-labels = ['4bit', '6bit', '8bit', '8bit']
-print(data[0]['metadata'])
+labels = ['4bit', '6bit', '8bit', None]
+print(data[1]['metadata'])
+print(data[2]['metadata'])
+print(data[3]['metadata'])
 
 for i, dt in enumerate(data):
     bins = dt['arr_bins']

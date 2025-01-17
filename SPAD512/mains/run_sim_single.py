@@ -133,7 +133,7 @@ class Simulator:
 
     def run_integs():
         obj = Simulator(config_path)
-        integs = [10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500]
+        integs = [10, 25, 50]
         tau1s = np.zeros(len(integs))
         tau2s = np.zeros(len(integs))
         k = obj.config['kernel_size']
@@ -158,14 +158,14 @@ class Simulator:
         plt.title('Accuracy of Lifetime Estimates with Integration Times')
         plt.legend()
         plt.grid(True)
-        plt.show()
+        plt.show() 
 
 
     def run_json():
         obj = Simulator(config_path)
         dt = obj.gen()
-        # results = obj.run(dt)
-        # obj.plot()
+        results = obj.run(dt)
+        obj.plot()
 
 if __name__ == '__main__':
     Simulator.run_json()
