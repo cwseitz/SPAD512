@@ -44,7 +44,7 @@ class Simulator:
         print('Generating data')
         tic = time.time()
         dt = Generator(self.config)
-        dt.plotTrace(show_max=True)
+        # dt.plotTrace(show_max=True)
         dt.genImage()
         toc = time.time()
         print(f'Done in {(toc-tic):.1f} seconds. Analyzing')
@@ -72,9 +72,9 @@ class Simulator:
 
     def run_bintest():
         iter = 100
-        arr_bins = [50, 75, 100, 125, 150, 175, 200, 250, 300, 350, 400, 450, 500]
+        arr_bins = [1, 2, 3, 4, 5]
         # arr_bins = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 24, 26, 28]
-        filename = 'c:\\Users\\ishaa\\Documents\\FLIM\\241202\\8bit_4step.npz'
+        filename = 'c:\\Users\\ishaa\\Documents\\FLIM\\241202\\12bit_results.npz'
 
         obj = Simulator(config_path)
         tau1s = np.zeros(len(arr_bins))
@@ -168,4 +168,4 @@ class Simulator:
         obj.plot()
 
 if __name__ == '__main__':
-    Simulator.run_json()
+    Simulator.run_bintest()

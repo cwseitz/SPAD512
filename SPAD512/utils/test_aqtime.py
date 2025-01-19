@@ -1,30 +1,43 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# constant params
-usb3_rate = 300 # MBps
-bin_readout = 10 # microseconds
-image_size = 512 # pixels
+SAVESPEED = 300 # MBps
+READOUT = 10 # us
+BITDATA = 512*512 # number of bits per 1-bit image
 
-
-
-# def cal_deadtime(numframes, numsteps, bits, t_r):
-#     F = numframes
-#     G = numsteps
-#     N = bits
+def cal_deadtime(bits, frames, steps): 
+    image_data = BITDATA * bits * steps * 1.25e-7 # MB
+    image_readout = image_data / SAVESPEED # s
     
-#     acq_dead = numsteps * (image_size**2) * bits * (1.25e-7) / usb3_rate # 1.25e-7 is conversion from bits to megabytes
-#     bin_dead = numsteps * (2**bits - 1) * t_r * 1e-6 # convert from microseconds to seconds
-#     return numframes * (acq_dead + bin_dead)
+    binaries = steps * (2**bits - 1) * READOUT * 1e-6 # s
+    return frames * (binaries + image_readout)
 
-# print(cal_deadtime(50, 50, 8, 10))
-    
+def cal_acqtime(frames, steps, integ, bits):
+    deatime = cal_deadtime(bits, frames, steps)
+    return deatime + frames*steps*integ
 
-data = np.linspace(0, 254, 500)
-corrected = -255*np.log(1-(data/255))
+# 1 s active time
+acq1 = { # fully spatial binning
+    'frames': 1,
+    'steps': 10,
+    'integ': 1,
+    'bits': 8,
+}
 
-plt.plot(corrected, data, '--b')
-plt.xlabel('True number of counts')
-plt.ylabel('Recorded counts at detector')
-plt.grid(True)
-plt.show()
+acq2 = { # fully temporal binning
+    'frames': 10,
+    'steps': 10,
+    'integ': 0.1,
+    'bits': 8,
+}
+
+print(f'Acquisiton 1: {cal_acqtime(**acq1)}')
+print(f'Acquisiton 2: {cal_acqtime(**acq2)}')
+
+# 500 ms active time
+
+# 100 ms active time
+
+# 10 ms active time
+
+# 1 ms active time
