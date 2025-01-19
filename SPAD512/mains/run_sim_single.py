@@ -44,7 +44,7 @@ class Simulator:
         print('Generating data')
         tic = time.time()
         dt = Generator(self.config)
-        # dt.plotTrace(show_max=True)
+        # dt.plotTrace(show_max=False, correct=False)
         dt.genImage()
         toc = time.time()
         print(f'Done in {(toc-tic):.1f} seconds. Analyzing')
@@ -168,4 +168,4 @@ class Simulator:
         obj.plot()
 
 if __name__ == '__main__':
-    Simulator.run_bintest()
+    Simulator.run_json()

@@ -96,10 +96,16 @@ class Generator:
         return detected[:len(trace)] 
 
     '''Function to help make sure refactoring data generation isn't changing the product'''
-    def plotTrace(self, show_max=False):
+    def plotTrace(self, show_max=False, correct=False):
         data = self.genTrace()
         x = np.arange(len(data)) * self.step + self.offset
         plt.figure(figsize=(6, 4))
+        if correct:
+            max_counts = 2**self.bits - 1
+            probs = data/max_counts
+            data = -max_counts * np.log(1 - probs + 1e-9)
+            data = 255 * (data/max(data))
+
         plt.plot(x, data, 'bo', markersize=3, label='Data')
         # plt.plot(x, decay(x, *params), 'r--', label='Fit: tau = {:.2f}'.format(params[1]))
         if show_max:

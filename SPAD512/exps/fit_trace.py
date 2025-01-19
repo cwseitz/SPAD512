@@ -351,6 +351,19 @@ class Trace:
                 self.params = list(self.fit_decay(full=full))
                 self.success = True
 
+                # newdat = self.bi(self.times, *self.params)
+                # plt.plot(self.times, 255*newdat/max(newdat), 'k-o', label=f'Uncorrected - Tau1: {1/self.params[1]:.2f}, Tau2: {1/self.params[3]:.2f}')
+
+                # # if not full: self.correct(antol=True)
+                # # self.params = list(self.fit_decay(full=full))
+                # # self.success = True
+
+                # # newdat = self.bi(self.times, *self.params)
+                # # plt.plot(self.times, 255*newdat/max(newdat), 'b-o', label=f'Corrected - Tau1: {1/self.params[1]:.2f}, Tau2: {1/self.params[3]:.2f}')
+                # # plt.legend()
+                # # plt.grid(True)
+                # # plt.show()
+
                 if self.params[1] > self.params[3]:
                     temp = self.params[3]
                     self.params[3] = self.params[1]

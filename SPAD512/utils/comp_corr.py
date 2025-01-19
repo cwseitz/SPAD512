@@ -1,22 +1,26 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def mine(x, K, Imax):
-    term1 = (1 - x/Imax)**(Imax/K)
-    return K * (1 - term1)
 
 def spad512(x, Imax):
-    return -Imax*np.log(1 - x/Imax)
+    return -Imax * np.log(1 - x / Imax)
 
-x = np.linspace(1, 254, 500)
+x = np.linspace(1, 254, 10000)
 Imax = 255
-K = 1000
+corr = Imax * (spad512(x, Imax) / np.max(spad512(x, Imax)))
 
-plt.plot(x, Imax * (mine(x, K, Imax)/np.max(mine(x, K, Imax))), label='New correction')
-plt.plot(x, Imax * (spad512(x, Imax)/np.max(spad512(x, Imax))), label='Existing correction')
-plt.xlabel('Recorded Counts')
-plt.ylabel('Corrected Counts')
-plt.title('0.1 ms Integration, 8-bit')
+edges = [0, 50, 100, 150, 200, 255] 
+
+plt.figure(figsize=(10, 6))
+for i in range(len(edges) - 1):
+    if i == len(edges) - 2:
+        mask = (corr >= edges[i]) & (corr <= edges[i + 1])
+    else:
+        mask = (corr >= edges[i]) & (corr < edges[i + 1])
+    plt.plot(corr[mask], x[mask], label=f'{edges[i]} - {edges[i + 1]}')
+
+plt.xlabel('Corrected Counts')
+plt.ylabel('Counts Recorded by SPAD')
 plt.grid(True)
-plt.legend()
-plt.show()  
+plt.legend(title="X Ranges", loc='lower right')  
+plt.show()

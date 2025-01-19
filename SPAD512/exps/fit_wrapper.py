@@ -95,6 +95,7 @@ class Fitter:
                         print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns, {1/(outputs[3]+1e-10)} ns')
 
         outputs, success, sum, i, j, full_trace = self.helper(self.full_trace.reshape(len(self.full_trace),1,1), 0, 0, full=True)
+        print(outputs)
         return self.A, self.B, self.tau1, self.tau2, self.intensity, full_trace, outputs, self.track, self.times
     
     def save_results(self, filename, results):
