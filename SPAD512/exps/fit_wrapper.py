@@ -91,7 +91,7 @@ class Fitter:
                     self.full_trace += data # full_trace enters fit_trace.py already corrected
                     self.track += 1
 
-                    if np.random.random() < 0: # print every so often just so that progress can be seen
+                    if np.random.random() < 0.01: # print every so often just so that progress can be seen
                         print(f'Pixel ({i}, {j}): {1/(outputs[1]+1e-10)} ns, {1/(outputs[3]+1e-10)} ns')
 
         outputs, success, sum, i, j, full_trace = self.helper(self.full_trace.reshape(len(self.full_trace),1,1), 0, 0, full=True)
