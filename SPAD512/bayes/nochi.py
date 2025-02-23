@@ -38,8 +38,8 @@ def h(t, tau_irf, sigma_irf, B, lam1, lam2):
 def P_i(start, end, A, B, lam1, lam2, tau_irf, sigma_irf, h_func):
     t_vals = np.linspace(start, end, 100)  # for trapezioidal sum, quad integration probably not needed
     h_vals = h_func(t_vals, tau_irf, sigma_irf, B, lam1, lam2)
-    print(np.trapz(h_vals, t_vals))
     return A  * np.trapz(h_vals, t_vals)
+
 def gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, lam1=0.05, lam2=0.2, A=0.5, B=0.5, chi=0.0001):
     P_chi = 1 - np.exp(-chi)
     data = []
@@ -83,9 +83,6 @@ def cal_loglike(lam1, lam2, A, B, data):
 data = gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, 
            A=A_true, B=B_true, lam1=lam1_true, lam2=lam2_true)
 data = np.float64(data)
-plt.plot(data)
-plt.show()
-
 
 
 class LogLike(Op):
@@ -130,10 +127,10 @@ if __name__ == '__main__':
             idata = pm.sample()
 
         stats = az.summary(idata, round_to=5)
-        stats.to_csv("C:\\Users\\ishaa\\Documents\\FLIM\\242211\\summary.csv")
+        stats.to_csv("C:\\Users\\ishaa\\Documents\\FLIM\\250223\\summary.csv")
         print(f"Summary statistics saved")
 
-        plots_dir = "C:\\Users\\ishaa\\Documents\\FLIM\\242211"
+        plots_dir = "C:\\Users\\ishaa\\Documents\\FLIM\\250223"
         os.makedirs(plots_dir, exist_ok=True)
 
         try:

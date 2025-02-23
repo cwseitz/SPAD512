@@ -143,6 +143,32 @@ class Plotter:
 
 
     '''main plotter functions'''
+    def plot_hist_unspliced(self, tau1, tau2, bins=20, filename='lifetime_histogram_spliced.png', show=True):
+        tau1_flat = tau1.flatten()
+        tau2_flat = tau2.flatten()
+
+        # tau2_flat = tau2_flat[tau1_flat <= 2.5]
+        # tau1_flat = tau1_flat[tau1_flat <= 2.5]  # remove values in tau1 less than 1
+        # tau2_flat = tau2_flat[tau2_flat >= 1]
+
+        print(f'tau1: {tau1_flat}')
+        print(f'tau2: {tau2_flat}')
+
+        # fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(10, 6), gridspec_kw={'width_ratios': [2, 2], 'wspace': 0.1})
+
+        plt.hist(tau1_flat, bins=200, alpha=0.5, label=f'Tau1 (mean = {np.mean(tau1_flat):.2f} ns)', color='blue')
+        plt.hist(tau2_flat, bins=bins, alpha=0.5, label=f'Tau2 (mean = {np.mean(tau2_flat):.2f} ns)', color='red')
+        plt.xlabel('Lifetime (ns)')
+        plt.xlim(0, 10)
+        plt.ylabel('Frequency')
+
+        plt.legend()
+        plt.tight_layout()
+
+        plt.savefig(filename)
+        if show:
+            plt.show()
+
     def plot_hist(self, tau1, tau2, bins=20, splice=(5, 20), filename='lifetime_histogram_spliced.png', show=True):
         tau1_flat = tau1.flatten()
         tau2_flat = tau2.flatten()

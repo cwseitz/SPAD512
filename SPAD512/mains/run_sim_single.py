@@ -44,7 +44,7 @@ class Simulator:
         print('Generating data')
         tic = time.time()
         dt = Generator(self.config)
-        # dt.plotTrace(show_max=False, correct=False)
+        # dt.plotTrace(show_max=True, correct=False)
         dt.genImage()
         toc = time.time()
         print(f'Done in {(toc-tic):.1f} seconds. Analyzing')
@@ -66,7 +66,8 @@ class Simulator:
         # plot.plot_all(results, self.config['filename'] + subname, show=show) 
 
         A1, A2, tau1, tau2, intensity, full_trace, full_params, track, times = plot.preprocess_results(results)
-        plot.plot_hist(tau1, tau2, splice = (8, 17), filename=self.config['filename'] + subname + '_lifetime_histogram.png', show=show)
+        # plot.plot_hist(tau1, tau2, splice = (8, 17), filename=self.config['filename'] + subname + '_lifetime_histogram.png', show=show)
+        plot.plot_hist_unspliced(tau1, tau2, filename=self.config['filename'] + subname + '_lifetime_histogram.png', show=show)
 
         print(f"Results plotted: {self.config['filename']}_results.png")
 
@@ -133,7 +134,7 @@ class Simulator:
 
     def run_integs():
         obj = Simulator(config_path)
-        integs = [10, 25, 50]
+        integs = [50, 200, 500, 1000, 2500, 5000, 7500, 10000, 12500, 15000, 17500, 20000, 25000, 30000, 35000, 40000, 45000, 50000]
         tau1s = np.zeros(len(integs))
         tau2s = np.zeros(len(integs))
         k = obj.config['kernel_size']
@@ -145,16 +146,16 @@ class Simulator:
 
             tau1s[i] += np.mean(results[2][k:-k, k:-k])
             tau2s[i] += np.mean(results[3][k:-k, k:-k])
-            print(f'tau1: {tau1s[i]}, tau2: {tau2s[i]}')
+            print(f'integ: {integ}, tau1: {tau1s[i]}, tau2: {tau2s[i]}\n')
         
-        plt.plot(integs, tau1s, 'o-g', label='Longer lifetimes')
+        plt.plot(integs, tau1s, 'o-g', label='Longer lifetimes') 
         plt.plot(integs, tau2s, 'o-b', label='Shorter lifetimes')
-        plt.axhline(20, color='green', linestyle='--', label='20 ns ground truth')
-        plt.axhline(5, color='blue', linestyle='--', label = '50 ns ground truth')
+        plt.ylim(0, 5)
+        plt.axhline(20, color='green', linestyle='--', label='0.5 ns ground truth')
+        plt.axhline(5, color='blue', linestyle='--', label = '2 ns ground truth')
        
-        plt.xlabel('Integration times, ms')
+        plt.xlabel('Integration times, us')
         plt.ylabel('Mean extracted lifetime, ns')
-        plt.ylim(0, 30)
         plt.title('Accuracy of Lifetime Estimates with Integration Times')
         plt.legend()
         plt.grid(True)
@@ -168,4 +169,4 @@ class Simulator:
         obj.plot()
 
 if __name__ == '__main__':
-    Simulator.run_json()
+    Simulator.run_integs()
