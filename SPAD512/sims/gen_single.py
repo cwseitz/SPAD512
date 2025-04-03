@@ -64,7 +64,7 @@ class Generator:
         self.times = (np.arange(self.numsteps) * self.step) + self.offset # ns
 
     '''Generation of a single fluorescent lifetime trace given the ground truth/SPAD parameters (in self), and convolution requirements'''
-    def genTrace(self, convolve=False):
+    def genTrace(self, convolve=False, save=False):
         numgates = int(self.freq * self.integ)  
         bin_gates = int(numgates / ((2 ** self.bits) - 1))  
         total_images = 2 ** self.bits - 1  
@@ -75,8 +75,19 @@ class Generator:
             prob += self.weight[i] * self.zeta * (np.exp(-lam * self.times) - np.exp(-lam * (self.times + self.width)))
         if convolve: prob = self.convolveProb(prob)
 
+        counts_raw = np.random.binomial(numgates, prob)
         P_bin = 1 - (1 - prob) ** bin_gates
         counts = np.random.binomial(total_images, P_bin)
+
+        if save: 
+            plt.plot(self.times, counts_raw, label='normal')
+            plt.plot(self.times, counts, label='bit')
+            plt.legend()
+            plt.show()
+            np.savez(r'C:\Users\ishaa\Documents\FLIM\figure_remaking\figure1_low',
+                    times=self.times,
+                    raw=counts_raw,
+                    bitted=counts)
 
         dcr = ((self.integ / 1e6) * (1 / self.dark_cps)) * (self.width * self.freq * 1e-3)
         dark_counts = np.random.poisson(dcr, size=self.numsteps)
@@ -96,7 +107,7 @@ class Generator:
         return detected[:len(trace)] 
 
     '''Function to help make sure refactoring data generation isn't changing the product'''
-    def plotTrace(self, show_max=False, correct=False):
+    def plotTrace(self, show_max=False, correct=False, save=False, filename='None'):
         data = self.genTrace()
         x = np.arange(len(data)) * self.step + self.offset
         plt.figure(figsize=(6, 4))
@@ -107,10 +118,11 @@ class Generator:
             data = 255 * (data/max(data))
 
         plt.plot(x, data, 'bo', markersize=3, label='Data')
-        np.savez(r'C:\Users\ishaa\Documents\FLIM\figure_remaking\figure3_10ms-trace',
+        if save:
+            np.savez(filename,
                  x=x,
                  data=data
-        )
+            )
 
         # plt.plot(x, decay(x, *params), 'r--', label='Fit: tau = {:.2f}'.format(params[1]))
         if show_max:

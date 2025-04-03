@@ -14,17 +14,18 @@ colors = ['red', 'green', 'green', 'blue', 'blue', 'orange']
 labels = ['4bit', '6bit', None, '8bit', None, '12bit']
 print(data[5]['arr_bins'])
 
+plt.figure(figsize=(10, 5))
 for i, dt in enumerate(data):
     bins = dt['arr_bins']
     rsds = dt['tau1s']
 
     times = 10*bins*integs[i]/1000
 
-    plt.scatter(times, rsds, color=colors[i], label=labels[i])
+    plt.scatter(times/1000, rsds, color=colors[i], label=labels[i])
 
-plt.xlabel('Total integration time (ms)')
-plt.ylabel('RSD of Smaller Lifetime')
-plt.title('Integration time versus relative precision')
-plt.legend()
-plt.grid(True)
+plt.xlabel('Total Integration Time (s)', fontsize=14)
+plt.xticks(ticks=[0, 0.2, 0.4, 0.6, 0.8, 1], labels=[0, 0.2, 0.4, 0.6, 0.8, 1], fontsize=12)
+plt.ylabel('RSD of Smaller Lifetime', fontsize=14)
+plt.yticks(ticks=[0.1, 0.2, 0.3, 0.4, 0.5], labels=[0.1, 0.2, 0.3, 0.4, 0.5], fontsize=12)
+plt.legend(fontsize=16)
 plt.show()

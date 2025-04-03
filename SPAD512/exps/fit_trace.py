@@ -158,7 +158,9 @@ class Trace:
 
 
     '''correction formulas'''
-    def correct(self, antol=False): # interpolate counts into the raw detection probability
+    def correct(self, antol=False, save=False): # interpolate counts into the raw detection probability
+        raw_data = self.data
+
         if antol:
             max_counts = ((1 + self.kernel_size*2)**2) * (2**self.bits - 1)
 
@@ -172,7 +174,7 @@ class Trace:
                 
             probs = self.data/max_counts
             probs = 1 - (1 - probs)**(1/(bin_gates))
-            self.data = max_counts*probs # rescale
+            self.data = max_counts*probs # rescale            
 
     '''Fitting main function'''
     def fit_decay(self, full=False): # organize fitting logic based on what fit was chosen in config
@@ -352,7 +354,8 @@ class Trace:
                 self.success = True
 
                 # newdat = self.bi(self.times, *self.params)
-                # plt.plot(self.times, 255*newdat/max(newdat), 'k-o', label=f'Uncorrected - Tau1: {1/self.params[1]:.2f}, Tau2: {1/self.params[3]:.2f}')
+                # newdat = 255*newdat/max(newdat)
+                # plt.plot(self.times, newdat, 'k-o', label=f'Uncorrected - Tau1: {1/self.params[1]:.2f}, Tau2: {1/self.params[3]:.2f}')
 
                 # # if not full: self.correct(antol=True)
                 # # self.params = list(self.fit_decay(full=full))
@@ -369,6 +372,11 @@ class Trace:
                     self.params[3] = self.params[1]
                     self.params[1] = temp
                     self.params[2] = 1 - self.params[2] # swap B weight because taus were swapped
+
+                if not full: np.savez(r'C:\Users\ishaa\Documents\FLIM\figure_remaking\figure2_500us_corrected-trace',
+                                    times=self.times,
+                                    data=self.data,
+                                    params=self.params)
 
             except (RuntimeError, ValueError):
                 self.params = [0, 0, 0, 0]

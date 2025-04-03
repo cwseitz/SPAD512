@@ -44,7 +44,7 @@ class Simulator:
         print('Generating data')
         tic = time.time()
         dt = Generator(self.config)
-        dt.plotTrace(show_max=True, correct=False)
+        # dt.plotTrace(show_max=True, correct=False, save=False, filename=r'C:\Users\ishaa\Documents\FLIM\figure_remaking\figure3_7o5ms-trace')
         dt.genImage()
         toc = time.time()
         print(f'Done in {(toc-tic):.1f} seconds. Analyzing')
@@ -66,20 +66,23 @@ class Simulator:
         # plot.plot_all(results, self.config['filename'] + subname, show=show) 
 
         A1, A2, tau1, tau2, intensity, full_trace, full_params, track, times = plot.preprocess_results(results)
-        # plot.plot_hist(tau1, tau2, splice = (8, 17), filename=self.config['filename'] + subname + '_lifetime_histogram.png', show=show)
-        np.savez(r'C:\Users\ishaa\Documents\FLIM\figure_remaking\figure3_10ms-hist',
-                 tau1=tau1,
-                 tau2=tau2
-                )
-        plot.plot_hist_unspliced(tau1, tau2, filename=self.config['filename'] + subname + '_lifetime_histogram.png', show=show)
+        plot.plot_hist(tau1, tau2, splice = (8, 17), filename=self.config['filename'] + subname + '_lifetime_histogram.png', show=show)
+        # np.savez(r'C:\Users\ishaa\Documents\FLIM\figure_remaking\figure3_7o5ms-hist',
+        #          tau1=tau1,
+        #          tau2=tau2
+        #         )
+        # plot.plot_hist_unspliced(tau1, tau2, filename=self.config['filename'] + subname + '_lifetime_histogram.png', show=show)
 
         print(f"Results plotted: {self.config['filename']}_results.png")
 
     def run_bintest():
         iter = 100
-        arr_bins = [1, 2, 3, 4, 5]
-        # arr_bins = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 24, 26, 28]
-        filename = 'c:\\Users\\ishaa\\Documents\\FLIM\\241202\\12bit_results.npz'
+        arr_bins = np.arange(1, 41)
+        print(arr_bins)
+        filename = 'c:\\Users\\ishaa\\Documents\\FLIM\\new_bintest\\12bit_25ms.npz'
+
+        with open(config_path, 'r') as f:
+            metadt = json.load(f)
 
         obj = Simulator(config_path)
         tau1s = np.zeros(len(arr_bins))
@@ -109,32 +112,23 @@ class Simulator:
                 filtered = data[(data > lower) & (data < upper)]
                 return np.std(filtered)/np.mean(filtered)
 
-
             tau1s[i] += spliced_std(results[2]) # results should already be sorted into higher and lower component
             tau2s[i] += spliced_std(results[3])
 
-            toc = time.time()
-            print(f'{arr_bins[i]} bins done in {(toc-tic):.1f} s: {tau1s[i]:.3f}, {tau2s[i]:.3f} \n \n')
-        print(f'Overall precision: {tau1s}, {tau2s} \n \n')
-
-        with open(config_path, 'r') as f:
-            metadt = json.load(f)
-
-        np.savez(filename, 
+            np.savez(filename, 
                 tau1s=tau1s,
                 tau2s=tau2s, 
                 iter=iter, 
                 arr_bins=arr_bins, 
                 metadata=metadt)
+            toc = time.time() 
+            print(f'{arr_bins[i]} bins done in {(toc-tic):.1f} s: {tau1s[i]:.3f}, {tau2s[i]:.3f} \n \n')
+
+        print(f'Overall precision: {tau1s}, {tau2s} \n \n')
+
         
-        plt.plot(arr_bins, tau1s, 'o-b', label='20 ns true')
-        plt.plot(arr_bins, tau2s, 'o-k', label='5 ns true')
-        plt.grid(True)
-        plt.legend()
-        plt.title('4-bit RSD improvement with binning')
-        plt.xlabel('Number of binned pixels')
-        plt.ylabel('Relative standard deviation')
-        plt.show()
+
+        
 
     def run_integs():
         obj = Simulator(config_path)
@@ -181,7 +175,6 @@ class Simulator:
 
         plt.legend(fontsize=12)
         plt.show() 
-
 
     def run_json():
         obj = Simulator(config_path)
