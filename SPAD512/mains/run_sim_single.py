@@ -44,7 +44,7 @@ class Simulator:
         print('Generating data')
         tic = time.time()
         dt = Generator(self.config)
-        # dt.plotTrace(show_max=True, correct=False)
+        dt.plotTrace(show_max=True, correct=False)
         dt.genImage()
         toc = time.time()
         print(f'Done in {(toc-tic):.1f} seconds. Analyzing')
@@ -67,6 +67,10 @@ class Simulator:
 
         A1, A2, tau1, tau2, intensity, full_trace, full_params, track, times = plot.preprocess_results(results)
         # plot.plot_hist(tau1, tau2, splice = (8, 17), filename=self.config['filename'] + subname + '_lifetime_histogram.png', show=show)
+        np.savez(r'C:\Users\ishaa\Documents\FLIM\figure_remaking\figure3_10ms-hist',
+                 tau1=tau1,
+                 tau2=tau2
+                )
         plot.plot_hist_unspliced(tau1, tau2, filename=self.config['filename'] + subname + '_lifetime_histogram.png', show=show)
 
         print(f"Results plotted: {self.config['filename']}_results.png")
@@ -134,9 +138,12 @@ class Simulator:
 
     def run_integs():
         obj = Simulator(config_path)
-        integs = [50, 200, 500, 1000, 2500, 5000, 7500, 10000, 12500, 15000, 17500, 20000, 25000, 30000, 35000, 40000, 45000, 50000]
+        integs = [100, 250, 500, 1000, 2500, 5000, 7500, 10000, 12500, 15000, 17500, 20000, 22500, 25000]
         tau1s = np.zeros(len(integs))
+        tau1s_err = np.zeros(len(integs))
         tau2s = np.zeros(len(integs))
+        tau2s_err = np.zeros(len(integs))
+
         k = obj.config['kernel_size']
 
         for i, integ in enumerate(integs):
@@ -145,20 +152,34 @@ class Simulator:
             results = obj.run(dt)
 
             tau1s[i] += np.mean(results[2][k:-k, k:-k])
+            tau1s_err[i] += np.std(results[2][k:-k, k:-k])
             tau2s[i] += np.mean(results[3][k:-k, k:-k])
+            tau2s_err[i] += np.std(results[3][k:-k, k:-k])
+
             print(f'integ: {integ}, tau1: {tau1s[i]}, tau2: {tau2s[i]}\n')
         
-        plt.plot(integs, tau1s, 'o-g', label='Longer lifetimes') 
-        plt.plot(integs, tau2s, 'o-b', label='Shorter lifetimes')
-        plt.ylim(0, 5)
-        plt.axhline(20, color='green', linestyle='--', label='0.5 ns ground truth')
-        plt.axhline(5, color='blue', linestyle='--', label = '2 ns ground truth')
+        integs = np.array(integs)/1000
+
+        np.savez(r'C:\Users\ishaa\Documents\FLIM\figure_remaking\figure3_timeseries',
+                 integs=integs,
+                 tau1s=tau1s,
+                 tau1s_err=tau1s_err,
+                 tau2s=tau2s,
+                 tau2s_err=tau2s_err)
+        
+        plt.errorbar(integs, tau1s, yerr=tau1s_err, capsize=5, fmt='og', label='Longer lifetimes') 
+        plt.errorbar(integs, tau2s, yerr=tau2s_err, capsize=5, fmt='ob', label='Shorter lifetimes')
+        plt.ylim(0, 25)
+        plt.axhline(20, color='green', linestyle='--', label='20 ns ground truth')
+        plt.axhline(5, color='blue', linestyle='--', label = '5 ns ground truth')
        
-        plt.xlabel('Integration times, us')
-        plt.ylabel('Mean extracted lifetime, ns')
-        plt.title('Accuracy of Lifetime Estimates with Integration Times')
-        plt.legend()
-        plt.grid(True)
+        plt.xlabel('Integration time (ms)', fontsize=14)
+        plt.ylabel('Lifetime, (ns)', fontsize=14)
+        plt.xticks([0, 5, 10, 15, 20, 25])
+        plt.yticks()
+        plt.tick_params(axis='both', labelsize=12)
+
+        plt.legend(fontsize=12)
         plt.show() 
 
 
@@ -169,4 +190,4 @@ class Simulator:
         obj.plot()
 
 if __name__ == '__main__':
-    Simulator.run_integs()
+    Simulator.run_json()

@@ -107,6 +107,11 @@ class Generator:
             data = 255 * (data/max(data))
 
         plt.plot(x, data, 'bo', markersize=3, label='Data')
+        np.savez(r'C:\Users\ishaa\Documents\FLIM\figure_remaking\figure3_10ms-trace',
+                 x=x,
+                 data=data
+        )
+
         # plt.plot(x, decay(x, *params), 'r--', label='Fit: tau = {:.2f}'.format(params[1]))
         if show_max:
             plt.axhline(2**self.bits - 1, color='black', ls='--', label='Max Counts')
