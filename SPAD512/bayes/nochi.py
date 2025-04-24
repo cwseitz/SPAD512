@@ -5,9 +5,6 @@ import scipy.special as sp
 import matplotlib.pyplot as plt
 from pytensor.graph import Apply, Op
 import pytensor.tensor as pt
-import pytensor
-from scipy.optimize import approx_fprime
-from scipy.integrate import simps
 import os
 rng = np.random.default_rng(716743)
 
@@ -17,13 +14,13 @@ ground truth values are defined in gen() to avoid variable naming annoyances
 K = 10000 # number of laser pulses per step
 numsteps = 20 # number of steps
 step = 5 # ns
-offset = 0.018 # ns
+offset = 2.5 # ns
 width = 5 # ns
-tau_irf = 1.5
-sigma_irf = 0.5
+tau_irf = 0
+sigma_irf = 1.4
 
-A_true = 0.1
-B_true = 0.8
+A_true = 0.5
+B_true = 0.5
 lam1_true = 0.05
 lam2_true = 0.2
 chi_true = 0.001
@@ -38,7 +35,7 @@ def h(t, tau_irf, sigma_irf, B, lam1, lam2):
 def P_i(start, end, A, B, lam1, lam2, tau_irf, sigma_irf, h_func):
     t_vals = np.linspace(start, end, 100)  # for trapezioidal sum, quad integration probably not needed
     h_vals = h_func(t_vals, tau_irf, sigma_irf, B, lam1, lam2)
-    return A  * np.trapz(h_vals, t_vals)
+    return A  * np.trapezoid(h_vals, t_vals)
 
 def gen(K, numsteps, step, offset, width, tau_irf, sigma_irf, lam1=0.05, lam2=0.2, A=0.5, B=0.5, chi=0.0001):
     P_chi = 1 - np.exp(-chi)
@@ -101,7 +98,7 @@ class LogLike(Op):
     def perform(self, node: Apply, inputs: list[np.ndarray], outputs: list[list[None]]) -> None:
         lam1, lam2, A, B, data = inputs  
         loglike_eval = cal_loglike(lam1, lam2, A, B, data)
-        outputs[0][0] = np.asarray(loglike_eval)
+        outputs[0][0] = np.sum(loglike_eval)
 
 loglike_op = LogLike()
 def custom_dist_loglike(data, lam1, lam2, A, B):
@@ -142,41 +139,41 @@ if __name__ == '__main__':
         except Exception as e: 
             pass
  
+        # # try:
+        # #     az.plot_energy(idata)
+        # #     plt.tight_layout()
+        # #     plt.show()
+        # #     plt.savefig(plots_dir + "\\energy_plot.png")
+        # #     plt.close()
+        # #     print("Energy plot saved.")
+        # # except Exception as e:
+        # #     pass
+
         # try:
-        #     az.plot_energy(idata)
+        #     az.plot_posterior(idata)
         #     plt.tight_layout()
         #     plt.show()
-        #     plt.savefig(plots_dir + "\\energy_plot.png")
         #     plt.close()
-        #     print("Energy plot saved.")
+        #     print("Posterior plot saved.")
         # except Exception as e:
         #     pass
 
-        try:
-            az.plot_posterior(idata)
-            plt.tight_layout()
-            plt.show()
-            plt.close()
-            print("Posterior plot saved.")
-        except Exception as e:
-            pass
+        # try:
+        #     az.plot_pair(idata, kind='kde', divergences=True)
+        #     plt.tight_layout()
+        #     plt.show()
+        #     plt.close()
+        #     print("Pairwise scatterplot saved.")
+        # except Exception as e:
+        #     pass
 
-        try:
-            az.plot_pair(idata, kind='kde', divergences=True)
-            plt.tight_layout()
-            plt.show()
-            plt.close()
-            print("Pairwise scatterplot saved.")
-        except Exception as e:
-            pass
-
-        try:
-            az.plot_rank(idata)
-            plt.tight_layout()
-            plt.show()
-            plt.close()
-            print("Rank plot saved.")
-        except Exception as e:
-            pass
+        # try:
+        #     az.plot_rank(idata)
+        #     plt.tight_layout()
+        #     plt.show()
+        #     plt.close()
+        #     print("Rank plot saved.")
+        # except Exception as e:
+        #     pass
 
         print(f"plots saved in {plots_dir}.")

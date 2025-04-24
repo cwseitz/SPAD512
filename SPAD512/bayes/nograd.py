@@ -17,10 +17,10 @@ ground truth values are defined in gen() to avoid variable naming annoyances
 K = 10000 # number of laser pulses per step
 numsteps = 20 # number of steps
 step = 5 # ns
-offset = 0.018 # ns
+offset = 2.5 # ns
 width = 5 # ns
-tau_irf = 1.5
-sigma_irf = 0.5
+tau_irf = 0
+sigma_irf = 1.4
 
 A_true = 0.1
 B_true = 0.8
