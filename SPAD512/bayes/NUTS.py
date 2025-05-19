@@ -45,7 +45,7 @@ if __name__ ==  '__main__':
     rng = np.random.default_rng(716743)
     lam1_true, lam2_true = 0.05, 0.20     
     tau1_true, tau2_true = 1/lam1_true, 1/lam2_true
-    A_true = 0.1
+    A_true = 1
     B_true = 0.8
     chi_true = 1e-3
 
@@ -58,6 +58,9 @@ if __name__ ==  '__main__':
     P_gate     = gate_prob_np(t_start, t_end, A_true, B_true, tau1_true, tau2_true)
     P_tot_true = P_gate + P_chi_true
     y_obs      = rng.binomial(K, P_tot_true).astype("int64")
+
+    plt.plot(t_start, y_obs)
+    plt.show()
 
     with pm.Model() as model:
         tau1 = pm.LogNormal("tau1", mu=np.log(20), sigma=1.0)
@@ -86,5 +89,5 @@ if __name__ ==  '__main__':
 
     az.summary(idata, var_names=["tau1","tau2","A","B"], round_to=4)
 
-    az.plot_trace(idata, var_names=["lam1","lam2","A","B"])
+    az.plot_trace(idata, var_names=["tau1","tau2","A","B"])
     plt.show()
