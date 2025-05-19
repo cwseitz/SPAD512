@@ -44,7 +44,7 @@ class FLIMSTORM:
         self.psf_sigma_px = (self.psf_fwhm_nm / 2.355) / (self.pixel_size_um * 1e3)
         self.rng = np.random.default_rng(self.seed)
 
-    def _p_det(self, t0):
+    def p_det(self, t0):
         lam = self.lambda_decay
         w = self.gate_width_s
         return np.exp(-lam * t0) * (1 - np.exp(-lam * w))
@@ -54,7 +54,7 @@ class FLIMSTORM:
         emitters = self.rng.uniform(0, self.img_n, size=(self.n_emitters, 2))
         for x0, y0 in emitters:
             for g in range(self.numsteps):
-                mean_ph = self.pulses_per_gate * self.zeta * self._p_det(self.gate_starts[g])
+                mean_ph = self.pulses_per_gate * self.zeta * self.p_det(self.gate_starts[g])
                 n_phot = self.rng.poisson(mean_ph)
                 if n_phot == 0:
                     continue
@@ -71,7 +71,7 @@ class FLIMSTORM:
         return stack, emitters
 
     @staticmethod
-    def _gauss2d(coords, amp, x0, y0, sigma, offset):
+    def gauss2d(coords, amp, x0, y0, sigma, offset):
         x, y = coords
         return (offset + amp * np.exp(-((x-x0)**2 + (y-y0)**2) / (2*sigma**2))).ravel()
 
@@ -94,7 +94,7 @@ class FLIMSTORM:
             yy, xx = np.mgrid[y_min:y_max, x_min:x_max]
             guess = (patch.max()-patch.min(), x0, y0, self.psf_sigma_px, patch.min())
             try:
-                popt, _ = curve_fit(self._gauss2d, (xx, yy), patch.ravel(), p0=guess,
+                popt, _ = curve_fit(self.gauss2d, (xx, yy), patch.ravel(), p0=guess,
                                     bounds=(0, np.inf), maxfev=2000)
                 locs.append((popt[1], popt[2]))
             except RuntimeError:
@@ -111,7 +111,7 @@ class FLIMSTORM:
         self.gate_curves = np.array(curves)
         return self.gate_curves
 
-    def _fit_tau_single(self, curve):
+    def fit_tau_single(self, curve):
         def model(t, lam, scale):
             return scale * np.exp(-lam*t) * (1 - np.exp(-lam*self.gate_width_s))
         popt, _ = curve_fit(model, self.gate_starts, curve,
@@ -119,7 +119,7 @@ class FLIMSTORM:
         return 1.0/popt[0], popt
 
     def fit_lifetimes(self):
-        self.fit_results = [self._fit_tau_single(c) for c in self.gate_curves]
+        self.fit_results = [self.fit_tau_single(c) for c in self.gate_curves]
         self.tau_estimates_ns = [1e9 / fit[1][0] for fit in self.fit_results]
         return self.tau_estimates_ns
 
