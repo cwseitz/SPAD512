@@ -154,9 +154,9 @@ class FLIMSTORM:
         self.localise()
         self.gate_counts()
         self.fit_lifetimes()
-        print("Truth (px):\n", np.round(self.truth_emitters_px, 2))
-        print("Localisations (px):\n", np.round(self.locs, 2))
-        print("Estimated τ (ns):\n", np.round(self.tau_estimates_ns, 3))
+        print("true coordinates:\n", np.round(self.truth_emitters_px, 2))
+        print("localizations:\n", np.round(self.locs, 2))
+        print("lifetimes:\n", np.round(self.tau_estimates_ns, 3))
         if plot:
             self.plot_results()
 
